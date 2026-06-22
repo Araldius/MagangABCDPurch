@@ -27,7 +27,10 @@ class DashboardController extends Controller
             'rfqs.vendorSelections.selectionItems',
             'rfqs.histories.user',
         ])
-            ->where('user_id', $userId)
+            ->where(function ($q) use ($userId) {
+                $q->where('user_id', $userId)
+                  ->orWhereHas('user', fn($u) => $u->where('role', 'purchasing'));
+            })
             ->latest()
             ->get()
             ->map(function ($req) {
@@ -39,7 +42,10 @@ class DashboardController extends Controller
             });
 
         $srs = ServiceRequest::with(['jobs.items', 'user'])
-            ->where('user_id', $userId)
+            ->where(function ($q) use ($userId) {
+                $q->where('user_id', $userId)
+                  ->orWhereHas('user', fn($u) => $u->where('role', 'purchasing'));
+            })
             ->latest()
             ->get()
             ->map(function ($req) {

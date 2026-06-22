@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $pageTitle ?? 'ProcureX' }} | PT. Dunia Kimia Jaya</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
@@ -248,11 +249,11 @@
                 list.innerHTML = '';
                 data.notifications.forEach(n => {
                     const d = n.data;
-                    const link = `/vendor-selection?key=${d.category}_${d.rfq_id}`;
+                    const link = \`/vendor-selection?key=\${d.category}_\${d.pr_id || d.rfq_id}\`;
                     
                     // Check if it's new and unread, then show toast
                     if (n.read_at === null && !lastNotifIds.has(n.id) && lastNotifIds.size > 0) {
-                        showToast(`<b>${d.vendor_name}</b> ${d.message} <b>${d.document_number}</b>`, link);
+                        showToast(\`<b>\${d.vendor_name}</b> \${d.message} <b>\${d.document_number}</b>\`, link);
                     }
                     lastNotifIds.add(n.id);
 
@@ -261,14 +262,14 @@
                     item.onclick = () => {
                         markNotifAsRead(n.id, link);
                     };
-                    item.innerHTML = `
+                    item.innerHTML = \`
                         <div style="font-size:12px;color:#374151;line-height:1.4;">
-                            <span style="font-weight:600;color:#111827;">${d.vendor_name}</span> ${d.message} <span style="font-family:monospace;font-weight:600;color:#3b5bdb;">${d.document_number}</span>
+                            <span style="font-weight:600;color:#111827;">\${d.vendor_name}</span> \${d.message} <span style="font-family:monospace;font-weight:600;color:#3b5bdb;">\${d.document_number}</span>
                         </div>
                         <div style="font-size:10px;color:#9ca3af;margin-top:4px;">
-                            ${new Date(n.created_at).toLocaleString('id-ID', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+                            \${new Date(n.created_at).toLocaleString('id-ID', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}
                         </div>
-                    `;
+                    \`;
                     list.appendChild(item);
                 });
             } else {

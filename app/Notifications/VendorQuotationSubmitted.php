@@ -45,11 +45,13 @@ class VendorQuotationSubmitted extends Notification
         
         // Use property access instead of method since type might be handled in controller or by accessor
         $category = $this->rfq->serviceRequest ? 'service' : 'goods';
+        $prId = $this->rfq->purchaseRequest ? $this->rfq->purchaseRequest->id : ($this->rfq->serviceRequest ? $this->rfq->serviceRequest->id : null);
         
         return [
             'vendor_name' => $this->vendor->vendor_name ?? $this->vendor->name ?? 'A Vendor',
             'rfq_number' => $this->rfq->rfq_number,
             'rfq_id' => $this->rfq->id,
+            'pr_id' => $prId,
             'document_number' => $docNo,
             'category' => $category,
             'message' => 'submitted a quotation for',

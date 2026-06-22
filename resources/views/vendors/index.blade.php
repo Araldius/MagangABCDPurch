@@ -169,6 +169,8 @@ const serverVendors = @json($vendors);
 let currentPR = null;
 let selections = {}; 
 let vendorOffers = {};
+let bestPriceMap = {};
+let bestServiceVendor = null;
 
 function fmt(n){return 'Rp '+Number(n).toLocaleString('id-ID');}
 
@@ -196,7 +198,8 @@ function buildVendorOffers(pr, vendors) {
                     if (itemId) {
                         offers[vId].items[itemId] = {
                             qty_offered: det.offered_quantity || det.quantity || 0,
-                            unit_price: det.offered_price_per_item || det.price || 0
+                            unit_price: det.offered_price_per_item || det.price || 0,
+                            notes: det.notes || det.item_notes || ''
                         };
                     }
                 });
@@ -204,6 +207,41 @@ function buildVendorOffers(pr, vendors) {
         });
     });
     return offers;
+}
+
+function computeBestPrices() {
+    bestPriceMap = {};
+    bestServiceVendor = null;
+    
+    currentPR.items.forEach(item => {
+        let minPrice = Infinity;
+        serverVendors.forEach(v => {
+            const o = vendorOffers[v.id]?.items[item.id];
+            if (o && parseFloat(o.unit_price) > 0 && o.unit_price < minPrice) {
+                minPrice = parseFloat(o.unit_price);
+            }
+        });
+        if (minPrice < Infinity) bestPriceMap[item.id] = minPrice;
+    });
+
+    if (currentPR.type === 'service') {
+        let minTotal = Infinity;
+        serverVendors.forEach(v => {
+            let total = 0;
+            let hasOffer = false;
+            currentPR.items.forEach(item => {
+                const o = vendorOffers[v.id]?.items[item.id];
+                if (o) {
+                    total += parseFloat(o.unit_price) * parseFloat(item.quantity);
+                    hasOffer = true;
+                }
+            });
+            if (hasOffer && total < minTotal && total > 0) {
+                minTotal = total;
+                bestServiceVendor = v.id;
+            }
+        });
+    }
 }
 
 function loadPR(uniqueKey) {
@@ -222,6 +260,7 @@ function loadPR(uniqueKey) {
     }
 
     vendorOffers = buildVendorOffers(currentPR, serverVendors);
+    computeBestPrices();
  
     document.getElementById('selection-workspace').style.display='block';
     document.getElementById('result-workspace').style.display='none';
@@ -360,6 +399,7 @@ function renderVendorCards(){
         if (currentPR.type === 'service') {
             const vendorSelCount = Object.values(selections).filter(s => s.vendor_id == v.id).length;
             isVendorChecked = vendorSelCount > 0;
+            const isBestService = (bestServiceVendor == v.id);
 
             const allSelected = currentPR.items.every(i => selections[`${v.id}_${i.id}`]);
             contentHtml += `<label class="vc-svc-header" style="cursor:pointer; display:flex; align-items:center; gap:8px;">
@@ -393,14 +433,15 @@ function renderVendorCards(){
 
 function renderItemCard(v, item, off) {
     const o = off ? off.items[item.id] : null;
-    if(!o) return `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px;margin-bottom:8px">
-        <div style="font-size:12.5px;font-weight:700;color:#111827;margin-bottom:6px">${item.item_name}</div>
-        <div style="background:#fef2f2;border-radius:6px;padding:4px;font-size:11px;color:#b91c1c;font-weight:600;text-align:center">❌ NOT OFFERED</div>
+    if(!o) return `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:24px 10px;margin-bottom:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:220px;">
+        <div style="font-size:12px;font-weight:600;color:#d1d5db;margin-bottom:8px">${item.item_name}</div>
+        <div style="border:1px solid #fca5a5;color:#ef4444;border-radius:4px;padding:4px 8px;font-size:11px;font-weight:700;">❌ NOT OFFERED</div>
     </div>`;
     
     const isService = currentPR.type === 'service';
     const selKey = `${v.id}_${item.id}`;
     const isSelected = !!selections[selKey];
+    
     // FIX: parseFloat prevents string-concat bug
     let totalSel = 0;
     for(let key in selections) { if (selections[key].item_id == item.id) totalSel += parseFloat(selections[key].quantity) || 0; }
@@ -409,28 +450,52 @@ function renderItemCard(v, item, off) {
     const isFullMatch = totalSel >= targetQty;
     const disableSel = isFullMatch && !isSelected;
 
-    const buyQty = isSelected ? parseFloat(selections[selKey].quantity) : Math.min(o.qty_offered, Math.max(1, targetQty - totalSel));
-    const subtotal = isSelected ? selections[selKey].subtotal : (buyQty * o.unit_price);
-    const stokBadge = o.qty_offered < targetQty ? `<span style="color:#ef4444">(Tersedia ${o.qty_offered})</span>` : `<span style="color:#10b981">(Tersedia)</span>`;
+    const isBestItemPrice = (bestPriceMap[item.id] == o.unit_price);
+    
+    let qtyBadge = '';
+    if (!isService) {
+        if (o.qty_offered == targetQty) {
+            qtyBadge = `<span style="background:#dcfce7;color:#16a34a;padding:2px 6px;border-radius:4px;font-size:9.5px;font-weight:700;">MATCH</span>`;
+        } else if (o.qty_offered < targetQty) {
+            qtyBadge = `<span style="background:#ffedd5;color:#ea580c;padding:2px 6px;border-radius:4px;font-size:9.5px;font-weight:700;">INSUFFICIENT (Need ${targetQty - o.qty_offered} more)</span>`;
+        } else if (o.qty_offered > targetQty) {
+            qtyBadge = `<span style="background:#e0f2fe;color:#0284c7;padding:2px 6px;border-radius:4px;font-size:9.5px;font-weight:700;">SURPLUS (+${o.qty_offered - targetQty})</span>`;
+        }
+    }
 
-    return `<div style="background:#fff;border:2px solid ${isSelected?'#3b5bdb':'#e5e7eb'};border-radius:8px;padding:10px;margin-bottom:8px;${!isService ? `cursor:${disableSel?'not-allowed':'pointer'}` : ''};opacity:${disableSel?'0.5':'1'};transition:all .15s"
+    const itemNotes = item.item_notes || item.notes || '';
+    const offerNotes = o.notes || '';
+    const combinedNotes = [itemNotes, offerNotes].filter(n => n && n.trim()).join(' - ') || 'No notes';
+
+    return `<div style="background:#fff;border:1px solid ${isSelected?'#3b5bdb':'#e5e7eb'};border-radius:8px;padding:14px;margin-bottom:12px;${!isService ? `cursor:${disableSel?'not-allowed':'pointer'}` : ''};opacity:${disableSel?'0.5':'1'};transition:all .15s"
         ${!isService && !disableSel ? `onclick="toggleSelect(${v.id}, '${item.id}')"` : ''}>
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px">
-            <div style="font-size:12.5px;font-weight:700;color:#111827;line-height:1.2">${item.item_name} <br><span style="font-size:10px;font-weight:600;margin-top:2px;display:inline-block">${stokBadge}</span></div>
-            ${!isService ? `<input type="checkbox" ${isSelected?'checked':''} ${disableSel?'disabled':''} onclick="event.stopPropagation(); toggleSelect(${v.id}, '${item.id}')" style="width:16px;height:16px;accent-color:#3b5bdb;">` : ''}
+        
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
+            <div style="font-size:13px;font-weight:700;color:#111827;">${item.item_name}</div>
+            ${!isService ? `<input type="checkbox" ${isSelected?'checked':''} ${disableSel?'disabled':''} onclick="event.stopPropagation(); toggleSelect(${v.id}, '${item.id}')" style="width:16px;height:16px;accent-color:#3b5bdb;cursor:pointer;">` : ''}
         </div>
-        <div style="font-size:11px;display:grid;grid-template-columns:auto 1fr;gap:6px 10px;align-items:center">
-            <span style="color:#6b7280;font-weight:500">Harga</span>
-            <span style="font-weight:600;color:#111827">${fmt(o.unit_price)}</span>
-            <span style="color:#6b7280;font-weight:500">Qty Beli</span>
-            <span style="display:flex;align-items:center;gap:5px">
-                <input type="number" onclick="event.stopPropagation()" onchange="updateQty(${v.id}, '${item.id}', this.value)"
-                    value="${buyQty}" min="1" max="${o.qty_offered}"
-                    style="width:50px;padding:3px 5px;border:1px solid ${isSelected?'#3b5bdb':'#d1d5db'};border-radius:4px;font-size:11px;font-weight:600;background:${isSelected?'#eff6ff':'#f9fafb'};"
-                    ${!isSelected || disableSel || isService ? 'disabled' : ''}> <span style="color:#6b7280">/ ${item.quantity}</span>
-            </span>
-            <span style="color:#6b7280;font-weight:500">Subtotal</span>
-            <span style="font-weight:700;color:#111827">${fmt(subtotal)}</span>
+
+        <div style="display:grid;grid-template-columns:65px 1fr;gap:8px 10px;align-items:center;font-size:11px;">
+            <div style="color:#9ca3af">Qty Offer</div>
+            <div style="font-weight:700;color:#111827;display:flex;align-items:center;gap:6px">
+                ${o.qty_offered} / ${targetQty}
+                ${qtyBadge}
+            </div>
+
+            <div style="color:#9ca3af">Unit</div>
+            <div style="color:#111827">${item.unit}</div>
+
+            <div style="color:#9ca3af">Unit Price</div>
+            <div style="font-weight:600;color:#111827;display:flex;align-items:center;gap:6px">
+                ${fmt(o.unit_price)}
+                ${isBestItemPrice ? `<span style="background:#e0f2fe;color:#0284c7;padding:2px 6px;border-radius:4px;font-size:9.5px;font-weight:700;">BEST PRICE</span>` : ''}
+            </div>
+
+            <div style="color:#9ca3af">Notes:</div>
+            <div style="color:#6b7280;font-style:italic">${combinedNotes}</div>
+
+            <div style="color:#9ca3af">Subtotal</div>
+            <div style="font-weight:700;color:#111827">${fmt(o.qty_offered * o.unit_price)}</div>
         </div>
     </div>`;
 }
@@ -677,17 +742,28 @@ function submitToServer(){
     
     fetch('{{ route("vendors.store.selection") }}', { 
         method:'POST', 
-        headers:{'Content-Type':'application/json','X-CSRF-TOKEN':payload._token}, 
+        headers:{
+            'Content-Type':'application/json',
+            'Accept':'application/json',
+            'X-CSRF-TOKEN':payload._token
+        }, 
         body:JSON.stringify(payload) 
     })
-    .then(r=>r.json()).then(data=>{
+    .then(r => {
+        if (!r.ok) {
+            return r.json().then(err => { 
+                throw new Error(err.message || JSON.stringify(err)); 
+            });
+        }
+        return r.json();
+    })
+    .then(data => {
         closeSubmitModal(); 
         document.getElementById('popup-pr').textContent=data.pr_number || currentPR.display_doc; 
         document.getElementById('success-popup').style.display='flex';
-    }).catch(()=>{
+    }).catch(err => {
         closeSubmitModal(); 
-        document.getElementById('popup-pr').textContent=currentPR.display_doc; 
-        document.getElementById('success-popup').style.display='flex';
+        alert('Submission failed. Please try again.\nError: ' + (err.message || ''));
     });
 }
 

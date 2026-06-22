@@ -109,89 +109,95 @@ class VendorController extends Controller
 
         $isService = ($request->item_type === 'service');
 
-        if ($isService) {
-            $pr     = ServiceRequest::findOrFail($request->purchase_request_id);
-            $docNum = $pr->document_number
-                ?? ('SR-' . ($pr->created_at ?? now())->format('Y') . '-' . str_pad($pr->id, 4, '0', STR_PAD_LEFT));
-        } else {
-            $pr     = PurchaseRequest::findOrFail($request->purchase_request_id);
-            $docNum = $pr->document_number;
-        }
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($request, $isService) {
+            if ($isService) {
+                $pr     = ServiceRequest::findOrFail($request->purchase_request_id);
+                $docNum = $pr->document_number
+                    ?? ('SR-' . ($pr->created_at ?? now())->format('Y') . '-' . str_pad($pr->id, 4, '0', STR_PAD_LEFT));
+            } else {
+                $pr     = PurchaseRequest::findOrFail($request->purchase_request_id);
+                $docNum = $pr->document_number;
+            }
 
-        $rfq = $pr->rfqs()->first();
-        if (!$rfq) {
-            $todayCount = Rfq::whereDate('created_at', today())->count() + 1;
-            $rfq = Rfq::create([
-                'purchase_request_id' => $isService ? null : $pr->id,
-                'service_request_id'  => $isService ? $pr->id : null,
-                'rfq_number'          => 'RFQ-' . now()->format('Y-md') . '-' . str_pad($todayCount, 3, '0', STR_PAD_LEFT),
-                'status'              => 'closed',
-                'opened_at'           => now(),
-            ]);
-        }
-
-        $byVendor = collect($request->selections)->groupBy('vendor_id');
-
-        foreach ($byVendor as $vendorId => $items) {
-            $vendor = Vendor::find($vendorId);
-
-            $sel = VendorSelection::updateOrCreate(
-                ['rfq_id' => $rfq->id, 'vendor_id' => $vendorId],
-                [
-                    'quotation_id'   => null,
-                    'decision_notes' => $request->selection_notes ?? '',
-                    'decided_at'     => now(),
-                ]
-            );
-
-            $sel->selectionItems()->delete();
-
-            foreach ($items as $row) {
-                $qd = QuotationDetail::whereHas('quotation', function ($q) use ($rfq, $vendorId) {
-                    $q->where('rfq_id', $rfq->id)->where('vendor_id', $vendorId);
-                })->where(
-                    $isService ? 'service_request_item_id' : 'purchase_request_item_id',
-                    $row['item_id']
-                )->first();
-
-                $qsId = null;
-                if ($qd) {
-                    $qs   = QuotationSummary::where('quotation_detail_id', $qd->id)->first();
-                    $qsId = $qs ? $qs->id : null;
-                }
-
-                SelectionItem::create([
-                    'vendor_selection_id'       => $sel->id,
-                    'quotation_summary_id'      => $qsId ?? 1,
-                    'final_price_per_item'      => $row['unit_price'],
-                    'final_quantity'            => $row['quantity'],
-                    'notes'                     => $row['notes'] ?? 'Selected',
-                    'purchase_request_item_id'  => $isService ? null : $row['item_id'],
-                    'service_request_item_id'   => $isService ? $row['item_id'] : null,
+            $rfq = $pr->rfqs()->first();
+            if (!$rfq) {
+                $todayCount = Rfq::whereDate('created_at', today())->count() + 1;
+                $rfq = Rfq::create([
+                    'purchase_request_id' => $isService ? null : $pr->id,
+                    'service_request_id'  => $isService ? $pr->id : null,
+                    'rfq_number'          => 'RFQ-' . now()->format('Y-md') . '-' . str_pad($todayCount, 3, '0', STR_PAD_LEFT),
+                    'status'              => 'closed',
+                    'opened_at'           => now(),
                 ]);
             }
 
-            History::create([
-                'user_id'             => auth()->id(),
-                'vendor_id'           => $vendorId,
-                'rfq_id'              => $rfq->id,
-                'vendor_selection_id' => $sel->id,
-                'action'              => 'Vendor Selection Submitted',
-                'transaction_status'  => 'completed',
-                'notes'               => 'Vendor ' . $vendor->vendor_name . ' dipilih untuk '
-                                        . count($items) . ' item pada dokumen ' . $docNum,
-                'action_date'         => now(),
+            $byVendor = collect($request->selections)->groupBy('vendor_id');
+
+            foreach ($byVendor as $vendorId => $items) {
+                $vendor = Vendor::find($vendorId);
+
+                $quotation = \App\Models\Quotation::where('rfq_id', $rfq->id)
+                    ->where('vendor_id', $vendorId)
+                    ->first();
+
+                $sel = VendorSelection::updateOrCreate(
+                    ['rfq_id' => $rfq->id, 'vendor_id' => $vendorId],
+                    [
+                        'quotation_id'   => $quotation ? $quotation->id : 0, // Fallback if necessary, but it shouldn't be null
+                        'decision_notes' => $request->selection_notes ?? '',
+                        'decided_at'     => now(),
+                    ]
+                );
+
+                $sel->selectionItems()->delete();
+
+                foreach ($items as $row) {
+                    $qd = QuotationDetail::whereHas('quotation', function ($q) use ($rfq, $vendorId) {
+                        $q->where('rfq_id', $rfq->id)->where('vendor_id', $vendorId);
+                    })->where(
+                        $isService ? 'service_request_item_id' : 'purchase_request_item_id',
+                        $row['item_id']
+                    )->first();
+
+                    $qsId = null;
+                    if ($qd) {
+                        $qs   = QuotationSummary::where('quotation_detail_id', $qd->id)->first();
+                        $qsId = $qs ? $qs->id : null;
+                    }
+
+                    SelectionItem::create([
+                        'vendor_selection_id'       => $sel->id,
+                        'quotation_summary_id'      => $qsId,
+                        'final_price_per_item'      => $row['unit_price'],
+                        'final_quantity'            => $row['quantity'],
+                        'notes'                     => $row['notes'] ?? 'Selected',
+                        'purchase_request_item_id'  => $isService ? null : $row['item_id'],
+                        'service_request_item_id'   => $isService ? $row['item_id'] : null,
+                    ]);
+                }
+
+                History::create([
+                    'user_id'             => auth()->id(),
+                    'vendor_id'           => $vendorId,
+                    'rfq_id'              => $rfq->id,
+                    'vendor_selection_id' => $sel->id,
+                    'action'              => 'Vendor Selection Submitted',
+                    'transaction_status'  => 'completed',
+                    'notes'               => 'Vendor ' . $vendor->vendor_name . ' dipilih untuk '
+                                            . count($items) . ' item pada dokumen ' . $docNum,
+                    'action_date'         => now(),
+                ]);
+            }
+
+            $pr->update(['status' => 'completed']);
+
+            return response()->json([
+                'success'   => true,
+                'message'   => 'Vendor selection submitted for ' . $docNum,
+                'pr_number' => $docNum,
+                'notes'     => $request->selection_notes ?? '—',
             ]);
-        }
-
-        $pr->update(['status' => 'completed']);
-
-        return response()->json([
-            'success'   => true,
-            'message'   => 'Vendor selection submitted for ' . $docNum,
-            'pr_number' => $docNum,
-            'notes'     => $request->selection_notes ?? '—',
-        ]);
+        });
     }
 
     // ─────────────────────────────────────────────

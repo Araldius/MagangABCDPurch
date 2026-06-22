@@ -363,5 +363,3 @@
     }
 </script>
 @endsection
-
-c:\Users\given.MSI\InternshipWebsiteLaravel - Copy\database\migrations\2026_06_07_000000_make_user_id_nullable_in_history_table.php

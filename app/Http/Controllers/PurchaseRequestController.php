@@ -166,6 +166,7 @@ class PurchaseRequestController extends Controller
                 'department'      => 'required|string',
                 'plant'           => 'required|string',
                 'requested_date'  => 'required|date',
+                'need_date'       => 'required|date',
                 'items'           => 'required|array|min:1',
                 'items.*.item_id' => 'required|string',
             ]);
@@ -182,6 +183,7 @@ class PurchaseRequestController extends Controller
                 'plant'           => $request->plant,
                 'submission_date' => now(),
                 'requested_date'  => $request->requested_date,
+                'need_date'       => $request->need_date,
                 'status'          => 'submitted',
             ]);
 

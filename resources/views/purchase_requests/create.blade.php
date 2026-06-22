@@ -99,8 +99,9 @@
         </div>
     </div>
     <div class="card-body">
-        <div class="form-row form-row-2" style="margin-bottom:0;">
+        <div class="form-row" style="grid-template-columns: 1fr 1fr 1fr; margin-bottom:0;">
             <div class="form-group" style="margin-bottom:0;"><label class="form-label">Requested Date <span class="req">*</span></label><input class="form-control" type="date" name="requested_date" required></div>
+            <div class="form-group" style="margin-bottom:0;"><label class="form-label">Need Date <span class="req">*</span></label><input class="form-control" type="date" name="need_date" required></div>
             <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label">Plant <span class="req">*</span></label>
                 <select class="form-control" name="plant" required>
@@ -238,8 +239,9 @@
             <button class="modal-close" onclick="closeNewItemModal()">&times;</button>
         </div>
         <div class="modal-body">
-            <div class="form-row form-row-2">
+            <div class="form-row" style="grid-template-columns: 2fr 1fr 1.5fr;">
                 <div class="form-group"><label class="form-label">Item Name <span class="req">*</span></label><input class="form-control" id="new-item-name"></div>
+                <div class="form-group"><label class="form-label">Qty <span class="req">*</span></label><input type="number" class="form-control" id="new-item-qty" value="1" min="1"></div>
                 <div class="form-group"><label class="form-label">Unit <span class="req">*</span></label>
                     <select class="form-control" id="new-item-unit">
                         <option>Pcs</option><option>Roll</option><option>Unit</option><option>Meter</option><option>Kg</option><option>Set</option><option>Box</option><option>Lot</option><option>Jasa</option>
@@ -319,8 +321,10 @@ function setTab(t) {
     document.getElementById('tab-service').classList.toggle('tab-active', t==='service');
     document.getElementById('goods-panel').style.display   = t==='goods'   ? '' : 'none';
     document.getElementById('service-panel').style.display = t==='service' ? '' : 'none';
-    document.getElementById('goods-doc').required = (t === 'goods');
+    
+    // Toggle 'required' attributes so hidden fields don't block form submission
     document.getElementById('goods-title').required = (t === 'goods');
+    document.getElementById('service-title').required = (t === 'service');
 }
 
 /* GOODS LOGIC */
@@ -349,16 +353,37 @@ function removeGoods(idx){ addedItems=addedItems.filter(i=>i.idx!==idx); renderG
 function openNewItemModal(){ closeItemModal(); document.getElementById('new-item-modal').classList.add('open'); }
 function closeNewItemModal(){ document.getElementById('new-item-modal').classList.remove('open'); }
 function saveNewItem(){
+    saveCurrentGoodsInputValuesToState();
     const name=document.getElementById('new-item-name').value.trim();
     if(!name){alert('Item name is required.');return;}
     const unit=document.getElementById('new-item-unit').value, spec=document.getElementById('new-item-spec').value.trim(), notes=document.getElementById('new-item-notes').value.trim();
+    const qty=parseFloat(document.getElementById('new-item-qty').value) || 1;
     const newId='ITM-'+Math.floor(Math.random()*9000+1000);
     catalog.push({id:newId, name, unit, spec, notes});
-    addedItems.push({idx:itemCounter++, id:newId, name, unit, spec, notes, qty:1});
+    addedItems.push({idx:itemCounter++, id:newId, name, unit, spec, notes, qty:qty});
     renderGoodsTable(); closeNewItemModal();
     ['new-item-name','new-item-spec','new-item-notes'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('new-item-qty').value = '1';
 }
+function saveCurrentGoodsInputValuesToState() {
+    addedItems.forEach(it => {
+        const qtyInput = document.querySelector(`input[name="items[${it.idx}][quantity]"]`);
+        if (qtyInput) {
+            it.qty = parseFloat(qtyInput.value) || 1;
+            const nameInput = document.querySelector(`input[name="items[${it.idx}][item_name]"]`);
+            if (nameInput) it.name = nameInput.value;
+            const specInput = document.querySelector(`input[name="items[${it.idx}][specification]"]`);
+            if (specInput) it.spec = specInput.value;
+            const notesInput = document.querySelector(`input[name="items[${it.idx}][item_notes]"]`);
+            if (notesInput) it.notes = notesInput.value;
+            const unitSelect = document.querySelector(`select[name="items[${it.idx}][unit]"]`);
+            if (unitSelect) it.unit = unitSelect.value;
+        }
+    });
+}
+
 function renderGoodsTable(){
+    saveCurrentGoodsInputValuesToState();
     const t=document.getElementById('goods-tbody');
     document.getElementById('goods-count-label').textContent=`${addedItems.length} item(s) added`;
     if(!addedItems.length){t.innerHTML='<tr><td colspan="8" style="text-align:center;padding:28px 16px;color:#9ca3af;">No items added yet.</td></tr>';return;}
@@ -566,6 +591,11 @@ document.getElementById('pr-form').addEventListener('submit', function(e) {
     const type = document.getElementById('item_type_field').value;
     if (type === 'goods' && addedItems.length === 0) { e.preventDefault(); alert('Please add at least one item.'); return; }
     if (type === 'service' && mainServicesData.length === 0) { e.preventDefault(); alert('Please register at least one complete service module.'); return; }
+});
+
+// Initialize form validation state on page load
+document.addEventListener('DOMContentLoaded', function() {
+    setTab('goods');
 });
 </script>
 @endsection
