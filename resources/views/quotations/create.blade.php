@@ -100,8 +100,8 @@
                 <input class="form-control" name="new_vendor_location" id="vendor_location" placeholder="Vendor location">
             </div>
             <div class="form-group flex-1" style="margin-bottom:0;">
-                <label class="form-label">Contact Person</label>
-                <input class="form-control" name="new_vendor_contact" id="vendor_contact" placeholder="Vendor contact">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-control" name="new_vendor_contact" id="vendor_contact" placeholder="vendor@email.com">
             </div>
         </div>
     </div>

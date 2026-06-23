@@ -35,7 +35,9 @@ class VendorPortalController extends Controller
             }
         }
 
-        return view('vendors.quote', compact('rfq', 'items'));
+        $vendors = Vendor::all();
+
+        return view('vendors.quote', compact('rfq', 'items', 'vendors'));
     }
 
     public function submit(Request $request, $token)
@@ -53,7 +55,7 @@ class VendorPortalController extends Controller
 
         $data = $request->validate([
             'vendor_name' => 'required|string|max:255',
-            'vendor_contact' => 'required|string|max:255',
+            'vendor_contact' => 'required|email|max:255',
             'vendor_location' => 'nullable|string|max:255',
             'items' => 'required|array',
             'items.*.item_id' => 'required',

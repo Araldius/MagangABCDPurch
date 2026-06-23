@@ -31,7 +31,7 @@ class QuotationController extends Controller
             'vendor_id' => ['nullable', 'exists:vendors,id'],
             'new_vendor_name' => ['nullable', 'string', 'max:255'],
             'new_vendor_location' => ['nullable', 'string', 'max:255'],
-            'new_vendor_contact' => ['nullable', 'string', 'max:255'],
+            'new_vendor_contact' => ['nullable', 'email', 'max:255'],
             'items' => ['required', 'array'],
             'items.*.item_id' => ['required'], // PR item or SR item ID
             'items.*.price' => ['required', 'numeric', 'min:0'],
@@ -163,7 +163,7 @@ class QuotationController extends Controller
             'items' => ['required', 'array', 'min:1'],
             'items.*.purchase_request_item_id' => ['required', 'exists:purchase_request_items,id'],
             'items.*.offered_price_per_item' => ['required', 'numeric', 'min:0'],
-            'items.*.offered_quantity' => ['required', 'integer', 'min:1'],
+            'items.*.offered_quantity' => ['required', 'numeric', 'min:0'],
         ]);
 
         $quotation = Quotation::updateOrCreate([

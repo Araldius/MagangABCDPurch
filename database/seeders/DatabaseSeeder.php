@@ -46,7 +46,7 @@ class DatabaseSeeder extends Seeder
         // ════════════════════════════════════════════════════════════════════
         $admin = User::create([
             'name' => 'Admin Purchasing', 'email' => 'admin@company.com',
-            'password' => Hash::make('password'), 'role' => 'purchasing', 'department' => 'Procurement',
+            'password' => Hash::make('password'), 'role' => 'purchasing', 'department' => 'Purchasing',
         ]);
         $user = User::create([
             'name' => 'John Requester', 'email' => 'user@company.com',
@@ -59,13 +59,13 @@ class DatabaseSeeder extends Seeder
         // ════════════════════════════════════════════════════════════════════
         // 2. VENDORS (7 active vendors)
         // ════════════════════════════════════════════════════════════════════
-        $v1 = Vendor::create(['vendor_name' => 'PT Tekno Mandiri',    'location' => 'Jakarta',  'contact' => '021-1111111', 'status' => 'active']);
-        $v2 = Vendor::create(['vendor_name' => 'CV Maju Komputer',    'location' => 'Bandung',  'contact' => '022-2222222', 'status' => 'active']);
-        $v3 = Vendor::create(['vendor_name' => 'PT Karya Jasa',       'location' => 'Surabaya', 'contact' => '031-3333333', 'status' => 'active']);
-        $v4 = Vendor::create(['vendor_name' => 'CV Bangun Nusantara', 'location' => 'Semarang', 'contact' => '024-4444444', 'status' => 'active']);
-        $v5 = Vendor::create(['vendor_name' => 'PT Sumber Makmur',    'location' => 'Cikarang', 'contact' => '021-5555555', 'status' => 'active']);
-        $v6 = Vendor::create(['vendor_name' => 'CV Delta Sejahtera',  'location' => 'Bekasi',   'contact' => '021-6666666', 'status' => 'active']);
-        $v7 = Vendor::create(['vendor_name' => 'PT Arindo Perkasa',   'location' => 'Gresik',   'contact' => '031-7777777', 'status' => 'active']);
+        $v1 = Vendor::create(['vendor_name' => 'PT Tekno Mandiri',    'location' => 'Jakarta',  'contact' => 'sales@teknomandiri.co.id', 'status' => 'active']);
+        $v2 = Vendor::create(['vendor_name' => 'CV Maju Komputer',    'location' => 'Bandung',  'contact' => 'info@majukomputer.com', 'status' => 'active']);
+        $v3 = Vendor::create(['vendor_name' => 'PT Karya Jasa',       'location' => 'Surabaya', 'contact' => 'contact@karyajasa.co.id', 'status' => 'active']);
+        $v4 = Vendor::create(['vendor_name' => 'CV Bangun Nusantara', 'location' => 'Semarang', 'contact' => 'hello@bangunnusantara.com', 'status' => 'active']);
+        $v5 = Vendor::create(['vendor_name' => 'PT Sumber Makmur',    'location' => 'Cikarang', 'contact' => 'sales@sumbermakmur.co.id', 'status' => 'active']);
+        $v6 = Vendor::create(['vendor_name' => 'CV Delta Sejahtera',  'location' => 'Bekasi',   'contact' => 'info@deltasejahtera.com', 'status' => 'active']);
+        $v7 = Vendor::create(['vendor_name' => 'PT Arindo Perkasa',   'location' => 'Gresik',   'contact' => 'contact@arindoperkasa.co.id', 'status' => 'active']);
         // ════════════════════════════════════════════════════════════════════
         // ── PURCHASE REQUESTS (GOODS) ────────────────────────────────────
         // ════════════════════════════════════════════════════════════════════

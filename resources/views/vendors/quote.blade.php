@@ -43,6 +43,21 @@
         .alert-danger { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
         .text-center { text-align: center; }
         .mt-4 { margin-top: 16px; }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 1000; align-items: center; justify-content: center; padding: 16px; }
+        .modal-overlay.open { display: flex; }
+        .modal { background: #fff; border-radius: 14px; width: 100%; max-width: 600px; display: flex; flex-direction: column; overflow: hidden; }
+        .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .modal-title  { font-size: 16px; font-weight: 700; }
+        .modal-desc   { font-size: 13px; color: var(--text-muted); }
+        .modal-body   { padding: 20px; overflow-y: auto; max-height: 65vh; }
+        .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+        .modal-close  { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 18px; }
+        .item-option { padding:12px 14px;border-radius:8px;cursor:pointer;border:1px solid var(--border);transition:background .1s; margin-bottom: 6px; }
+        .item-option:hover { background:#f9fafb; }
+        .item-option.selected { background:#f0f4ff;border-color:var(--primary); }
+        .item-option-name { font-size:13.5px;font-weight:600;color:var(--text-main); }
+        .item-option-desc { font-size:12px;color:var(--text-muted); margin-top: 4px;}
+        .flex-between { display: flex; align-items: center; justify-content: space-between; }
     </style>
 </head>
 <body>
@@ -79,17 +94,20 @@
                 <div class="card-body">
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                         <div class="form-group">
-                            <label class="form-label">Company Name *</label>
+                            <label class="form-label flex-between" style="width:100%">
+                                <span>Company Name *</span>
+                                <a href="#" onclick="openVendorModal(); return false;" style="font-size:12px; color:var(--primary); text-decoration:none; font-weight:600;">Select from Catalog</a>
+                            </label>
                             <input type="text" class="form-control" name="vendor_name" id="vendor_name_input" required placeholder="PT. ABC XYZ">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Email / Contact Number *</label>
-                            <input type="text" class="form-control" name="vendor_contact" required placeholder="email@company.com">
+                            <label class="form-label">Email *</label>
+                            <input type="email" class="form-control" name="vendor_contact" id="vendor_contact_input" required placeholder="email@company.com">
                         </div>
                     </div>
                     <div class="form-group" style="margin-bottom:0;">
                         <label class="form-label">Company Location / Address</label>
-                        <input type="text" class="form-control" name="vendor_location" placeholder="Jakarta, Indonesia">
+                        <input type="text" class="form-control" name="vendor_location" id="vendor_location_input" placeholder="Jakarta, Indonesia">
                     </div>
                 </div>
             </div>
@@ -186,9 +204,43 @@
             </div>
         </form>
         @endif
+        <div class="modal-overlay" id="vendor-modal">
+            <div class="modal">
+                <div class="modal-header">
+                    <div><div class="modal-title">Vendor Catalog</div><div class="modal-desc">Search and select registered vendors</div></div>
+                    <button type="button" class="modal-close" onclick="closeVendorModal()">&times;</button>
+                </div>
+                <div style="padding: 16px 20px 12px; border-bottom: 1px solid var(--border); background: #fafafa;">
+                    <input class="form-control mb-2" id="vendor-search" placeholder="Search vendor name..." oninput="filterVendors(this.value)">
+                </div>
+                <div class="modal-body" style="padding-top: 12px;">
+                    <div id="vendor-list" style="display:flex;flex-direction:column;"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" onclick="closeVendorModal()" style="border: 1px solid var(--border); background: #fff; color: var(--text-main);">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="addSelectedVendor()">Select Vendor</button>
+                </div>
+            </div>
+        </div>
+
         <script>
+            let vendors = @json($vendors ?? []);
+            let selectedVendorId = null;
+
             const vendorNameInput = document.getElementById('vendor_name_input');
+            const vendorContactInput = document.getElementById('vendor_contact_input');
+            const vendorLocationInput = document.getElementById('vendor_location_input');
+
+            // Handle Enter key to prevent form submit and move to next field
             if(vendorNameInput) {
+                vendorNameInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.blur();
+                        if(vendorContactInput) vendorContactInput.focus();
+                    }
+                });
+
                 vendorNameInput.addEventListener('input', function() {
                     let start = this.selectionStart;
                     let end = this.selectionEnd;
@@ -211,8 +263,63 @@
                         this.value = newVal;
                         this.setSelectionRange(start, end);
                     }
+
+                    // Autofill logic
+                    if (!newVal.trim()) return;
+
+                    const match = vendors.find(v => v.vendor_name.toLowerCase() === newVal.trim().toLowerCase());
+                    if (match) {
+                        if(vendorLocationInput) vendorLocationInput.value = match.location || '';
+                        if(vendorContactInput) vendorContactInput.value = match.contact || '';
+                    }
                 });
             }
+
+            function filterVendors(q) { renderVendorList(q.toLowerCase()); }
+            function renderVendorList(q='') {
+                const filtered = vendors.filter(v => !q || v.vendor_name.toLowerCase().includes(q));
+                document.getElementById('vendor-list').innerHTML = filtered.map(v => {
+                    const isSelected = String(selectedVendorId) === String(v.id);
+                    return `
+                    <div class="item-option ${isSelected ? 'selected' : ''}" onclick="selectVendorModal('${v.id}')">
+                        <div class="item-option-name">${v.vendor_name}</div>
+                        <div class="item-option-desc">${v.location || '-'} | ${v.contact || '-'}</div>
+                    </div>`;
+                }).join('');
+            }
+
+            function selectVendorModal(id) { 
+                selectedVendorId = id; 
+                renderVendorList(document.getElementById('vendor-search').value.toLowerCase()); 
+            }
+            
+            function openVendorModal() { 
+                selectedVendorId = null; 
+                document.getElementById('vendor-search').value = ''; 
+                renderVendorList(); 
+                document.getElementById('vendor-modal').classList.add('open'); 
+            }
+            
+            function closeVendorModal() { 
+                document.getElementById('vendor-modal').classList.remove('open'); 
+            }
+            
+            function addSelectedVendor() {
+                if(!selectedVendorId){ alert('Please select a vendor.'); return; }
+                const v = vendors.find(x => x.id == selectedVendorId);
+                if(!v) return;
+                
+                if(vendorNameInput) vendorNameInput.value = v.vendor_name;
+                if(vendorLocationInput) vendorLocationInput.value = v.location || '';
+                if(vendorContactInput) vendorContactInput.value = v.contact || '';
+                
+                closeVendorModal();
+            }
+            
+            // Close modal when clicking outside
+            document.getElementById('vendor-modal').addEventListener('click', function(e) {
+                if(e.target === this) this.classList.remove('open');
+            });
         </script>
     </div>
 </body>

@@ -103,7 +103,7 @@ class VendorController extends Controller
             'selections.*.vendor_id'   => ['required', 'exists:vendors,id'],
             'selections.*.item_id'     => ['required'],
             'selections.*.unit_price'  => ['required', 'numeric', 'min:0'],
-            'selections.*.quantity'    => ['required', 'integer', 'min:1'],
+            'selections.*.quantity'    => ['required', 'numeric', 'min:0'],
             'selections.*.notes'       => ['nullable', 'string'],
         ]);
 
