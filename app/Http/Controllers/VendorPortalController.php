@@ -28,6 +28,14 @@ class VendorPortalController extends Controller
             return abort(403, 'Permintaan ini sudah diproses dan tidak menerima penawaran lagi.');
         }
 
+        $neededDateRaw = $rfq->purchaseRequest ? $rfq->purchaseRequest->need_date : ($rfq->serviceRequest ? $rfq->serviceRequest->requested_date : null);
+        $neededDate = $neededDateRaw ? \Carbon\Carbon::parse($neededDateRaw)->startOfDay() : null;
+        $closedDate = $neededDate ? $neededDate->copy()->subDay()->endOfDay() : null;
+
+        if ($closedDate && now()->gt($closedDate)) {
+            return view('vendors.closed', compact('rfq', 'pr', 'neededDate', 'closedDate'));
+        }
+
         $items = $rfq->purchaseRequest ? $rfq->purchaseRequest->items : collect();
         if ($rfq->serviceRequest) {
             foreach ($rfq->serviceRequest->jobs as $job) {
@@ -35,9 +43,7 @@ class VendorPortalController extends Controller
             }
         }
 
-        $vendors = Vendor::all();
-
-        return view('vendors.quote', compact('rfq', 'items', 'vendors'));
+        return view('vendors.quote', compact('rfq', 'items', 'neededDate', 'closedDate'));
     }
 
     public function submit(Request $request, $token)
@@ -53,9 +59,17 @@ class VendorPortalController extends Controller
             return back()->withErrors(['error' => 'Permintaan ini sudah diproses dan tidak menerima penawaran lagi.']);
         }
 
+        $neededDateRaw = $rfq->purchaseRequest ? $rfq->purchaseRequest->need_date : ($rfq->serviceRequest ? $rfq->serviceRequest->requested_date : null);
+        $neededDate = $neededDateRaw ? \Carbon\Carbon::parse($neededDateRaw)->startOfDay() : null;
+        $closedDate = $neededDate ? $neededDate->copy()->subDay()->endOfDay() : null;
+
+        if ($closedDate && now()->gt($closedDate)) {
+            return back()->withErrors(['error' => 'Masa penawaran (Quotation) telah ditutup karena sudah melewati batas waktu H-1 dari tanggal dibutuhkan.']);
+        }
+
         $data = $request->validate([
             'vendor_name' => 'required|string|max:255',
-            'vendor_contact' => 'required|email|max:255',
+            'vendor_contact' => 'required|string|max:255',
             'vendor_location' => 'nullable|string|max:255',
             'items' => 'required|array',
             'items.*.item_id' => 'required',

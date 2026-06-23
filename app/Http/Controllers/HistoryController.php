@@ -231,15 +231,20 @@ class HistoryController extends Controller
     {
         $prs = $this->getBaseCompletedPRs();
         $vendorMap = [];
+        $unselectedVendorMap = [];
 
         foreach ($prs as $pr) {
             foreach ($pr->rfqs as $rfq) {
+                // Collect selected vendors
+                $selectedVendorIds = [];
                 foreach ($rfq->vendorSelections as $sel) {
                     $vendor = $sel->vendor;
                     if (!$vendor) continue;
                     $vid = $vendor->id;
                     $vName = $vendor->name ?? $vendor->vendor_name ?? '-';
                     if ($vName === '-' || $vName === '-') continue;
+
+                    $selectedVendorIds[] = $vid;
 
                     if (!isset($vendorMap[$vid])) {
                         $vendorMap[$vid] = [
@@ -290,10 +295,72 @@ class HistoryController extends Controller
                     }
                     $vendorMap[$vid]['total_value'] += $subtotal;
                 }
+
+                // Collect unselected vendors (Quotations without a VendorSelection for this RFQ)
+                if (method_exists($rfq, 'quotations')) {
+                    foreach ($rfq->quotations as $quotation) {
+                        $vendor = collect(\App\Models\Vendor::all())->firstWhere('id', $quotation->vendor_id);
+                        if (!$vendor) continue;
+                        $vid = $vendor->id;
+
+                        // Only consider if not selected
+                        if (in_array($vid, $selectedVendorIds)) continue;
+
+                        $vName = $vendor->name ?? $vendor->vendor_name ?? '-';
+                        if ($vName === '-' || $vName === '-') continue;
+
+                        if (!isset($unselectedVendorMap[$vid])) {
+                            $unselectedVendorMap[$vid] = [
+                                'vendor_id' => $vid,
+                                'vendor_name' => $vName,
+                                'vendor_city' => $vendor->location ?? '',
+                                'last_submitted' => null,
+                                'quotation_count' => 0,
+                                'history' => []
+                            ];
+                        }
+
+                        $dateStr = $quotation->created_at ? $quotation->created_at->format('Y-m-d') : '';
+                        if (!$unselectedVendorMap[$vid]['last_submitted'] || $dateStr > $unselectedVendorMap[$vid]['last_submitted']) {
+                            $unselectedVendorMap[$vid]['last_submitted'] = $dateStr;
+                        }
+
+                        $unselectedVendorMap[$vid]['quotation_count']++;
+
+                        foreach ($quotation->details ?? [] as $qd) {
+                            $val = $qd->offered_price_per_item * $qd->offered_quantity;
+                            $pri = null;
+                            if ($pr->type === 'service' || method_exists($pr, 'jobs')) {
+                                foreach ($pr->jobs ?? [] as $job) {
+                                    $found = collect($job->items)->firstWhere('id', $qd->service_request_item_id);
+                                    if ($found) { $pri = $found; break; }
+                                }
+                            } else {
+                                $pri = collect($pr->items)->firstWhere('id', $qd->purchase_request_item_id);
+                            }
+
+                            $unselectedVendorMap[$vid]['history'][] = [
+                                'item_id' => $pri->item_id ?? $pri->item_code ?? '-',
+                                'item_name' => $pri->item_name ?? $pri->name ?? '-',
+                                'value' => $val,
+                                'qty' => $qd->offered_quantity,
+                                'unit' => $qd->offered_unit ?? $pri->unit ?? '-',
+                                'specification' => $pri->specification ?? '-',
+                                'requested_by' => $pr->user->name ?? '-',
+                                'lead_time' => '-', // not selected
+                                'req_date' => $pr->requested_date ? \Carbon\Carbon::parse($pr->requested_date)->format('Y-m-d') : '-',
+                                'doc_no' => $pr->document_number,
+                                'pr_id' => $pr->id,
+                                'type' => $pr->type ?? 'goods'
+                            ];
+                        }
+                    }
+                }
             }
         }
 
         $vendors = collect(array_values($vendorMap))->sortByDesc('last_purchase')->values();
+        $unselectedVendors = collect(array_values($unselectedVendorMap))->sortByDesc('last_submitted')->values();
 
         $vendorsUsed = count($vendorMap);
         $totalValue = $vendors->sum('total_value');
@@ -310,6 +377,6 @@ class HistoryController extends Controller
         }
         $avgLeadDays = $lDays->count() > 0 ? round($lDays->avg()) : 0;
 
-        return view('history.vendors', compact('vendors', 'vendorsUsed', 'totalValue', 'prsCompleted', 'avgLeadDays'));
+        return view('history.vendors', compact('vendors', 'unselectedVendors', 'vendorsUsed', 'totalValue', 'prsCompleted', 'avgLeadDays'));
     }
 }
