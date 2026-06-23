@@ -29,6 +29,7 @@ Route::middleware('auth')->group(function () {
 
     /* Dashboard */
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('dashboard/chart-data', [DashboardController::class, 'getChartData'])->name('dashboard.chart_data');
 
     /* Purchase Requests */
     Route::get( 'purchase-request/create', [PurchaseRequestController::class, 'create'])->name('purchase_requests.create');
@@ -73,4 +74,5 @@ Route::middleware('auth')->group(function () {
     /* Notifications */
     Route::get('notifications/fetch', [\App\Http\Controllers\NotificationController::class, 'fetch'])->name('notifications.fetch');
     Route::post('notifications/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.read');
+
 });
