@@ -69,6 +69,9 @@ Route::middleware('auth')->group(function () {
     /* API / Data Fetching */
     Route::get('api/vendors', [VendorController::class, 'apiList'])->name('api.vendors');
     Route::post('api/rfq/{rfq}/generate-link', [QuotationController::class, 'generateVendorLink']);
+    Route::get('api/dashboard/admin-stats', [DashboardController::class, 'adminStats'])->name('api.dashboard.admin');
+    Route::get('api/dashboard/drill-down', [DashboardController::class, 'drillDown'])->name('api.dashboard.drilldown');
+    Route::get('api/dashboard/compare', [DashboardController::class, 'compare'])->name('api.dashboard.compare');
     
     /* Notifications */
     Route::get('notifications/fetch', [\App\Http\Controllers\NotificationController::class, 'fetch'])->name('notifications.fetch');

@@ -100,8 +100,8 @@
                 <input class="form-control" name="new_vendor_location" id="vendor_location" placeholder="Vendor location">
             </div>
             <div class="form-group flex-1" style="margin-bottom:0;">
-                <label class="form-label">Email</label>
-                <input type="email" class="form-control" name="new_vendor_contact" id="vendor_contact" placeholder="vendor@email.com">
+                <label class="form-label">Contact Person</label>
+                <input class="form-control" name="new_vendor_contact" id="vendor_contact" placeholder="Vendor contact">
             </div>
         </div>
     </div>
@@ -146,9 +146,9 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <input type="number" step="0.01" class="form-control price-input" name="items[{{ $idx }}][price]" required min="0" placeholder="0">
+                                    <input type="text" inputmode="decimal" class="form-control price-input" name="items[{{ $idx }}][price]" required placeholder="Rp. 0" oninput="formatPriceInput(this)">
                                 </td>
-                                <td class="subtotal-cell" style="font-weight:700; font-family:monospace; font-size:14px; text-align:right;">Rp 0</td>
+                                <td class="subtotal-cell" style="font-weight:700; font-family:monospace; font-size:14px; text-align:right;">Rp. 0</td>
                             </tr>
                         @endforeach
                     @endforeach
@@ -172,9 +172,9 @@
                                 </div>
                             </td>
                             <td>
-                                <input type="number" step="0.01" class="form-control price-input" name="items[{{ $idx }}][price]" required min="0" placeholder="0">
+                                <input type="text" inputmode="decimal" class="form-control price-input" name="items[{{ $idx }}][price]" required placeholder="Rp.0" oninput="formatPriceInput(this)">
                             </td>
-                            <td class="subtotal-cell" style="font-weight:700; font-family:monospace; font-size:14px; text-align:right;">Rp 0</td>
+                            <td class="subtotal-cell" style="font-weight:700; font-family:monospace; font-size:14px; text-align:right;">Rp. 0</td>
                         </tr>
                     @endforeach
                 @endif
@@ -182,7 +182,7 @@
             <tfoot>
                 <tr style="background:#f9fafb;">
                     <td colspan="5" style="text-align:right; font-weight:700; color:var(--text-muted);">Grand Total</td>
-                    <td id="grand-total" style="font-weight:800; font-size:16px; color:#111827; font-family:monospace; text-align:right;">Rp 0</td>
+                    <td id="grand-total" style="font-weight:800; font-size:16px; color:#111827; font-family:monospace; text-align:right;">Rp. 0</td>
                 </tr>
             </tfoot>
         </table>
@@ -332,6 +332,29 @@
         if(e.target === this) this.classList.remove('open');
     });
 
+    // Helper: ubah "1.500,75" -> 1500.75 (number biasa)
+    function parsePriceValue(str) {
+        if (!str) return 0;
+        let cleanStr = String(str).replace(/[^0-9,]/g, '').replace(',', '.');
+        return parseFloat(cleanStr) || 0;
+    }
+
+    // Format live saat input: titik = pemisah ribuan, koma = desimal
+    function formatPriceInput(input) {
+        let val = input.value.replace(/[^0-9,]/g, '');
+        const commaIndex = val.indexOf(',');
+        let intPart = commaIndex === -1 ? val : val.slice(0, commaIndex);
+        let decPart = commaIndex === -1 ? null : val.slice(commaIndex + 1).replace(/,/g, '').slice(0, 2);
+
+        intPart = intPart.replace(/^0+(?=\d)/, '');
+        const formattedInt = intPart ? Number(intPart).toLocaleString('id-ID') : '';
+
+        let finalValue = decPart !== null
+            ? formattedInt + ',' + decPart
+            : (commaIndex !== -1 ? formattedInt + ',' : formattedInt);
+        input.value = finalValue ? 'Rp. ' + finalValue : '';
+    }
+
     // Calculate totals
     const rows = document.querySelectorAll('tbody tr:not([style*="background:#f0f4f8"])');
     rows.forEach(row => {
@@ -341,8 +364,8 @@
 
         const update = () => {
             const q = parseFloat(qty.value) || 0;
-            const p = parseFloat(price.value) || 0;
-            sub.textContent = 'Rp ' + (q * p).toLocaleString('id-ID');
+            const p = parsePriceValue(price.value);
+            sub.textContent = 'Rp. ' + (q * p).toLocaleString('id-ID');
             updateGrandTotal();
         };
 
@@ -356,10 +379,17 @@
             const qty = row.querySelector('.qty-input');
             const price = row.querySelector('.price-input');
             if(qty && price) {
-                total += (parseFloat(qty.value)||0) * (parseFloat(price.value)||0);
+                total += (parseFloat(qty.value)||0) * parsePriceValue(price.value);
             }
         });
-        document.getElementById('grand-total').textContent = 'Rp ' + total.toLocaleString('id-ID');
+        document.getElementById('grand-total').textContent = 'Rp. ' + total.toLocaleString('id-ID');
     }
+
+    // Pastikan value yang dikirim ke server tetap angka polos, bukan "1.500,75"
+    document.getElementById('quote-form').addEventListener('submit', function() {
+        document.querySelectorAll('.price-input').forEach(input => {
+            input.value = parsePriceValue(input.value);
+        });
+    });
 </script>
 @endsection

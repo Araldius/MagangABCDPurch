@@ -33,7 +33,7 @@ class VendorPortalController extends Controller
         $closedDate = $neededDate ? $neededDate->copy()->subDay()->endOfDay() : null;
 
         if ($closedDate && now()->gt($closedDate)) {
-            return view('vendors.closed', compact('rfq', 'pr', 'neededDate', 'closedDate'));
+            // We no longer block access here. Instead, the view will show an "Overdue" warning.
         }
 
         $items = $rfq->purchaseRequest ? $rfq->purchaseRequest->items : collect();
@@ -64,7 +64,7 @@ class VendorPortalController extends Controller
         $closedDate = $neededDate ? $neededDate->copy()->subDay()->endOfDay() : null;
 
         if ($closedDate && now()->gt($closedDate)) {
-            return back()->withErrors(['error' => 'Masa penawaran (Quotation) telah ditutup karena sudah melewati batas waktu H-1 dari tanggal dibutuhkan.']);
+            // We no longer block submission here. Vendors can submit overdue quotations.
         }
 
         $data = $request->validate([

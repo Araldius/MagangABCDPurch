@@ -80,6 +80,7 @@ class PurchaseRequestController extends Controller
         $existingServiceTemplates = ServiceRequest::with('jobs.items')
             ->latest()
             ->get()
+            ->unique('service_name')
             ->map(function ($sr) {
                 return [
                     'id'           => 'SR-' . $sr->id,
