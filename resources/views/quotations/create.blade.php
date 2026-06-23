@@ -146,7 +146,7 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <input type="number" step="0.01" class="form-control price-input" name="items[{{ $idx }}][price]" required min="0" placeholder="0">
+                                <input type="text" inputmode="decimal" class="form-control price-input" name="items[{{ $idx }}][price]" required placeholder="0" oninput="formatPriceInput(this)">
                                 </td>
                                 <td class="subtotal-cell" style="font-weight:700; font-family:monospace; font-size:14px; text-align:right;">Rp 0</td>
                             </tr>
@@ -172,7 +172,7 @@
                                 </div>
                             </td>
                             <td>
-                                <input type="number" step="0.01" class="form-control price-input" name="items[{{ $idx }}][price]" required min="0" placeholder="0">
+                            <input type="text" inputmode="decimal" class="form-control price-input" name="items[{{ $idx }}][price]" required placeholder="0" oninput="formatPriceInput(this)">
                             </td>
                             <td class="subtotal-cell" style="font-weight:700; font-family:monospace; font-size:14px; text-align:right;">Rp 0</td>
                         </tr>
@@ -332,6 +332,27 @@
         if(e.target === this) this.classList.remove('open');
     });
 
+    // Helper: ubah "1.500,75" -> 1500.75 (number biasa)
+    function parsePriceValue(str) {
+        if (!str) return 0;
+        return parseFloat(String(str).replace(/\./g, '').replace(',', '.')) || 0;
+    }
+
+    // Format live saat input: titik = pemisah ribuan, koma = desimal
+    function formatPriceInput(input) {
+        let val = input.value.replace(/[^0-9,]/g, '');
+        const commaIndex = val.indexOf(',');
+        let intPart = commaIndex === -1 ? val : val.slice(0, commaIndex);
+        let decPart = commaIndex === -1 ? null : val.slice(commaIndex + 1).replace(/,/g, '').slice(0, 2);
+
+        intPart = intPart.replace(/^0+(?=\d)/, '');
+        const formattedInt = intPart ? Number(intPart).toLocaleString('id-ID') : '';
+
+        input.value = decPart !== null
+            ? formattedInt + ',' + decPart
+            : (commaIndex !== -1 ? formattedInt + ',' : formattedInt);
+    }
+
     // Calculate totals
     const rows = document.querySelectorAll('tbody tr:not([style*="background:#f0f4f8"])');
     rows.forEach(row => {
@@ -341,7 +362,7 @@
 
         const update = () => {
             const q = parseFloat(qty.value) || 0;
-            const p = parseFloat(price.value) || 0;
+            const p = parsePriceValue(price.value);
             sub.textContent = 'Rp ' + (q * p).toLocaleString('id-ID');
             updateGrandTotal();
         };
@@ -356,10 +377,17 @@
             const qty = row.querySelector('.qty-input');
             const price = row.querySelector('.price-input');
             if(qty && price) {
-                total += (parseFloat(qty.value)||0) * (parseFloat(price.value)||0);
+                total += (parseFloat(qty.value)||0) * parsePriceValue(price.value);
             }
         });
         document.getElementById('grand-total').textContent = 'Rp ' + total.toLocaleString('id-ID');
     }
+
+    // Pastikan value yang dikirim ke server tetap angka polos, bukan "1.500,75"
+    document.getElementById('quote-form').addEventListener('submit', function() {
+        document.querySelectorAll('.price-input').forEach(input => {
+            input.value = parsePriceValue(input.value);
+        });
+    });
 </script>
 @endsection
