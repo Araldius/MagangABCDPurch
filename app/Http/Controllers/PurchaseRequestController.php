@@ -28,8 +28,14 @@ class PurchaseRequestController extends Controller
         $srQuery = ServiceRequest::with(['jobs.items', 'user'])->latest();
 
         if ($user->role !== 'purchasing') {
-            $prQuery->where('user_id', $user->id);
-            $srQuery->where('user_id', $user->id);
+            $prQuery->where(function ($q) use ($user) {
+                $q->where('user_id', $user->id)
+                  ->orWhereHas('user', fn($u) => $u->where('role', 'purchasing'));
+            });
+            $srQuery->where(function ($q) use ($user) {
+                $q->where('user_id', $user->id)
+                  ->orWhereHas('user', fn($u) => $u->where('role', 'purchasing'));
+            });
         }
 
         $prs = $prQuery->get()->map(function ($req) {

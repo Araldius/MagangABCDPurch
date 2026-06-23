@@ -39,7 +39,7 @@
 
 <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #f3f4f6">
-        <div style="display:flex;gap:12px">
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
             <input type="text" id="hist-search" placeholder="Search doc, vendor..." oninput="applyHFilters()" style="height:34px;border:1px solid #d1d5db;border-radius:6px;padding:0 12px;font-size:12.5px;width:220px;outline:none">
             <select id="unit-filter" onchange="applyHFilters()" style="height:34px;border:1px solid #d1d5db;border-radius:6px;padding:0 12px;font-size:12.5px;outline:none;background:#fff">
                 <option value="">All Departments</option>
@@ -47,6 +47,12 @@
                     <option value="{{ $d }}">{{ $d }}</option>
                 @endforeach
             </select>
+            <div style="display:flex;align-items:center;gap:6px;background:#f9fafb;border:1px solid #d1d5db;border-radius:6px;padding:0 10px;height:34px;">
+                <span style="font-size:10.5px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;">Date Range</span>
+                <input type="date" id="hist-start-date" onchange="applyHFilters()" style="border:none;background:transparent;font-size:12.5px;outline:none;color:#111827;cursor:pointer;padding:0">
+                <span style="color:#9ca3af;font-size:11px;">to</span>
+                <input type="date" id="hist-end-date" onchange="applyHFilters()" style="border:none;background:transparent;font-size:12.5px;outline:none;color:#111827;cursor:pointer;padding:0">
+            </div>
         </div>
     </div>
     <div style="overflow-x:auto">
@@ -64,7 +70,7 @@
             </thead>
             <tbody id="hist-tbody">
                 @forelse($records as $idx => $r)
-                <tr style="border-bottom:1px solid #f3f4f6" data-dept="{{ $r->department }}">
+                <tr style="border-bottom:1px solid #f3f4f6" data-dept="{{ $r->department }}" data-date="{{ $r->completed_date_raw ?? '' }}">
                     <td style="padding:12px 20px;font-weight:600;color:#111827;font-family:monospace">{{ $r->doc_number }}</td>
                     <td style="padding:12px 14px">
                         <div style="font-weight:600;color:#111827">{{ $r->vendor_name }}</div>
@@ -95,6 +101,8 @@ function applyHFilters() {
     const q      = (document.getElementById('hist-search')?.value || '').toLowerCase();
     const dept   = document.getElementById('unit-filter')?.value || '';
     const status = document.getElementById('hist-status-filter')?.value || '';
+    const dStart = document.getElementById('hist-start-date')?.value;
+    const dEnd   = document.getElementById('hist-end-date')?.value;
 
     let rows = Array.from(document.querySelectorAll('#hist-tbody tr[data-dept]'));
 
@@ -102,6 +110,8 @@ function applyHFilters() {
         if (dept   && r.dataset.dept   !== dept)   return false;
         if (status && r.dataset.status !== status) return false;
         if (q && !r.textContent.toLowerCase().includes(q)) return false;
+        if (dStart && r.dataset.date < dStart) return false;
+        if (dEnd && r.dataset.date > dEnd) return false;
         return true;
     });
 

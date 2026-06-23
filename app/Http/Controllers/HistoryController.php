@@ -55,6 +55,7 @@ class HistoryController extends Controller
                     'status'         => $pr->status,
                     'decided_at'     => null,
                     'completed_date' => $pr->updated_at ? $pr->updated_at->format('d M Y') : '-',
+                    'completed_date_raw' => $pr->updated_at ? $pr->updated_at->format('Y-m-d') : '',
                 ];
             }
             $rec = $recordMap[$docNo];
