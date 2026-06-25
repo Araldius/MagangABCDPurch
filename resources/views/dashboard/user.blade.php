@@ -464,7 +464,33 @@ function openDetailModal(id, category) {
         </tr>`).join('');
     }
     const subDate = new Date(pr.submission_date||pr.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
-    const reqDate = new Date(pr.requested_date||pr.need_date||pr.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+    const rawReqDate = new Date(pr.requested_date||pr.need_date||pr.created_at);
+    const reqDate = rawReqDate.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+    const isOverdue = pr.status !== 'completed' && pr.status !== 'cancelled' && pr.status !== 'rejected' && rawReqDate < new Date(new Date().setHours(0,0,0,0));
+
+    let logItems = '';
+    if (histories.length > 0) {
+        logItems = histories.slice(-6).reverse().map(h => {
+            const actor = h.user?.name || 'System';
+            const time  = h.action_date ? new Date(h.action_date).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+            return `<div style="display:flex;gap:8px;font-size:12px;margin-bottom:8px;">
+                <span style="width:6px;height:6px;border-radius:50%;background:#3b5bdb;margin-top:5px;flex-shrink:0;"></span>
+                <div>
+                    <span style="font-weight:600;color:#111827;">${h.action||'Action'}</span>
+                    ${h.notes?`<span style="color:#6b7280;"> — Notes: ${h.notes}</span>`:''}
+                    <div style="font-size:11px;color:#9ca3af;margin-top:1px;">${time} — ${actor}</div>
+                </div>
+            </div>`;
+        }).join('');
+    } else {
+        logItems = `<div style="display:flex;gap:8px;font-size:12px;">
+            <span style="width:6px;height:6px;border-radius:50%;background:#22c55e;margin-top:5px;flex-shrink:0;"></span>
+            <div><span style="font-weight:600;color:#111827;">PR created and submitted to supervisor</span>
+            <div style="font-size:11px;color:#9ca3af;margin-top:1px;">${subDate} — ${pr.user?.name||'You'}</div></div>
+        </div>`;
+    }
+
+    // === Assemble body ===
     document.getElementById('modal-pr-body').innerHTML = `
         <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:10px">Progress Status</div>
         ${buildProgressBar(pr.status)}
@@ -472,7 +498,7 @@ function openDetailModal(id, category) {
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;background:#f9fafb;border-radius:8px;padding:12px 14px">
             <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Submission Date</div><div style="font-weight:500;font-size:12.5px">${subDate}</div></div>
             <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Department</div><div style="font-weight:500;font-size:12.5px">${pr.department||'—'}</div></div>
-            <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Requested Date</div><div style="font-weight:500;font-size:12.5px">${reqDate}</div></div>
+            <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Need Date</div><div style="font-weight:500;font-size:12.5px">${reqDate} ${isOverdue ? '<span style="background:#fee2e2;color:#991b1b;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-left:4px">OVERDUE</span>' : ''}</div></div>
             <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Plant</div><div style="font-weight:500;font-size:12.5px">${pr.plant||'—'}</div></div>
         </div>
         <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:8px">Scope Details</div>
@@ -489,55 +515,23 @@ function openDetailModal(id, category) {
                 <tbody>${itemRows||'<tr><td colspan="6" style="text-align:center;padding:16px;">No items</td></tr>'}</tbody>
             </table>
         </div>
-        <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:8px">Activity Log</div>
-        <div style="font-size:12px;color:#111827;">Request submitted on ${subDate} by ${pr.user?.name||'You'}</div>`;
+        ${vendorSummaryHtml}
+
+        <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-top:18px;margin-bottom:8px;padding-bottom:5px;border-bottom:2px solid #e5e7eb;">Activity Log</div>
+        ${logItems}`;
+
+    const selectBtn = document.getElementById('modal-select-vendor-btn');
+    if (pr.status === 'vendor_selection') {
+        selectBtn.style.display = 'inline-flex';
+    } else {
+        selectBtn.style.display = 'none';
+    }
+
+    document.body.style.overflow = 'hidden';
     document.getElementById('detail-modal').style.display = 'flex';
 }
-function closeDetailModal() { document.getElementById('detail-modal').style.display = 'none'; }
-function showVendorDetail(idx) {
-    const item = chartDataCache[idx];
-    if (!item) return;
-    document.getElementById('vendor-detail-name').textContent = item.vendor_name;
- 
-    const rows = (item.items || []).map(it => `<tr>
-        <td style="padding:8px 10px;border-bottom:1px solid #f9fafb;font-family:monospace;color:#3b5bdb;font-weight:600">${it.item_id ?? '-'}</td>
-        <td style="padding:8px 10px;border-bottom:1px solid #f9fafb;font-weight:500;">${it.item_name ?? '-'}</td>
-        <td style="padding:8px 10px;border-bottom:1px solid #f9fafb;">${it.qty ?? 0}</td>
-        <td style="padding:8px 10px;border-bottom:1px solid #f9fafb;">${it.unit ?? '-'}</td>
-        <td style="padding:8px 10px;border-bottom:1px solid #f9fafb;">Rp ${Number(it.unit_price ?? 0).toLocaleString('id-ID')}</td>
-        <td style="padding:8px 10px;border-bottom:1px solid #f9fafb;font-weight:600;">Rp ${Number(it.total_price ?? 0).toLocaleString('id-ID')}</td>
-    </tr>`).join('');
- 
-    document.getElementById('vendor-detail-body').innerHTML = `
-        <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #f9fafb">
-            <span style="font-size:12.5px;color:#6b7280">Selected Frequency</span>
-            <span style="font-size:13px;font-weight:700;color:#111827">${item.frequency}x</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;padding:9px 0;margin-bottom:14px">
-            <span style="font-size:12.5px;color:#6b7280">Total Transaction Value</span>
-            <span style="font-size:13px;font-weight:700;color:#111827">Rp ${Number(item.total_value).toLocaleString('id-ID')}</span>
-        </div>
-        <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:8px">Item Breakdown</div>
-        <div style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">
-            <table style="width:100%;border-collapse:collapse;font-size:12px">
-                <thead><tr style="background:#f9fafb">
-                    <th style="padding:8px 10px;text-align:left;">ITEM ID</th>
-                    <th style="padding:8px 10px;text-align:left;">ITEM NAME</th>
-                    <th style="padding:8px 10px;text-align:left;">QTY</th>
-                    <th style="padding:8px 10px;text-align:left;">UNIT</th>
-                    <th style="padding:8px 10px;text-align:left;">UNIT PRICE</th>
-                    <th style="padding:8px 10px;text-align:left;">TOTAL PRICE</th>
-                </tr></thead>
-                <tbody>${rows || '<tr><td colspan="6" style="text-align:center;padding:16px;color:#9ca3af;">No items</td></tr>'}</tbody>
-            </table>
-        </div>`;
-    document.getElementById('vendor-detail-modal').style.display = 'flex';
-}
-function closeVendorDetailModal() { document.getElementById('vendor-detail-modal').style.display = 'none'; }
-const isPurchasing = {{ auth()->user()->role === 'purchasing' ? 'true' : 'false' }};
-let freqChart  = null;
-let valueChart = null;
-let chartDataCache = [];
+
+function closeDetailModal() { document.body.style.overflow = ''; document.getElementById('detail-modal').style.display = 'none'; }
 
 function formatRupiahShort(num) {
     if (num >= 1e9) return 'Rp ' + (num / 1e9).toFixed(1) + 'B';

@@ -133,11 +133,11 @@
 </div>
 
 <!-- Drill Down Table Modal -->
-<div class="modal-overlay" id="drillModal" onclick="if(event.target===this) document.getElementById('drillModal').classList.remove('active')">
+<div class="modal-overlay" id="drillModal" onclick="if(event.target===this) { document.getElementById('drillModal').classList.remove('active'); document.body.style.overflow=''; }">
     <div class="modal-content" style="width: 900px;">
         <div class="modal-header">
             <div class="modal-title" id="drillModalTitle">Detail Records</div>
-            <button class="modal-close" onclick="document.getElementById('drillModal').classList.remove('active')">&times;</button>
+            <button class="modal-close" onclick="document.getElementById('drillModal').classList.remove('active'); document.body.style.overflow='';">&times;</button>
         </div>
         <div class="modal-body">
             <div style="display:flex; justify-content:space-between; margin-bottom:12px; align-items:center;">
@@ -167,11 +167,11 @@
 </div>
 
 <!-- Compare Config Modal -->
-<div class="modal-overlay" id="compareConfigModal" onclick="if(event.target===this) document.getElementById('compareConfigModal').classList.remove('active')">
+<div class="modal-overlay" id="compareConfigModal" onclick="if(event.target===this) { document.getElementById('compareConfigModal').classList.remove('active'); document.body.style.overflow=''; }">
     <div class="modal-content" style="width: 500px;">
         <div class="modal-header">
             <div class="modal-title">Compare Data</div>
-            <button class="modal-close" onclick="document.getElementById('compareConfigModal').classList.remove('active')">&times;</button>
+            <button class="modal-close" onclick="document.getElementById('compareConfigModal').classList.remove('active'); document.body.style.overflow='';">&times;</button>
         </div>
         <div class="modal-body">
             <label style="font-weight:600; font-size:13px; color:#374151; display:block; margin-bottom:8px;">Select Topic</label>
@@ -192,11 +192,11 @@
 </div>
 
 <!-- Compare Result Modal -->
-<div class="modal-overlay" id="compareResultModal" onclick="if(event.target===this) document.getElementById('compareResultModal').classList.remove('active')">
+<div class="modal-overlay" id="compareResultModal" onclick="if(event.target===this) { document.getElementById('compareResultModal').classList.remove('active'); document.body.style.overflow=''; }">
     <div class="modal-content" style="width: 800px;">
         <div class="modal-header">
             <div class="modal-title" id="compareResultTitle">Comparison Result</div>
-            <button class="modal-close" onclick="document.getElementById('compareResultModal').classList.remove('active')">&times;</button>
+            <button class="modal-close" onclick="document.getElementById('compareResultModal').classList.remove('active'); document.body.style.overflow='';">&times;</button>
         </div>
         <div class="modal-body">
             <div style="position: relative; height: 350px; width: 100%;">
@@ -326,6 +326,7 @@
         document.getElementById('drillModalSubtitle').innerText = 'Loading data...';
         document.getElementById('drillTableHead').innerHTML = '';
         document.getElementById('drillTableBody').innerHTML = '';
+        document.body.style.overflow = 'hidden';
         document.getElementById('drillModal').classList.add('active');
 
         // Render Headers
@@ -430,6 +431,7 @@
     function openCompareModal() {
         document.getElementById('compareTopic').value = '';
         document.getElementById('compareEntitiesList').innerHTML = '<div style="color:#9ca3af; font-size:12px; padding:8px;">Select a topic first...</div>';
+        document.body.style.overflow = 'hidden';
         document.getElementById('compareConfigModal').classList.add('active');
     }
 

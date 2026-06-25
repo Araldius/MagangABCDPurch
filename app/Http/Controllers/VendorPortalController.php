@@ -18,22 +18,17 @@ class VendorPortalController extends Controller
     public function show($token)
     {
         $rfq = Rfq::where('vendor_token', $token)->firstOrFail();
-
-        if ($rfq->token_expires_at < now()) {
-            return abort(403, 'Tautan ini sudah kedaluwarsa.');
-        }
-
         $pr = $rfq->purchaseRequest ?? $rfq->serviceRequest;
-        if ($pr && !in_array($pr->status, ['vendor_search', 'vendor_selection', 'submitted'])) {
-            return abort(403, 'Permintaan ini sudah diproses dan tidak menerima penawaran lagi.');
-        }
 
         $neededDateRaw = $rfq->purchaseRequest ? $rfq->purchaseRequest->need_date : ($rfq->serviceRequest ? $rfq->serviceRequest->requested_date : null);
         $neededDate = $neededDateRaw ? \Carbon\Carbon::parse($neededDateRaw)->startOfDay() : null;
         $closedDate = $neededDate ? $neededDate->copy()->subDay()->endOfDay() : null;
 
-        if ($closedDate && now()->gt($closedDate)) {
-            // We no longer block access here. Instead, the view will show an "Overdue" warning.
+        $closedReason = null;
+        if ($rfq->token_expires_at < now()) {
+            $closedReason = 'expired';
+        } elseif ($pr && !in_array($pr->status, ['vendor_search', 'vendor_selection', 'submitted'])) {
+            $closedReason = 'completed';
         }
 
         $items = $rfq->purchaseRequest ? $rfq->purchaseRequest->items : collect();
@@ -45,20 +40,34 @@ class VendorPortalController extends Controller
 
         $vendors = Vendor::select('id', 'vendor_name', 'email', 'location')->get();
 
-        return view('vendors.quote', compact('rfq', 'items', 'neededDate', 'closedDate', 'vendors'));
+        return view('vendors.quote', compact('rfq', 'items', 'neededDate', 'closedDate', 'vendors', 'closedReason'));
     }
 
     public function submit(Request $request, $token)
     {
         $rfq = Rfq::where('vendor_token', $token)->firstOrFail();
+        $pr = $rfq->purchaseRequest ?? $rfq->serviceRequest;
 
+        $neededDateRaw = $rfq->purchaseRequest ? $rfq->purchaseRequest->need_date : ($rfq->serviceRequest ? $rfq->serviceRequest->requested_date : null);
+        $neededDate = $neededDateRaw ? \Carbon\Carbon::parse($neededDateRaw)->startOfDay() : null;
+        $closedDate = $neededDate ? $neededDate->copy()->subDay()->endOfDay() : null;
+
+        $closedReason = null;
         if ($rfq->token_expires_at < now()) {
-            return back()->withErrors(['error' => 'Tautan ini sudah kedaluwarsa.']);
+            $closedReason = 'expired';
+        } elseif ($pr && !in_array($pr->status, ['vendor_search', 'vendor_selection', 'submitted'])) {
+            $closedReason = 'completed';
         }
 
-        $pr = $rfq->purchaseRequest ?? $rfq->serviceRequest;
-        if ($pr && !in_array($pr->status, ['vendor_search', 'vendor_selection', 'submitted'])) {
-            return back()->withErrors(['error' => 'Permintaan ini sudah diproses dan tidak menerima penawaran lagi.']);
+        if ($closedReason) {
+            $items = $rfq->purchaseRequest ? $rfq->purchaseRequest->items : collect();
+            if ($rfq->serviceRequest) {
+                foreach ($rfq->serviceRequest->jobs as $job) {
+                    $items = $items->merge($job->items);
+                }
+            }
+            $vendors = Vendor::select('id', 'vendor_name', 'email', 'location')->get();
+            return response()->view('vendors.quote', compact('rfq', 'items', 'neededDate', 'closedDate', 'vendors', 'closedReason'), 403);
         }
 
         $neededDateRaw = $rfq->purchaseRequest ? $rfq->purchaseRequest->need_date : ($rfq->serviceRequest ? $rfq->serviceRequest->requested_date : null);
