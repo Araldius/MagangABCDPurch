@@ -405,6 +405,7 @@ function renderVendorCards(){
             contentHtml += `<label class="vc-svc-header" style="cursor:pointer; display:flex; align-items:center; gap:8px;">
                 <input type="checkbox" ${allSelected ? 'checked' : ''} onchange="toggleVendorService(${v.id}, this.checked)" style="width:16px;height:16px;accent-color:#3b5bdb;">
                 ${currentPR.display_title}
+                ${isBestService ? '<span style="background:#e0f2fe;color:#0284c7;padding:2px 6px;border-radius:4px;font-size:9.5px;font-weight:700;">BEST PRICE</span>' : ''}
             </label>`;
 
             if(currentPR.jobs) {
@@ -488,7 +489,7 @@ function renderItemCard(v, item, off) {
             <div style="color:#9ca3af">Unit Price</div>
             <div style="font-weight:600;color:#111827;display:flex;align-items:center;gap:6px">
                 ${fmt(o.unit_price)}
-                ${isBestItemPrice ? `<span style="background:#e0f2fe;color:#0284c7;padding:2px 6px;border-radius:4px;font-size:9.5px;font-weight:700;">BEST PRICE</span>` : ''}
+                ${(isBestItemPrice && !isService) ? `<span style="background:#e0f2fe;color:#0284c7;padding:2px 6px;border-radius:4px;font-size:9.5px;font-weight:700;">BEST PRICE</span>` : ''}
             </div>
 
             <div style="color:#9ca3af">Notes:</div>

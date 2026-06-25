@@ -12,7 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('vendor_name');
             $table->string('location')->nullable();
-            $table->string('contact')->nullable();
+            $table->string('email')->nullable();
             $table->timestamps();
         });
     }

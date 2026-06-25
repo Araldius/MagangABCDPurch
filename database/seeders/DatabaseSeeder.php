@@ -74,7 +74,7 @@ class DatabaseSeeder extends Seeder
             $vendors[] = Vendor::create([
                 'vendor_name' => $faker->company,
                 'location' => $faker->city,
-                'contact' => $faker->unique()->companyEmail,
+                'email' => $faker->unique()->companyEmail,
                 'status' => 'active'
             ]);
         }

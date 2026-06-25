@@ -45,6 +45,6 @@ class ServiceRequestItem extends Model
     // Relasi ke Quotation Details (Penawaran Vendor)
     public function quotationDetails()
     {
-        return $this->hasMany(QuotationDetail::class, 'sr_item_id');
+        return $this->hasMany(QuotationDetail::class, 'service_request_item_id');
     }
 }

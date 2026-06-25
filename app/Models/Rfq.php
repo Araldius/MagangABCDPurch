@@ -31,6 +31,7 @@ class Rfq extends Model
         'sent_to_user_at' => 'datetime',
         'opened_at'       => 'datetime',
         'closed_at'       => 'datetime',
+        'token_expires_at' => 'datetime',
     ];
 
     public function purchaseRequest()

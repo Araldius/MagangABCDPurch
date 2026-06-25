@@ -100,8 +100,8 @@
                 <input class="form-control" name="new_vendor_location" id="vendor_location" placeholder="Vendor location">
             </div>
             <div class="form-group flex-1" style="margin-bottom:0;">
-                <label class="form-label">Contact Person</label>
-                <input class="form-control" name="new_vendor_contact" id="vendor_contact" placeholder="Vendor contact">
+                <label class="form-label">Email</label>
+                <input class="form-control" type="email" name="new_vendor_email" id="vendor_contact" placeholder="vendor@email.com">
             </div>
         </div>
     </div>
@@ -279,7 +279,7 @@
         if (match) {
             document.getElementById('hidden_vendor_id').value = match.id;
             document.getElementById('vendor_location').value = match.location || '';
-            document.getElementById('vendor_contact').value = match.contact || '';
+            document.getElementById('vendor_contact').value = match.email || '';
         } else {
             resetVendorId();
         }
@@ -293,7 +293,7 @@
             return `
             <div class="item-option ${isSelected ? 'selected' : ''}" onclick="selectVendorModal('${v.id}')">
                 <div class="item-option-name">${v.vendor_name}</div>
-                <div class="item-option-desc">${v.location || '-'} | ${v.contact || '-'}</div>
+                <div class="item-option-desc">${v.location || '-'} | ${v.email || '-'}</div>
             </div>`;
         }).join('');
     }
@@ -322,7 +322,7 @@
         document.getElementById('hidden_vendor_id').value = v.id;
         document.getElementById('new_vendor_name').value = v.vendor_name;
         document.getElementById('vendor_location').value = v.location || '';
-        document.getElementById('vendor_contact').value = v.contact || '';
+        document.getElementById('vendor_contact').value = v.email || '';
         
         closeVendorModal();
     }

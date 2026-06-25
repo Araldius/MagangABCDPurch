@@ -143,7 +143,7 @@ class VendorController extends Controller
                 $sel = VendorSelection::updateOrCreate(
                     ['rfq_id' => $rfq->id, 'vendor_id' => $vendorId],
                     [
-                        'quotation_id'   => $quotation ? $quotation->id : 0, // Fallback if necessary, but it shouldn't be null
+                        'quotation_id'   => $quotation ? $quotation->id : null,
                         'decision_notes' => $request->selection_notes ?? '',
                         'decided_at'     => now(),
                     ]
@@ -183,7 +183,7 @@ class VendorController extends Controller
                     'vendor_selection_id' => $sel->id,
                     'action'              => 'Vendor Selection Submitted',
                     'transaction_status'  => 'completed',
-                    'notes'               => 'Vendor ' . $vendor->vendor_name . ' dipilih untuk '
+                    'notes'               => 'Vendor ' . ($vendor ? $vendor->vendor_name : 'Unknown') . ' dipilih untuk '
                                             . count($items) . ' item pada dokumen ' . $docNum,
                     'action_date'         => now(),
                 ]);

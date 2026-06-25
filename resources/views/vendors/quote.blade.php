@@ -43,6 +43,22 @@
         .alert-danger { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
         .text-center { text-align: center; }
         .mt-4 { margin-top: 16px; }
+        /* Modals & Catalog */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 1000; align-items: center; justify-content: center; padding: 16px; }
+        .modal-overlay.open { display: flex; }
+        .modal { background: #fff; border-radius: 14px; width: 100%; max-width: 600px; display: flex; flex-direction: column; overflow: hidden; }
+        .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .modal-title  { font-size: 16px; font-weight: 700; }
+        .modal-desc   { font-size: 13px; color: var(--text-muted); }
+        .modal-body   { padding: 20px; overflow-y: auto; max-height: 65vh; }
+        .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+        .modal-close  { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 18px; }
+        .item-option { padding:12px 14px;border-radius:8px;cursor:pointer;border:1px solid var(--border);transition:background .1s; margin-bottom: 6px; }
+        .item-option:hover { background:#f9fafb; }
+        .item-option.selected { background:#f0f4ff;border-color:var(--primary); }
+        .item-option-name { font-size:13.5px;font-weight:600;color:var(--text-main); }
+        .item-option-desc { font-size:12px;color:var(--text-muted); margin-top: 4px;}
+        .flex-between { display: flex; justify-content: space-between; align-items: center; width: 100%; }
     </style>
 </head>
 <body>
@@ -69,31 +85,6 @@
         @endif
 
         @if(!session('success'))
-            @if(isset($neededDate) && isset($closedDate))
-                @if(now()->gt($closedDate))
-                    <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 16px; margin-bottom: 20px; border-radius: 6px; display: flex; align-items: flex-start; gap: 12px;">
-                        <svg width="24" height="24" fill="none" stroke="#ef4444" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-                        <div>
-                            <strong style="color: #991b1b; font-size: 14px;">STATUS: OVERDUE (Terlambat)</strong>
-                            <p style="margin: 4px 0 0 0; color: #b91c1c; font-size: 13px;">
-                                Permintaan ini telah melewati batas waktu target penawaran (<strong>{{ $closedDate->format('d M Y') }}</strong>). <br>
-                                Anda masih dapat mengisi dan mengirimkan penawaran Anda, namun mohon untuk segera diselesaikan.
-                            </p>
-                        </div>
-                    </div>
-                @else
-                    <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 16px; margin-bottom: 20px; border-radius: 6px; display: flex; align-items: flex-start; gap: 12px;">
-                        <svg width="24" height="24" fill="none" stroke="#3b82f6" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-                        <div>
-                            <strong style="color: #1e40af; font-size: 14px;">Informasi Target Waktu Penawaran</strong>
-                            <p style="margin: 4px 0 0 0; color: #1e3a8a; font-size: 13px;">
-                                Target tanggal dibutuhkan: <strong>{{ $neededDate->format('d M Y') }}</strong>.<br>
-                                Agar dapat diproses tepat waktu, mohon kirimkan penawaran harga Anda sebelum <strong>{{ $closedDate->format('d M Y') }}</strong>.
-                            </p>
-                        </div>
-                    </div>
-                @endif
-            @endif
 
         <form id="quote-form" method="POST" action="{{ route('vendors.quote.submit', $rfq->vendor_token) }}">
             @csrf
@@ -105,17 +96,20 @@
                 <div class="card-body">
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                         <div class="form-group">
-                            <label class="form-label">Company Name *</label>
+                            <label class="form-label flex-between">
+                                <span>Company Name *</span>
+                                <a href="#" onclick="openVendorModal(); return false;" style="font-size:12px; color:var(--primary); text-decoration:none; font-weight:600;">Select from Catalog</a>
+                            </label>
                             <input type="text" class="form-control" name="vendor_name" id="vendor_name_input" required placeholder="PT. ABC XYZ">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Email / Contact Number *</label>
-                            <input type="text" class="form-control" name="vendor_contact" required placeholder="email@company.com">
+                            <label class="form-label">Email *</label>
+                            <input type="email" class="form-control" name="email" id="vendor_contact" required placeholder="email@company.com">
                         </div>
                     </div>
                     <div class="form-group" style="margin-bottom:0;">
                         <label class="form-label">Company Location / Address</label>
-                        <input type="text" class="form-control" name="vendor_location" placeholder="Jakarta, Indonesia">
+                        <input type="text" class="form-control" name="vendor_location" id="vendor_location" placeholder="Jakarta, Indonesia">
                     </div>
                 </div>
             </div>
@@ -212,9 +206,83 @@
             </div>
         </form>
         @endif
+        <div class="modal-overlay" id="vendor-modal">
+            <div class="modal">
+                <div class="modal-header">
+                    <div><div class="modal-title">Vendor Catalog</div><div class="modal-desc">Search and select registered vendors</div></div>
+                    <button type="button" class="modal-close" onclick="closeVendorModal()">&times;</button>
+                </div>
+                <div style="padding: 16px 20px 12px; border-bottom: 1px solid var(--border); background: #fafafa;">
+                    <input class="form-control" id="vendor-search" placeholder="Search vendor name..." oninput="filterVendors(this.value)">
+                </div>
+                <div class="modal-body" style="padding-top: 12px;">
+                    <div id="vendor-list" style="display:flex;flex-direction:column;"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn" style="background:#fff;border:1px solid var(--border);color:var(--text-main);" onclick="closeVendorModal()">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="addSelectedVendor()">Select Vendor</button>
+                </div>
+            </div>
+        </div>
+
         <script>
+            const vendors = @json($vendors ?? []);
+            let selectedVendorId = null;
+
+            function filterVendors(q) { renderVendorList(q.toLowerCase()); }
+            function renderVendorList(q='') {
+                const filtered = vendors.filter(v => !q || v.vendor_name.toLowerCase().includes(q));
+                document.getElementById('vendor-list').innerHTML = filtered.map(v => {
+                    const isSelected = String(selectedVendorId) === String(v.id);
+                    return `
+                    <div class="item-option ${isSelected ? 'selected' : ''}" onclick="selectVendorModal('${v.id}')">
+                        <div class="item-option-name">${v.vendor_name}</div>
+                        <div class="item-option-desc">${v.location || '-'} | ${v.email || '-'}</div>
+                    </div>`;
+                }).join('');
+            }
+
+            function selectVendorModal(id) { 
+                selectedVendorId = id; 
+                renderVendorList(document.getElementById('vendor-search').value.toLowerCase()); 
+            }
+            
+            function openVendorModal() { 
+                selectedVendorId = null; 
+                document.getElementById('vendor-search').value = ''; 
+                renderVendorList(); 
+                document.getElementById('vendor-modal').classList.add('open'); 
+            }
+            
+            function closeVendorModal() { 
+                document.getElementById('vendor-modal').classList.remove('open'); 
+            }
+            
+            function addSelectedVendor() {
+                if(!selectedVendorId){ alert('Please select a vendor.'); return; }
+                const v = vendors.find(x => x.id == selectedVendorId);
+                if(!v) return;
+                
+                document.getElementById('vendor_name_input').value = v.vendor_name;
+                document.getElementById('vendor_location').value = v.location || '';
+                document.getElementById('vendor_contact').value = v.email || '';
+                
+                closeVendorModal();
+            }
+            
+            document.getElementById('vendor-modal')?.addEventListener('click', function(e) {
+                if(e.target === this) this.classList.remove('open');
+            });
             const vendorNameInput = document.getElementById('vendor_name_input');
             if(vendorNameInput) {
+                vendorNameInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.blur();
+                        document.getElementById('vendor_contact').focus();
+                    }
+                });
+
                 vendorNameInput.addEventListener('input', function() {
                     let start = this.selectionStart;
                     let end = this.selectionEnd;
@@ -236,6 +304,14 @@
                     if (this.value !== newVal) {
                         this.value = newVal;
                         this.setSelectionRange(start, end);
+                    }
+
+                    if (!newVal.trim()) return;
+
+                    const match = vendors.find(v => v.vendor_name.toLowerCase() === newVal.trim().toLowerCase());
+                    if (match) {
+                        document.getElementById('vendor_location').value = match.location || '';
+                        document.getElementById('vendor_contact').value = match.email || '';
                     }
                 });
             }

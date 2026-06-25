@@ -44,6 +44,8 @@ Route::middleware('auth')->group(function () {
         Route::get('orders',  [HistoryController::class, 'orders'])->name('orders');
         Route::get('items',   [HistoryController::class, 'items'])->name('items');
         Route::get('vendors', [HistoryController::class, 'vendors'])->name('vendors');
+        Route::get('master-vendors', [HistoryController::class, 'masterVendors'])->name('master.vendors');
+        Route::get('vendors/{id}', [HistoryController::class, 'vendorDetail'])->name('vendor.detail');
     });
 
     /* RFQ */
