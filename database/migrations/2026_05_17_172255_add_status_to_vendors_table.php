@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('vendors', function (Blueprint $table) {
-            $table->string('status')->default('active')->after('contact');
+            $table->string('status')->default('active')->after('email');
         });
     }
 

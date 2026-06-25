@@ -65,6 +65,12 @@
             </select>
             <svg style="position:absolute;right:8px;top:50%;transform:translateY(-50%);pointer-events:none;color:#6b7280" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke-linecap="round"/></svg>
         </div>
+        <div style="display:flex;align-items:center;gap:6px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:7px;padding:0 10px;height:32px;">
+            <span style="font-size:10.5px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;">Date Range</span>
+            <input type="date" id="hist-start-date" onchange="applyHFilters()" style="border:none;background:transparent;font-size:12.5px;outline:none;color:#111827;cursor:pointer;padding:0;font-family:inherit;">
+            <span style="color:#9ca3af;font-size:11px;">to</span>
+            <input type="date" id="hist-end-date" onchange="applyHFilters()" style="border:none;background:transparent;font-size:12.5px;outline:none;color:#111827;cursor:pointer;padding:0;font-family:inherit;">
+        </div>
     </div>
 
     <div style="overflow-x:auto">
@@ -82,6 +88,7 @@
                 @forelse($items as $idx => $item)
                 <tr style="border-bottom:1px solid #f3f4f6"
                     data-period="{{ $item['last_purchase'] ? \Carbon\Carbon::parse($item['last_purchase'])->format('Y-m') : '' }}"
+                    data-date="{{ $item['last_purchase'] }}"
                     data-value="{{ $item['last_value'] }}"
                     onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='transparent'">
                     <td style="padding:13px 20px"><span style="font-family:'Courier New',monospace;font-size:12px;font-weight:600;color:#111827">{{ $item['item_id'] }}</span></td>
@@ -171,11 +178,15 @@ function applyHFilters() {
     const q = (document.getElementById('hist-search')?.value || '').toLowerCase();
     const period = document.getElementById('period-filter')?.value || '';
     const valueRange = document.getElementById('value-filter')?.value || '';
+    const dStart = document.getElementById('hist-start-date')?.value;
+    const dEnd   = document.getElementById('hist-end-date')?.value;
 
     let rows = Array.from(document.querySelectorAll('#hist-tbody tr:not(#hist-empty)'));
     let filtered = rows.filter(r => {
         if (q && !r.textContent.toLowerCase().includes(q)) return false;
         if (period && (r.dataset.period || '') !== period) return false;
+        if (dStart && r.dataset.date < dStart) return false;
+        if (dEnd && r.dataset.date > dEnd) return false;
         if (valueRange) {
             const val = parseFloat(r.dataset.value || '0');
             if (valueRange === 'low' && val >= 1000000) return false;

@@ -100,8 +100,8 @@
                 <input class="form-control" name="new_vendor_location" id="vendor_location" placeholder="Vendor location">
             </div>
             <div class="form-group flex-1" style="margin-bottom:0;">
-                <label class="form-label">Contact Person</label>
-                <input class="form-control" name="new_vendor_contact" id="vendor_contact" placeholder="Vendor contact">
+                <label class="form-label">Email</label>
+                <input class="form-control" type="email" name="new_vendor_email" id="vendor_contact" placeholder="vendor@email.com">
             </div>
         </div>
     </div>
@@ -146,9 +146,9 @@
                                     </div>
                                 </td>
                                 <td>
-                                <input type="text" inputmode="decimal" class="form-control price-input" name="items[{{ $idx }}][price]" required placeholder="0" oninput="formatPriceInput(this)">
+                                    <input type="text" inputmode="decimal" class="form-control price-input" name="items[{{ $idx }}][price]" required placeholder="Rp. 0" oninput="formatPriceInput(this)">
                                 </td>
-                                <td class="subtotal-cell" style="font-weight:700; font-family:monospace; font-size:14px; text-align:right;">Rp 0</td>
+                                <td class="subtotal-cell" style="font-weight:700; font-family:monospace; font-size:14px; text-align:right;">Rp. 0</td>
                             </tr>
                         @endforeach
                     @endforeach
@@ -172,9 +172,9 @@
                                 </div>
                             </td>
                             <td>
-                            <input type="text" inputmode="decimal" class="form-control price-input" name="items[{{ $idx }}][price]" required placeholder="0" oninput="formatPriceInput(this)">
+                                <input type="text" inputmode="decimal" class="form-control price-input" name="items[{{ $idx }}][price]" required placeholder="Rp.0" oninput="formatPriceInput(this)">
                             </td>
-                            <td class="subtotal-cell" style="font-weight:700; font-family:monospace; font-size:14px; text-align:right;">Rp 0</td>
+                            <td class="subtotal-cell" style="font-weight:700; font-family:monospace; font-size:14px; text-align:right;">Rp. 0</td>
                         </tr>
                     @endforeach
                 @endif
@@ -182,7 +182,7 @@
             <tfoot>
                 <tr style="background:#f9fafb;">
                     <td colspan="5" style="text-align:right; font-weight:700; color:var(--text-muted);">Grand Total</td>
-                    <td id="grand-total" style="font-weight:800; font-size:16px; color:#111827; font-family:monospace; text-align:right;">Rp 0</td>
+                    <td id="grand-total" style="font-weight:800; font-size:16px; color:#111827; font-family:monospace; text-align:right;">Rp. 0</td>
                 </tr>
             </tfoot>
         </table>
@@ -279,7 +279,7 @@
         if (match) {
             document.getElementById('hidden_vendor_id').value = match.id;
             document.getElementById('vendor_location').value = match.location || '';
-            document.getElementById('vendor_contact').value = match.contact || '';
+            document.getElementById('vendor_contact').value = match.email || '';
         } else {
             resetVendorId();
         }
@@ -293,7 +293,7 @@
             return `
             <div class="item-option ${isSelected ? 'selected' : ''}" onclick="selectVendorModal('${v.id}')">
                 <div class="item-option-name">${v.vendor_name}</div>
-                <div class="item-option-desc">${v.location || '-'} | ${v.contact || '-'}</div>
+                <div class="item-option-desc">${v.location || '-'} | ${v.email || '-'}</div>
             </div>`;
         }).join('');
     }
@@ -322,7 +322,7 @@
         document.getElementById('hidden_vendor_id').value = v.id;
         document.getElementById('new_vendor_name').value = v.vendor_name;
         document.getElementById('vendor_location').value = v.location || '';
-        document.getElementById('vendor_contact').value = v.contact || '';
+        document.getElementById('vendor_contact').value = v.email || '';
         
         closeVendorModal();
     }
@@ -335,7 +335,8 @@
     // Helper: ubah "1.500,75" -> 1500.75 (number biasa)
     function parsePriceValue(str) {
         if (!str) return 0;
-        return parseFloat(String(str).replace(/\./g, '').replace(',', '.')) || 0;
+        let cleanStr = String(str).replace(/[^0-9,]/g, '').replace(',', '.');
+        return parseFloat(cleanStr) || 0;
     }
 
     // Format live saat input: titik = pemisah ribuan, koma = desimal
@@ -348,9 +349,10 @@
         intPart = intPart.replace(/^0+(?=\d)/, '');
         const formattedInt = intPart ? Number(intPart).toLocaleString('id-ID') : '';
 
-        input.value = decPart !== null
+        let finalValue = decPart !== null
             ? formattedInt + ',' + decPart
             : (commaIndex !== -1 ? formattedInt + ',' : formattedInt);
+        input.value = finalValue ? 'Rp. ' + finalValue : '';
     }
 
     // Calculate totals
@@ -363,7 +365,7 @@
         const update = () => {
             const q = parseFloat(qty.value) || 0;
             const p = parsePriceValue(price.value);
-            sub.textContent = 'Rp ' + (q * p).toLocaleString('id-ID');
+            sub.textContent = 'Rp. ' + (q * p).toLocaleString('id-ID');
             updateGrandTotal();
         };
 
@@ -380,7 +382,7 @@
                 total += (parseFloat(qty.value)||0) * parsePriceValue(price.value);
             }
         });
-        document.getElementById('grand-total').textContent = 'Rp ' + total.toLocaleString('id-ID');
+        document.getElementById('grand-total').textContent = 'Rp. ' + total.toLocaleString('id-ID');
     }
 
     // Pastikan value yang dikirim ke server tetap angka polos, bukan "1.500,75"

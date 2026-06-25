@@ -1,154 +1,501 @@
 @extends('layouts.app')
-@php 
-    $pageTitle = 'Admin Dashboard'; 
-    $statusCfg = [
-        'submitted'        => ['Awaiting Approval', '#fef3c7', '#d97706', '#f59e0b'],
-        'vendor_search'    => ['Vendor Search',     '#e0e7ff', '#4338ca', '#6366f1'],
-        'vendor_selection' => ['Vendor Selection',  '#dbeafe', '#1d4ed8', '#3b82f6'],
-        'completed'        => ['Completed',         '#dcfce7', '#15803d', '#22c55e'],
-        'rejected'         => ['Rejected',          '#fee2e2', '#b91c1c', '#ef4444'],
-        'cancelled'        => ['Cancelled',         '#f3f4f6', '#4b5563', '#9ca3af'],
-    ];
+@php
+    $pageTitle = 'Procurement Admin Dashboard';
 @endphp
 
 @section('content')
-@php $firstName = explode(' ', auth()->user()->name)[0]; @endphp
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<div class="page-header">
-    <div class="page-title">Selamat datang, {{ $firstName }}</div>
-    <div class="page-desc">Ringkasan seluruh aktivitas pengadaan — {{ now()->format('d M Y') }}</div>
-</div>
+<style>
+    .dash-container { display: flex; flex-direction: column; gap: 20px; }
+    
+    /* Header & Filters */
+    .dash-header { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 16px 24px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); flex-wrap: wrap; gap: 16px; }
+    .dash-title h1 { font-size: 20px; font-weight: 700; color: #1e3a8a; margin:0; }
+    .dash-title p { font-size: 13px; color: #6b7280; margin: 4px 0 0; }
+    .dash-filters { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .filter-select, .filter-input { padding: 8px 12px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 13px; outline: none; background: #f9fafb; color: #374151; font-weight: 500; }
+    .btn-primary { background: #3b82f6; color: white; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; }
+    .btn-primary:hover { background: #2563eb; }
+    .btn-outline { background: #fff; color: #374151; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; border: 1px solid #d1d5db; cursor: pointer; }
+    .btn-outline:hover { background: #f3f4f6; }
+    
+    /* Charts Grid */
+    .chart-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .chart-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+    .chart-card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #f3f4f6; }
+    .chart-header { font-size: 15px; font-weight: 600; color: #1e3a8a; margin-bottom: 16px; }
+    
+    /* Modal Base */
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 9999; }
+    .modal-content { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); display: flex; flex-direction: column; max-height: 90vh; }
+    .modal-overlay.active { display: flex; }
+    .modal-header { padding: 16px 24px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; }
+    .modal-title { font-weight: 700; font-size: 16px; color: #1e3a8a; }
+    .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: #6b7280; }
+    .modal-body { padding: 24px; overflow-y: auto; }
+    
+    /* Table inside Modal */
+    .data-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+    .data-table th { background: #f8fafc; padding: 12px; text-align: left; font-size: 12px; color: #475569; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; cursor: pointer; user-select: none; }
+    .data-table th:hover { background: #f1f5f9; }
+    .data-table td { padding: 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px; color: #334155; }
+    .pagination { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #64748b; }
+    .page-controls { display: flex; gap: 8px; }
+    .page-btn { padding: 6px 12px; border: 1px solid #cbd5e1; border-radius: 4px; background: #fff; cursor: pointer; color: #334155; }
+    .page-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .page-btn:hover:not(:disabled) { background: #f1f5f9; }
 
-{{-- Stat Cards --}}
-<div class="stat-grid">
-    <div class="stat-card">
-        <div class="stat-label">Total PR</div>
-        <div class="stat-value blue">{{ $totalRequests }}</div>
-        <div class="stat-sub">Semua periode</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-label">PR Menunggu</div>
-        <div class="stat-value orange">{{ $pendingRequests }}</div>
-        <div class="stat-sub">Perlu tindakan</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-label">RFQ Terbuka</div>
-        <div class="stat-value" style="color:#0369a1;">{{ $openRfqs }}</div>
-        <div class="stat-sub">Aktif saat ini</div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-label">Selesai Bulan Ini</div>
-        <div class="stat-value green">{{ $completedMonth }}</div>
-        <div class="stat-sub">PR terfulfill</div>
-    </div>
-</div>
+    /* Checkbox list */
+    .checkbox-list { max-height: 200px; overflow-y: auto; border: 1px solid #e5e7eb; border-radius: 6px; padding: 8px; }
+    .checkbox-item { display: flex; align-items: center; gap: 8px; padding: 6px; }
+</style>
 
-{{-- Quick Actions --}}
-<div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-top:24px;">
-    {{-- Latest Purchase Requests --}}
-    <div class="card">
-        <div class="card-header">
-            <div>
-                <div class="card-title">Purchase Request Terbaru</div>
-                <div class="card-desc">10 PR terakhir dari semua departemen.</div>
-            </div>
-            <a href="{{ route('pr.list') }}" class="btn btn-outline btn-sm">Lihat Semua</a>
+<div class="dash-container">
+    
+    <!-- Top Bar & Filters -->
+    <div class="dash-header">
+        <div class="dash-title">
+            <h1>Procurement Dashboard</h1>
+            <p>Full Visual Analytics & Drill-down</p>
         </div>
-        <div class="table-wrap">
-            <table>
+        <div class="dash-filters">
+            <select id="time_mode" class="filter-select" onchange="toggleTimeInput()">
+                <option value="all">All Time</option>
+                <option value="year">Yearly</option>
+                <option value="month">Monthly</option>
+                <option value="day">Daily</option>
+            </select>
+            
+            <input type="number" id="time_year" class="filter-input" style="display:none;" placeholder="YYYY" value="{{ date('Y') }}">
+            <input type="month" id="time_month" class="filter-input" style="display:none;" value="{{ date('Y-m') }}">
+            <input type="date" id="time_day" class="filter-input" style="display:none;" value="{{ date('Y-m-d') }}">
+            
+            <button class="btn-primary" onclick="fetchDashboardData()">Apply Filter</button>
+            <button class="btn-outline" onclick="openCompareModal()">Compare</button>
+        </div>
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div class="chart-row-2">
+        <div class="chart-card">
+            <div class="chart-header">Request Status Trend</div>
+            <div style="position: relative; height: 250px; width: 100%;">
+                <canvas id="chartStatus"></canvas>
+            </div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-header">Monthly Spend Trend</div>
+            <div style="position: relative; height: 250px; width: 100%;">
+                <canvas id="chartMonthly"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="chart-row-2">
+        <div class="chart-card">
+            <div class="chart-header">Top 10 Vendors by Spend</div>
+            <div style="position: relative; height: 250px; width: 100%;">
+                <canvas id="chartTopVendors"></canvas>
+            </div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-header">Department Performance (Spend)</div>
+            <div style="position: relative; height: 250px; width: 100%;">
+                <canvas id="chartDeptPerf"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 3 -->
+    <div class="chart-row-3">
+        <div class="chart-card">
+            <div class="chart-header">Order Records by Plant</div>
+            <div style="position: relative; height: 200px; width: 100%;">
+                <canvas id="chartOrderRecords"></canvas>
+            </div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-header">Top 10 Item Catalog</div>
+            <div style="position: relative; height: 200px; width: 100%;">
+                <canvas id="chartItemCatalog"></canvas>
+            </div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-header">Spend by Plant</div>
+            <div style="position: relative; height: 200px; width: 100%;">
+                <canvas id="chartPlantSpend"></canvas>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Drill Down Table Modal -->
+<div class="modal-overlay" id="drillModal" onclick="if(event.target===this) document.getElementById('drillModal').classList.remove('active')">
+    <div class="modal-content" style="width: 900px;">
+        <div class="modal-header">
+            <div class="modal-title" id="drillModalTitle">Detail Records</div>
+            <button class="modal-close" onclick="document.getElementById('drillModal').classList.remove('active')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div style="display:flex; justify-content:space-between; margin-bottom:12px; align-items:center;">
+                <span id="drillModalSubtitle" style="color:#64748b; font-size:13px;"></span>
+                <select id="itemsPerPage" class="filter-select" onchange="changeItemsPerPage()">
+                    <option value="5">5 per page</option>
+                    <option value="10" selected>10 per page</option>
+                    <option value="20">20 per page</option>
+                    <option value="50">50 per page</option>
+                </select>
+            </div>
+            <table class="data-table" id="drillTable">
                 <thead>
-                    <tr>
-                        <th>No. Dokumen</th>
-                        <th>Requester</th>
-                        <th>Departemen</th>
-                        <th>Status</th>
-                        <th>Tgl Diajukan</th>
-                        <th>Aksi</th>
-                    </tr>
+                    <tr id="drillTableHead"></tr>
                 </thead>
-                <tbody>
-                    @forelse($latestRequests as $pr)
-                    @php
-                        $normStatus = str_replace(' ', '_', strtolower($pr->status));
-                        if ($normStatus === 'rfq_open') { $normStatus = 'vendor_search'; }
-                        [$sLabel,$sBg,$sText,$sDot] = $statusCfg[$normStatus] ?? [ucfirst(str_replace('_',' ',$pr->status)),'#f3f4f6','#374151','#9ca3af'];
-                    @endphp
-                    <tr>
-                        <td class="td-doc">{{ $pr->document_number }}</td>
-                        <td>
-                            <div style="font-weight:500;">{{ $pr->user->name ?? '—' }}</div>
-                        </td>
-                        <td><span class="tag tag-blue">{{ $pr->department ?? '—' }}</span></td>
-                        <td>
-                            <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;background:{{ $sBg }};font-size:11.5px;font-weight:600;color:{{ $sText }};white-space:nowrap">
-                                <span style="width:5px;height:5px;border-radius:50%;background:{{ $sDot }}"></span>{{ $sLabel }}
-                            </span>
-                        </td>
-                        <td class="text-muted text-sm">
-                            {{ $pr->submission_date ? \Carbon\Carbon::parse($pr->submission_date)->format('d M Y') : \Carbon\Carbon::parse($pr->created_at)->format('d M Y') }}
-                        </td>
-                        <td>
-                            @if($pr->rfqs && $pr->rfqs->where('status','open')->count())
-                                <a href="{{ route('quotations.status', $pr->rfqs->where('status','open')->first()) }}" class="btn btn-outline btn-sm">RFQ</a>
-                            @else
-                                <button class="btn btn-ghost btn-sm" onclick="openAdminModal({{ $pr->id }})">Detail</button>
-                            @endif
-                        </td>
-                    </tr>
-                    @empty
-                    <tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted);">Belum ada PR.</td></tr>
-                    @endforelse
-                </tbody>
+                <tbody id="drillTableBody"></tbody>
             </table>
-        </div>
-    </div>
-
-    {{-- Right Panel --}}
-    <div style="display:flex;flex-direction:column;gap:20px;">
-        {{-- Quick Actions --}}
-        <div class="card">
-            <div class="card-header">
-                <div class="card-title">Menu Cepat</div>
-            </div>
-            <div class="card-body" style="display:flex;flex-direction:column;gap:10px;">
-                <a href="{{ route('rfqs.create') }}" class="btn btn-primary" style="width:100%;justify-content:center;">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
-                    Buat RFQ Baru
-                </a>
-                <a href="{{ route('vendors.list') }}" class="btn btn-outline" style="width:100%;justify-content:center;">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    Kelola Vendor
-                </a>
-                <a href="{{ route('history.orders') }}" class="btn btn-outline" style="width:100%;justify-content:center;">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    Riwayat Pengadaan
-                </a>
-            </div>
-        </div>
-
-        {{-- Recent Vendor Activity --}}
-        <div class="card" style="flex:1;">
-            <div class="card-header">
-                <div class="card-title">Aktivitas Vendor Terkini</div>
-            </div>
-            <div class="card-body" style="padding:12px 0 0;">
-                @forelse($recentHistory->take(5) as $h)
-                <div style="display:flex;gap:10px;align-items:flex-start;padding:10px 20px;border-bottom:1px solid var(--border);">
-                    <div style="width:34px;height:34px;border-radius:50%;background:#eef2ff;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;font-weight:700;color:#3b5bdb;">
-                        {{ strtoupper(substr($h->vendor->name ?? 'V', 0, 2)) }}
-                    </div>
-                    <div style="flex:1;min-width:0;">
-                        <div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ $h->vendor->name ?? '—' }}</div>
-                        <div style="font-size:12px;color:var(--text-muted);">{{ $h->action }}</div>
-                        <div style="font-size:11px;color:var(--text-light);margin-top:2px;">{{ \Carbon\Carbon::parse($h->action_date)->diffForHumans() }}</div>
-                    </div>
-                    <span class="badge badge-completed" style="font-size:11px;">Done</span>
+            <div class="pagination">
+                <span id="pageInfo">Showing 0 to 0 of 0 entries</span>
+                <div class="page-controls">
+                    <button class="page-btn" id="btnPrev" onclick="prevPage()">Previous</button>
+                    <button class="page-btn" id="btnNext" onclick="nextPage()">Next</button>
                 </div>
-                @empty
-                <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px;">Belum ada aktivitas.</div>
-                @endforelse
             </div>
         </div>
     </div>
 </div>
+
+<!-- Compare Config Modal -->
+<div class="modal-overlay" id="compareConfigModal" onclick="if(event.target===this) document.getElementById('compareConfigModal').classList.remove('active')">
+    <div class="modal-content" style="width: 500px;">
+        <div class="modal-header">
+            <div class="modal-title">Compare Data</div>
+            <button class="modal-close" onclick="document.getElementById('compareConfigModal').classList.remove('active')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <label style="font-weight:600; font-size:13px; color:#374151; display:block; margin-bottom:8px;">Select Topic</label>
+            <select id="compareTopic" class="filter-select" style="width:100%; margin-bottom:16px;" onchange="populateCompareEntities()">
+                <option value="">-- Choose Topic --</option>
+                <option value="topVendors">Vendor Performance (Spend)</option>
+                <option value="deptPerf">Department Performance (Spend)</option>
+            </select>
+
+            <label style="font-weight:600; font-size:13px; color:#374151; display:block; margin-bottom:8px;">Select Entities (Max 4)</label>
+            <div class="checkbox-list" id="compareEntitiesList">
+                <div style="color:#9ca3af; font-size:12px; padding:8px;">Select a topic first...</div>
+            </div>
+
+            <button class="btn-primary" style="width:100%; margin-top:20px;" onclick="runCompare()">Generate Comparison</button>
+        </div>
+    </div>
+</div>
+
+<!-- Compare Result Modal -->
+<div class="modal-overlay" id="compareResultModal" onclick="if(event.target===this) document.getElementById('compareResultModal').classList.remove('active')">
+    <div class="modal-content" style="width: 800px;">
+        <div class="modal-header">
+            <div class="modal-title" id="compareResultTitle">Comparison Result</div>
+            <button class="modal-close" onclick="document.getElementById('compareResultModal').classList.remove('active')">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div style="position: relative; height: 350px; width: 100%;">
+                <canvas id="chartCompare"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const formatRp = (num) => 'Rp ' + new Intl.NumberFormat('id-ID').format(num);
+    const formatShortRp = (num) => {
+        if(num >= 1000000000) return 'Rp ' + (num/1000000000).toFixed(1) + 'M';
+        if(num >= 1000000) return 'Rp ' + (num/1000000).toFixed(1) + 'Jt';
+        if(num >= 1000) return 'Rp ' + (num/1000).toFixed(1) + 'Rb';
+        return 'Rp ' + num;
+    };
+
+    let charts = {};
+    let currentEntities = {}; // Stores raw lists from adminStats
+
+    // Dynamic Filter Inputs
+    function toggleTimeInput() {
+        const mode = document.getElementById('time_mode').value;
+        document.getElementById('time_year').style.display = mode === 'year' ? 'block' : 'none';
+        document.getElementById('time_month').style.display = mode === 'month' ? 'block' : 'none';
+        document.getElementById('time_day').style.display = mode === 'day' ? 'block' : 'none';
+    }
+    
+    function getFilterParams() {
+        const mode = document.getElementById('time_mode').value;
+        let val = '';
+        if(mode === 'year') val = document.getElementById('time_year').value;
+        if(mode === 'month') val = document.getElementById('time_month').value;
+        if(mode === 'day') val = document.getElementById('time_day').value;
+        return new URLSearchParams({time_mode: mode, time_value: val});
+    }
+
+    // Chart Factory
+    function createOrUpdateChart(id, type, labels, datasets, clickHandler, isSingleDataset = false) {
+        const ctx = document.getElementById(id).getContext('2d');
+        if (charts[id]) charts[id].destroy();
+
+        // Standardize datasets if it's single
+        let chartDatasets = datasets;
+        if (isSingleDataset) {
+            chartDatasets = [{
+                label: 'Value',
+                data: datasets,
+                backgroundColor: type === 'doughnut' ? ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#f97316', '#14b8a6', '#6366f1'] : '#3b82f6',
+                borderColor: type === 'line' ? '#3b82f6' : '#fff',
+                borderWidth: type === 'line' ? 2 : 1,
+                fill: false,
+                tension: 0.3
+            }];
+        }
+
+        charts[id] = new Chart(ctx, {
+            type: type,
+            data: { labels: labels, datasets: chartDatasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, position: 'top' }, // Legends enabled
+                    tooltip: { callbacks: { label: (ctx) => ' ' + ((id !== 'chartStatus' && id !== 'chartOrderRecords') ? formatRp(ctx.raw) : ctx.raw) } }
+                },
+                onClick: (evt, activeEls) => {
+                    if(activeEls.length > 0 && clickHandler) {
+                        const index = activeEls[0].index;
+                        const datasetIndex = activeEls[0].datasetIndex;
+                        const seriesLabel = chartDatasets[datasetIndex] ? chartDatasets[datasetIndex].label : '';
+                        clickHandler(labels[index], seriesLabel);
+                    }
+                }
+            }
+        });
+    }
+
+    // Fetch Main Dashboard
+    function fetchDashboardData() {
+        fetch('{{ route("api.dashboard.admin") }}?' + getFilterParams().toString())
+            .then(res => res.json())
+            .then(data => {
+                const c = data.charts;
+                currentEntities = data.entities;
+
+                // 1. Status Trend
+                createOrUpdateChart('chartStatus', 'line', c.status.labels, c.status.datasets, (lbl, series) => openDrillModal('status', lbl, series, 'Request Status'));
+                // 2. Monthly Spend
+                createOrUpdateChart('chartMonthly', 'line', c.monthlySpend.labels, c.monthlySpend.data, (lbl) => openDrillModal('monthlySpend', lbl, '', 'Monthly Spend'), true);
+                // 3. Top Vendors
+                createOrUpdateChart('chartTopVendors', 'bar', c.topVendors.labels, c.topVendors.data, (lbl) => openDrillModal('topVendors', lbl, '', 'Vendor Details'), true);
+                // 4. Dept Perf
+                createOrUpdateChart('chartDeptPerf', 'bar', c.deptPerf.labels, c.deptPerf.data, (lbl) => openDrillModal('deptPerf', lbl, '', 'Department Details'), true);
+                // 5. Order Records
+                createOrUpdateChart('chartOrderRecords', 'bar', c.orderRecords.labels, c.orderRecords.data, (lbl) => openDrillModal('orderRecords', lbl, '', 'Order Records by Plant'), true);
+                // 6. Item Catalog
+                createOrUpdateChart('chartItemCatalog', 'bar', c.itemCatalog.labels, c.itemCatalog.data, (lbl) => openDrillModal('itemCatalog', lbl, '', 'Item Catalog Details'), true);
+                // 7. Plant Spend
+                createOrUpdateChart('chartPlantSpend', 'doughnut', c.plantSpend.labels, c.plantSpend.data, (lbl) => openDrillModal('plantSpend', lbl, '', 'Spend by Plant'), true);
+            });
+    }
+
+    // ==========================================
+    // Drill Down Data Table Logic
+    // ==========================================
+    let tableData = [];
+    let filteredData = [];
+    let currentPage = 1;
+    let itemsPerPage = 10;
+    let sortCol = null;
+    let sortAsc = true;
+
+    const headersMap = {
+        'status': ['Document No', 'Title', 'Department', 'Status', 'Date'],
+        'monthlySpend': ['Document No', 'Department', 'Plant', 'Value', 'Date'],
+        'topVendors': ['Vendor Name', 'Location', 'Document No', 'Value', 'Date'],
+        'deptPerf': ['Document No', 'Title', 'Status', 'Value', 'Date'],
+        'orderRecords': ['Document No', 'Title', 'Department', 'Status', 'Date'],
+        'itemCatalog': ['Item Name', 'Vendor', 'Qty', 'Value', 'Date'],
+        'plantSpend': ['Document No', 'Title', 'Department', 'Value', 'Date']
+    };
+
+    function openDrillModal(type, label, series, title) {
+        document.getElementById('drillModalTitle').innerText = title + ' - ' + label + (series && series !== 'Value' ? ` (${series})` : '');
+        document.getElementById('drillModalSubtitle').innerText = 'Loading data...';
+        document.getElementById('drillTableHead').innerHTML = '';
+        document.getElementById('drillTableBody').innerHTML = '';
+        document.getElementById('drillModal').classList.add('active');
+
+        // Render Headers
+        const headers = headersMap[type];
+        let theadHtml = '';
+        headers.forEach((h, idx) => {
+            theadHtml += `<th onclick="sortTable('col${idx+1}')">${h} <span id="sort-ind-col${idx+1}"></span></th>`;
+        });
+        document.getElementById('drillTableHead').innerHTML = theadHtml;
+
+        const params = getFilterParams();
+        params.append('type', type);
+        params.append('label', label);
+        if(series && series !== 'Value') params.append('series', series);
+
+        fetch('{{ route("api.dashboard.drilldown") }}?' + params.toString())
+            .then(res => res.json())
+            .then(data => {
+                tableData = data.rows;
+                filteredData = [...tableData];
+                currentPage = 1;
+                sortCol = null;
+                document.getElementById('drillModalSubtitle').innerText = `Found ${tableData.length} records.`;
+                renderTable();
+            });
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('drillTableBody');
+        tbody.innerHTML = '';
+        
+        if (filteredData.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No records found.</td></tr>';
+            document.getElementById('pageInfo').innerText = 'Showing 0 to 0 of 0 entries';
+            document.getElementById('btnPrev').disabled = true;
+            document.getElementById('btnNext').disabled = true;
+            return;
+        }
+
+        const start = (currentPage - 1) * itemsPerPage;
+        const end = Math.min(start + itemsPerPage, filteredData.length);
+        const pageData = filteredData.slice(start, end);
+
+        pageData.forEach(row => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${row.col1}</td>
+                    <td>${row.col2}</td>
+                    <td>${row.col3}</td>
+                    <td>${row.col4}</td>
+                    <td>${row.col5}</td>
+                </tr>
+            `;
+        });
+
+        document.getElementById('pageInfo').innerText = `Showing ${start + 1} to ${end} of ${filteredData.length} entries`;
+        document.getElementById('btnPrev').disabled = currentPage === 1;
+        document.getElementById('btnNext').disabled = end >= filteredData.length;
+    }
+
+    function changeItemsPerPage() {
+        itemsPerPage = parseInt(document.getElementById('itemsPerPage').value);
+        currentPage = 1;
+        renderTable();
+    }
+
+    function prevPage() { if(currentPage > 1) { currentPage--; renderTable(); } }
+    function nextPage() { if(currentPage * itemsPerPage < filteredData.length) { currentPage++; renderTable(); } }
+
+    function sortTable(col) {
+        if (sortCol === col) { sortAsc = !sortAsc; } 
+        else { sortCol = col; sortAsc = true; }
+
+        // reset indicators
+        for(let i=1; i<=5; i++) {
+            let el = document.getElementById(`sort-ind-col${i}`);
+            if(el) el.innerText = '';
+        }
+        let currentInd = document.getElementById(`sort-ind-${col}`);
+        if(currentInd) currentInd.innerText = sortAsc ? ' ▲' : ' ▼';
+
+        filteredData.sort((a, b) => {
+            let valA = a[col] || '';
+            let valB = b[col] || '';
+            // Handle numeric sort for Value if applicable (very naive check)
+            if(typeof valA === 'string' && valA.startsWith('Rp ')) {
+                valA = parseInt(valA.replace(/\D/g, '')) || 0;
+                valB = parseInt(valB.replace(/\D/g, '')) || 0;
+                return sortAsc ? valA - valB : valB - valA;
+            }
+            if (valA < valB) return sortAsc ? -1 : 1;
+            if (valA > valB) return sortAsc ? 1 : -1;
+            return 0;
+        });
+        currentPage = 1;
+        renderTable();
+    }
+
+    // ==========================================
+    // Compare Logic
+    // ==========================================
+    function openCompareModal() {
+        document.getElementById('compareTopic').value = '';
+        document.getElementById('compareEntitiesList').innerHTML = '<div style="color:#9ca3af; font-size:12px; padding:8px;">Select a topic first...</div>';
+        document.getElementById('compareConfigModal').classList.add('active');
+    }
+
+    function populateCompareEntities() {
+        const topic = document.getElementById('compareTopic').value;
+        const listDiv = document.getElementById('compareEntitiesList');
+        listDiv.innerHTML = '';
+        if(!topic) return;
+
+        const entities = currentEntities[topic] || [];
+        if(entities.length === 0) {
+            listDiv.innerHTML = '<div style="font-size:13px; padding:8px;">No data available to compare.</div>';
+            return;
+        }
+
+        entities.forEach(ent => {
+            listDiv.innerHTML += `
+                <label class="checkbox-item">
+                    <input type="checkbox" value="${ent}" class="compare-chk" onchange="limitCompareSelection(this)">
+                    <span style="font-size:13px;">${ent}</span>
+                </label>
+            `;
+        });
+    }
+
+    function limitCompareSelection(chk) {
+        const checked = document.querySelectorAll('.compare-chk:checked');
+        if (checked.length > 4) {
+            chk.checked = false;
+            alert('You can only select up to 4 entities to compare.');
+        }
+    }
+
+    function runCompare() {
+        const topic = document.getElementById('compareTopic').value;
+        const checked = Array.from(document.querySelectorAll('.compare-chk:checked')).map(c => c.value);
+
+        if(!topic || checked.length === 0) {
+            alert('Please select a topic and at least one entity.');
+            return;
+        }
+
+        const params = getFilterParams();
+        params.append('topic', topic);
+        params.append('entities', JSON.stringify(checked));
+
+        fetch('{{ route("api.dashboard.compare") }}?' + params.toString())
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('compareConfigModal').classList.remove('active');
+                document.getElementById('compareResultTitle').innerText = 'Comparison: ' + (topic==='topVendors' ? 'Vendors' : 'Departments');
+                document.getElementById('compareResultModal').classList.add('active');
+                
+                // Render Compare Chart
+                createOrUpdateChart('chartCompare', 'bar', data.labels, data.data, null, true);
+                if(charts['chartCompare']) {
+                    charts['chartCompare'].data.datasets[0].backgroundColor = ['#ef4444', '#3b82f6', '#10b981', '#f59e0b'];
+                    charts['chartCompare'].data.datasets[0].label = 'Total Spend';
+                    charts['chartCompare'].update();
+                }
+            });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        toggleTimeInput();
+        fetchDashboardData();
+    });
+</script>
 @endsection

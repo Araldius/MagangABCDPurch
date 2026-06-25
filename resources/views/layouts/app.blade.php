@@ -110,6 +110,7 @@
                 <a href="{{ route('history.orders') }}" class="sidebar-link {{ request()->routeIs('history.orders') ? 'active' : '' }}" style="padding:6px 10px;font-size:11.5px">Order Records</a>
                 <a href="{{ route('history.items') }}" class="sidebar-link {{ request()->routeIs('history.items') ? 'active' : '' }}" style="padding:6px 10px;font-size:11.5px">Item Catalog</a>
                 <a href="{{ route('history.vendors') }}" class="sidebar-link {{ request()->routeIs('history.vendors') ? 'active' : '' }}" style="padding:6px 10px;font-size:11.5px">Vendor Directory</a>
+                <a href="{{ route('history.master.vendors') }}" class="sidebar-link {{ request()->routeIs('history.master.vendors') ? 'active' : '' }}" style="padding:6px 10px;font-size:11.5px">Master Vendor</a>
             </div>
         </div>
         <a href="{{ route('vendors.list') }}" class="sidebar-link {{ request()->routeIs('vendors.*') ? 'active' : '' }}">

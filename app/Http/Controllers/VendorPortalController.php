@@ -28,6 +28,14 @@ class VendorPortalController extends Controller
             return abort(403, 'Permintaan ini sudah diproses dan tidak menerima penawaran lagi.');
         }
 
+        $neededDateRaw = $rfq->purchaseRequest ? $rfq->purchaseRequest->need_date : ($rfq->serviceRequest ? $rfq->serviceRequest->requested_date : null);
+        $neededDate = $neededDateRaw ? \Carbon\Carbon::parse($neededDateRaw)->startOfDay() : null;
+        $closedDate = $neededDate ? $neededDate->copy()->subDay()->endOfDay() : null;
+
+        if ($closedDate && now()->gt($closedDate)) {
+            // We no longer block access here. Instead, the view will show an "Overdue" warning.
+        }
+
         $items = $rfq->purchaseRequest ? $rfq->purchaseRequest->items : collect();
         if ($rfq->serviceRequest) {
             foreach ($rfq->serviceRequest->jobs as $job) {
@@ -35,7 +43,9 @@ class VendorPortalController extends Controller
             }
         }
 
-        return view('vendors.quote', compact('rfq', 'items'));
+        $vendors = Vendor::select('id', 'vendor_name', 'email', 'location')->get();
+
+        return view('vendors.quote', compact('rfq', 'items', 'neededDate', 'closedDate', 'vendors'));
     }
 
     public function submit(Request $request, $token)
@@ -51,9 +61,17 @@ class VendorPortalController extends Controller
             return back()->withErrors(['error' => 'Permintaan ini sudah diproses dan tidak menerima penawaran lagi.']);
         }
 
+        $neededDateRaw = $rfq->purchaseRequest ? $rfq->purchaseRequest->need_date : ($rfq->serviceRequest ? $rfq->serviceRequest->requested_date : null);
+        $neededDate = $neededDateRaw ? \Carbon\Carbon::parse($neededDateRaw)->startOfDay() : null;
+        $closedDate = $neededDate ? $neededDate->copy()->subDay()->endOfDay() : null;
+
+        if ($closedDate && now()->gt($closedDate)) {
+            // We no longer block submission here. Vendors can submit overdue quotations.
+        }
+
         $data = $request->validate([
             'vendor_name' => 'required|string|max:255',
-            'vendor_contact' => 'required|string|max:255',
+            'email' => 'required|email|max:255',
             'vendor_location' => 'nullable|string|max:255',
             'items' => 'required|array',
             'items.*.item_id' => 'required',
@@ -65,7 +83,7 @@ class VendorPortalController extends Controller
 
         // Find or create vendor based on exact name and contact
         $vendor = Vendor::firstOrCreate(
-            ['vendor_name' => $data['vendor_name'], 'contact' => $data['vendor_contact']],
+            ['vendor_name' => $data['vendor_name'], 'email' => $data['email']],
             ['location' => $data['vendor_location'] ?? '-', 'status' => 'active']
         );
 

@@ -1,40 +1,15 @@
 @extends('layouts.app')
-@php $pageTitle = 'Procurement History'; @endphp
+@php $pageTitle = 'Master Vendor'; @endphp
 @section('content')
 
 <div style="margin-bottom:20px">
-    <h1 style="font-size:20px;font-weight:700;color:#111827;margin:0 0 3px">Procurement History</h1>
-    <p style="font-size:12.5px;color:#6b7280;margin:0">All selected vendors and completed procurement records.</p>
-</div>
- 
-{{-- STAT CARDS --}}
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">
-    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:18px 20px">
-        <div style="font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.07em">Vendors Used</div>
-        <div style="font-size:28px;font-weight:800;color:#111827;margin:8px 0 5px;line-height:1">{{ $vendorsUsed }}</div>
-        <div style="font-size:11.5px;color:#9ca3af">Throughout {{ now()->year }}</div>
-    </div>
-    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:18px 20px">
-        <div style="font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.07em">Total Value</div>
-        <div style="font-size:22px;font-weight:800;color:#111827;margin:8px 0 5px;line-height:1">Rp {{ number_format($totalValue/1000000,0) }} Jt</div>
-        <div style="font-size:11.5px;color:#9ca3af">Jan–{{ now()->format('M Y') }}</div>
-    </div>
-    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:18px 20px">
-        <div style="font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.07em">PR Completed</div>
-        <div style="font-size:28px;font-weight:800;color:#16a34a;margin:8px 0 5px;line-height:1">{{ $prsCompleted }}</div>
-        <div style="font-size:11.5px;color:#9ca3af">Year {{ now()->year }}</div>
-    </div>
-    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:18px 20px">
-        <div style="font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.07em">Avg. Lead Time</div>
-        <div style="font-size:28px;font-weight:800;color:#d97706;margin:8px 0 5px;line-height:1">{{ $avgLeadDays }} Days</div>
-        <div style="font-size:11.5px;color:#9ca3af">PR to goods received</div>
-    </div>
+    <h1 style="font-size:20px;font-weight:700;color:#111827;margin:0 0 3px">Master Vendor</h1>
+    <p style="font-size:12.5px;color:#6b7280;margin:0">Complete list of all registered vendors in the system.</p>
 </div>
 
-{{-- TABLE 1: Selected Vendors --}}
-<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px">
+<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-top:20px;">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #f3f4f6;gap:10px;flex-wrap:wrap">
-        <div style="font-size:14px;font-weight:700;color:#111827">Selected Vendor Directory</div>
+        <div style="font-size:14px;font-weight:700;color:#111827">All Vendors</div>
     </div>
 
     {{-- Toolbar --}}
@@ -46,22 +21,9 @@
             <select id="period-filter" onchange="applyHFilters()"
                 style="height:32px;padding:0 28px 0 10px;border:1px solid #e5e7eb;border-radius:7px;font-size:12.5px;color:#374151;background:#fff;appearance:none;cursor:pointer;font-family:inherit;">
                 <option value="">All Locations</option>
-                @php
-                    $locations = collect($vendors)->pluck('vendor_city')->filter()->unique()->sort()->values();
-                @endphp
                 @foreach($locations as $loc)
                     <option value="{{ $loc }}">{{ $loc }}</option>
                 @endforeach
-            </select>
-            <svg style="position:absolute;right:8px;top:50%;transform:translateY(-50%);pointer-events:none;color:#6b7280" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke-linecap="round"/></svg>
-        </div>
-        <div style="position:relative;">
-            <select id="value-filter" onchange="applyHFilters()"
-                style="height:32px;padding:0 28px 0 10px;border:1px solid #e5e7eb;border-radius:7px;font-size:12.5px;color:#374151;background:#fff;appearance:none;cursor:pointer;font-family:inherit;">
-                <option value="">All Values</option>
-                <option value="low">< Rp 1 Jt</option>
-                <option value="mid">Rp 1 Jt – 50 Jt</option>
-                <option value="high">> Rp 50 Jt</option>
             </select>
             <svg style="position:absolute;right:8px;top:50%;transform:translateY(-50%);pointer-events:none;color:#6b7280" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke-linecap="round"/></svg>
         </div>
@@ -78,24 +40,24 @@
             <thead>
                 <tr style="background:#f9fafb">
                     <th onclick="histSort(0)" style="padding:9px 20px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;">VENDOR NAME <span id="hs0" style="font-size:9px;">↕</span></th>
-                    <th onclick="histSort(1)" style="padding:9px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;">LAST PURCHASE <span id="hs1" style="font-size:9px;">↕</span></th>
-                    <th onclick="histSort(2)" style="padding:9px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;">TOTAL VALUE (RP) <span id="hs2" style="font-size:9px;">↕</span></th>
+                    <th onclick="histSort(1)" style="padding:9px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;">LAST SUBMITTED <span id="hs1" style="font-size:9px;">↕</span></th>
+                    <th onclick="histSort(2)" style="padding:9px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;">QUOTATIONS COUNT <span id="hs2" style="font-size:9px;">↕</span></th>
                     <th style="padding:9px 20px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;">ACTION</th>
                 </tr>
             </thead>
             <tbody id="hist-tbody">
-                @forelse($vendors as $idx => $vendor)
+                @forelse($masterVendors as $idx => $vendor)
                 <tr style="border-bottom:1px solid #f3f4f6"
                     data-location="{{ $vendor['vendor_city'] }}"
-                    data-date="{{ $vendor['last_purchase'] }}"
-                    data-value="{{ $vendor['total_value'] }}"
+                    data-date="{{ $vendor['last_submitted'] }}"
+                    data-value="0"
                     onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='transparent'">
                     <td style="padding:13px 20px">
                         <div style="font-size:12.5px;font-weight:600;color:#111827">{{ $vendor['vendor_name'] }}</div>
                         <div style="font-size:11px;color:#9ca3af;margin-top:1px">{{ $vendor['vendor_city'] }}</div>
                     </td>
-                    <td style="padding:13px 14px;font-size:12.5px;color:#374151">{{ $vendor['last_purchase'] }}</td>
-                    <td style="padding:13px 14px;font-size:12.5px;font-weight:600;color:#111827">{{ number_format($vendor['total_value'],0,',','.') }}</td>
+                    <td style="padding:13px 14px;font-size:12.5px;color:#374151">{{ $vendor['last_submitted'] }}</td>
+                    <td style="padding:13px 14px;font-size:12.5px;font-weight:600;color:#111827">{{ $vendor['quotation_count'] }}</td>
                     <td style="padding:13px 20px"><button onclick="window.location.href='{{ route('history.vendor.detail', $vendor['vendor_id']) }}'" style="padding:4px 10px;font-size:11.5px;font-weight:600;color:#374151;background:#fff;border:1px solid #e5e7eb;border-radius:6px;cursor:pointer">Detail</button></td>
                 </tr>
                 @empty
@@ -114,7 +76,6 @@ let histPage = 1, histPageSize = 10;
 function applyHFilters() {
     const q = (document.getElementById('hist-search')?.value || '').toLowerCase();
     const location = document.getElementById('period-filter')?.value || '';
-    const valueRange = document.getElementById('value-filter')?.value || '';
     const dStart = document.getElementById('hist-start-date')?.value;
     const dEnd   = document.getElementById('hist-end-date')?.value;
 
@@ -124,12 +85,6 @@ function applyHFilters() {
         if (location && (r.dataset.location || '') !== location) return false;
         if (dStart && r.dataset.date < dStart) return false;
         if (dEnd && r.dataset.date > dEnd) return false;
-        if (valueRange) {
-            const val = parseFloat(r.dataset.value || '0');
-            if (valueRange === 'low' && val >= 1000000) return false;
-            if (valueRange === 'mid' && (val < 1000000 || val > 50000000)) return false;
-            if (valueRange === 'high' && val <= 50000000) return false;
-        }
         return true;
     });
 
@@ -174,7 +129,7 @@ function applyHFilters() {
 function histSort(col) {
     if (histSortState.col === col) histSortState.dir = histSortState.dir==='asc'?'desc':'asc';
     else { histSortState.col = col; histSortState.dir = 'asc'; }
-    document.querySelectorAll('[id^="hs"]:not([id^="hs2-"])').forEach(el => el.textContent = '↕');
+    document.querySelectorAll('[id^="hs"]').forEach(el => el.textContent = '↕');
     const el = document.getElementById('hs'+col);
     if (el) el.textContent = histSortState.dir==='asc'?'↑':'↓';
     applyHFilters();

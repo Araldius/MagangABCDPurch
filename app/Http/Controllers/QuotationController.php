@@ -31,7 +31,7 @@ class QuotationController extends Controller
             'vendor_id' => ['nullable', 'exists:vendors,id'],
             'new_vendor_name' => ['nullable', 'string', 'max:255'],
             'new_vendor_location' => ['nullable', 'string', 'max:255'],
-            'new_vendor_contact' => ['nullable', 'string', 'max:255'],
+            'new_vendor_email' => ['nullable', 'email', 'max:255'],
             'items' => ['required', 'array'],
             'items.*.item_id' => ['required'], // PR item or SR item ID
             'items.*.price' => ['required', 'numeric', 'min:0'],
@@ -46,7 +46,7 @@ class QuotationController extends Controller
             $vendor = \App\Models\Vendor::create([
                 'vendor_name' => $data['new_vendor_name'],
                 'location' => $data['new_vendor_location'],
-                'contact' => $data['new_vendor_contact'],
+                'email' => $data['new_vendor_email'],
                 'status' => 'active',
             ]);
             $vendorId = $vendor->id;
@@ -106,7 +106,7 @@ class QuotationController extends Controller
 
     public function status(Rfq $rfq)
     {
-        $rfq->load(['purchaseRequest', 'vendor', 'vendorQuotations.vendor', 'quotationPeriods', 'quotation.quotationDetails']);
+        $rfq->load(['purchaseRequest', 'vendor', 'vendorQuotations.vendor', 'quotationPeriods', 'quotation.details']);
 
         return view('quotations.status', compact('rfq'));
     }
@@ -149,21 +149,26 @@ class QuotationController extends Controller
     public function final(Rfq $rfq)
     {
         $quotation = $rfq->quotation;
-        $items = $rfq->purchaseRequest->items;
-        $details = $quotation ? $quotation->quotationDetails->keyBy('purchase_request_item_id') : collect();
+        $isService = (bool) $rfq->service_request_id;
+        $items = $isService ? $rfq->serviceRequest->jobs->flatMap->items : $rfq->purchaseRequest->items;
+        $details = $quotation ? $quotation->details->keyBy($isService ? 'service_request_item_id' : 'purchase_request_item_id') : collect();
 
         return view('quotations.final', compact('rfq', 'quotation', 'items', 'details'));
     }
 
     public function storeFinal(Request $request, Rfq $rfq)
     {
+        $isService = (bool) $rfq->service_request_id;
+        $itemTable = $isService ? 'service_request_items' : 'purchase_request_items';
+        $itemColumn = $isService ? 'service_request_item_id' : 'purchase_request_item_id';
+
         $data = $request->validate([
             'total_price' => ['required', 'numeric', 'min:0'],
             'note' => ['nullable', 'string'],
             'items' => ['required', 'array', 'min:1'],
-            'items.*.purchase_request_item_id' => ['required', 'exists:purchase_request_items,id'],
+            "items.*.{$itemColumn}" => ['required', "exists:{$itemTable},id"],
             'items.*.offered_price_per_item' => ['required', 'numeric', 'min:0'],
-            'items.*.offered_quantity' => ['required', 'integer', 'min:1'],
+            'items.*.offered_quantity' => ['required', 'numeric', 'min:0'],
         ]);
 
         $quotation = Quotation::updateOrCreate([
@@ -181,7 +186,8 @@ class QuotationController extends Controller
         foreach ($data['items'] as $itemData) {
             $detail = QuotationDetail::create([
                 'quotation_id' => $quotation->id,
-                'purchase_request_item_id' => $itemData['purchase_request_item_id'],
+                'purchase_request_item_id' => $isService ? null : $itemData['purchase_request_item_id'],
+                'service_request_item_id' => $isService ? $itemData['service_request_item_id'] : null,
                 'offered_price_per_item' => $itemData['offered_price_per_item'],
                 'offered_quantity' => $itemData['offered_quantity'],
             ]);
@@ -209,7 +215,7 @@ class QuotationController extends Controller
             ->pluck('id', 'quotation_detail_id')
             ->toArray();
 
-        foreach ($quotation->quotationDetails as $detail) {
+        foreach ($quotation->details as $detail) {
             SelectionItem::create([
                 'vendor_selection_id' => $selection->id,
                 'quotation_summary_id' => $summaryIds[$detail->id] ?? null,
@@ -221,7 +227,12 @@ class QuotationController extends Controller
 
         $rfq->status = 'closed';
         $rfq->save();
-        $rfq->purchaseRequest->update(['status' => 'completed']);
+        
+        if ($isService) {
+            $rfq->serviceRequest->update(['status' => 'completed']);
+        } else {
+            $rfq->purchaseRequest->update(['status' => 'completed']);
+        }
 
         History::create([
             'user_id' => auth()->id(),

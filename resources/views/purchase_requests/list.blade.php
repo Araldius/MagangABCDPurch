@@ -449,6 +449,7 @@ function openPRDetail(id, category) {
 
     document.getElementById('detail-select-vendor-btn').style.display = 'none';
     document.getElementById('detail-add-quotation-btn').style.display = 'none';
+    document.getElementById('detail-generate-link-btn').style.display = 'none';
     const approveForm = document.getElementById('detail-approve-form');
     const rejectForm = document.getElementById('detail-reject-form');
     const cancelForm = document.getElementById('detail-cancel-form');

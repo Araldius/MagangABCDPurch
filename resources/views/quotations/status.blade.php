@@ -55,7 +55,7 @@
                     <div class="card-desc">{{ $rfq->vendorQuotations->count() }} vendor telah diundang.</div>
                 </div>
                 @if($rfq->status === 'open')
-                <a href="{{ route('vendors.index', $rfq) }}" class="btn btn-outline btn-sm">+ Tambah Vendor</a>
+                <a href="{{ route('vendors.list', $rfq) }}" class="btn btn-outline btn-sm">+ Tambah Vendor</a>
                 @endif
             </div>
             @if($rfq->vendorQuotations->count())
