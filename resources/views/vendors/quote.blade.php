@@ -62,6 +62,30 @@
     </style>
 </head>
 <body>
+    @if(isset($closedReason))
+    <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.65); backdrop-filter: blur(4px); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;">
+        <script>document.body.style.overflow = 'hidden';</script>
+        <div style="background: #fff; border-radius: 12px; width: 100%; max-width: 450px; text-align: center; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+            <div style="padding: 32px 24px;">
+                <div style="width: 64px; height: 64px; background: #fee2e2; color: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width: 32px; height: 32px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                </div>
+                <h1 style="font-size: 20px; font-weight: 700; color: #111827; margin-bottom: 12px;">Akses Penawaran Ditutup</h1>
+                <p style="font-size: 14px; color: #6b7280; line-height: 1.6; margin-bottom: 24px;">
+                    @if($closedReason === 'completed')
+                        Permintaan ini sudah selesai diproses dan tidak menerima penawaran lagi. Terima kasih atas partisipasi Anda.
+                    @else
+                        Tautan ini sudah kedaluwarsa. Tautan hanya berlaku selama periode pengumpulan penawaran dibuka.
+                    @endif
+                </p>
+                <button onclick="window.close(); history.back();" style="background: #1e3a5f; color: #fff; border: none; padding: 10px 24px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; width: 100%;">Tutup / Kembali</button>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <div class="container">
         @if(session('success'))
             <div class="alert alert-success text-center">

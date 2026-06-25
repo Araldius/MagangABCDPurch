@@ -511,7 +511,9 @@ function openPRDetail(id, category) {
 
     // ── Request info grid ──
     const subDate = new Date(pr.submission_date||pr.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
-    const reqDate = new Date(pr.requested_date||pr.need_date||pr.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+    const rawReqDate = new Date(pr.requested_date||pr.need_date||pr.created_at);
+    const reqDate = rawReqDate.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+    const isOverdue = pr.status !== 'completed' && pr.status !== 'cancelled' && pr.status !== 'rejected' && rawReqDate < new Date(new Date().setHours(0,0,0,0));
 
     // ── Item table ──
     const thS = 'padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#9ca3af;white-space:nowrap;background:#f9fafb;border-bottom:1px solid #e5e7eb';
@@ -693,8 +695,8 @@ function openPRDetail(id, category) {
                      ${isService ? 'Service Name' : 'Department'}
                  </div>
                  <div style="font-weight:500;font-size:12.5px">${isService ? (pr.service_name || pr.display_title || '—') : (pr.department || '—')}</div></div>
-            <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Requested Date</div>
-                 <div style="font-weight:500;font-size:12.5px">${reqDate}</div></div>
+            <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Need Date</div>
+                 <div style="font-weight:500;font-size:12.5px">${reqDate} ${isOverdue ? '<span style="background:#fee2e2;color:#991b1b;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-left:4px">OVERDUE</span>' : ''}</div></div>
             <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Plant</div>
                  <div style="font-weight:500;font-size:12.5px">${pr.plant || '—'}</div></div>
             ${!isService ? `<div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Priority</div>
@@ -710,10 +712,11 @@ function openPRDetail(id, category) {
         <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-top:18px;margin-bottom:8px;padding-bottom:5px;border-bottom:2px solid #e5e7eb">Activity Log</div>
         ${activityHtml}`;
 
+    document.body.style.overflow = 'hidden';
     document.getElementById('pr-detail-modal').style.display = 'flex';
 }
 
-function closePRDetail() { document.getElementById('pr-detail-modal').style.display = 'none'; }
+function closePRDetail() { document.body.style.overflow = ''; document.getElementById('pr-detail-modal').style.display = 'none'; }
 
 async function generateVendorLink() {
     const btn = document.getElementById('detail-generate-link-btn');

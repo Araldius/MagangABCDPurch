@@ -591,7 +591,9 @@ function openDetailModal(id, category) {
     let activityHtml = '';
     const histories = rfq ? (rfq.histories || []) : [];
     const subDate = new Date(pr.submission_date||pr.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
-    const reqDate = new Date(pr.requested_date||pr.need_date||pr.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+    const rawReqDate = new Date(pr.requested_date||pr.need_date||pr.created_at);
+    const reqDate = rawReqDate.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+    const isOverdue = pr.status !== 'completed' && pr.status !== 'cancelled' && pr.status !== 'rejected' && rawReqDate < new Date(new Date().setHours(0,0,0,0));
 
     let logItems = '';
     if (histories.length > 0) {
@@ -624,7 +626,7 @@ function openDetailModal(id, category) {
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;background:#f9fafb;border-radius:8px;padding:12px 14px">
             <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Submission Date</div><div style="font-weight:500;font-size:12.5px">${subDate}</div></div>
             <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Department</div><div style="font-weight:500;font-size:12.5px">${pr.department||'—'}</div></div>
-            <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Requested Date</div><div style="font-weight:500;font-size:12.5px">${reqDate}</div></div>
+            <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Need Date</div><div style="font-weight:500;font-size:12.5px">${reqDate} ${isOverdue ? '<span style="background:#fee2e2;color:#991b1b;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-left:4px">OVERDUE</span>' : ''}</div></div>
             <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Plant</div><div style="font-weight:500;font-size:12.5px">${pr.plant||'—'}</div></div>
         </div>
 
@@ -659,10 +661,11 @@ function openDetailModal(id, category) {
         selectBtn.style.display = 'none';
     }
 
+    document.body.style.overflow = 'hidden';
     document.getElementById('detail-modal').style.display = 'flex';
 }
 
-function closeDetailModal() { document.getElementById('detail-modal').style.display = 'none'; }
+function closeDetailModal() { document.body.style.overflow = ''; document.getElementById('detail-modal').style.display = 'none'; }
 
 document.addEventListener('DOMContentLoaded', () => { applyDashPR(); applyDashH(); });
 </script>
