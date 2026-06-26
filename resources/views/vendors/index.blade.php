@@ -199,6 +199,7 @@ function buildVendorOffers(pr, vendors) {
                         offers[vId].items[itemId] = {
                             qty_offered: det.offered_quantity || det.quantity || 0,
                             unit_price: det.offered_price_per_item || det.price || 0,
+                            unit_offered: det.offered_unit || '',
                             notes: det.notes || det.item_notes || ''
                         };
                     }
@@ -483,8 +484,21 @@ function renderItemCard(v, item, off) {
                 ${qtyBadge}
             </div>
 
+            ${isSelected && !isService ? `
+            <div style="color:#3b5bdb;font-weight:700">Buy Qty</div>
+            <div>
+                <input type="number" min="1" max="${o.qty_offered}" value="${selections[`${v.id}_${item.id}`].quantity}"
+                    onclick="event.stopPropagation()"
+                    onchange="updateQty(${v.id}, '${item.id}', this.value)"
+                    style="width:80px;height:26px;border:1px solid #3b5bdb;border-radius:4px;padding:0 8px;font-size:12px;font-weight:600;outline:none;color:#3b5bdb">
+            </div>
+            ` : ''}
+
             <div style="color:#9ca3af">Unit</div>
-            <div style="color:#111827">${item.unit}</div>
+            <div style="color:#111827;line-height:1.2">
+                ${o.unit_offered ? o.unit_offered : item.unit}
+                ${o.unit_offered && item.unit && o.unit_offered.toLowerCase() !== item.unit.toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-left:4px" title="Original PR Unit: ${item.unit}">DIFFERS</div>` : ''}
+            </div>
 
             <div style="color:#9ca3af">Unit Price</div>
             <div style="font-weight:600;color:#111827;display:flex;align-items:center;gap:6px">
@@ -496,7 +510,7 @@ function renderItemCard(v, item, off) {
             <div style="color:#6b7280;font-style:italic">${combinedNotes}</div>
 
             <div style="color:#9ca3af">Subtotal</div>
-            <div style="font-weight:700;color:#111827">${fmt(o.qty_offered * o.unit_price)}</div>
+            <div style="font-weight:700;color:#111827">${isSelected && !isService ? fmt(selections[`${v.id}_${item.id}`].quantity * o.unit_price) : fmt(o.qty_offered * o.unit_price)}</div>
         </div>
     </div>`;
 }
