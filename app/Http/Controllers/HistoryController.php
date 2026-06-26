@@ -11,18 +11,32 @@ class HistoryController extends Controller
     private function getBaseCompletedPRs()
     {
         $user = Auth::user();
+        $startDate = request('start_date');
+        $endDate = request('end_date');
         
         $prQuery = PurchaseRequest::with([
             'items',
             'rfqs.vendorSelections.vendor',
             'rfqs.vendorSelections.selectionItems'
-        ])->where('status', 'completed')->latest();
+        ])->where('status', 'completed');
 
         $srQuery = ServiceRequest::with([
             'jobs.items',
             'rfqs.vendorSelections.vendor',
             'rfqs.vendorSelections.selectionItems'
-        ])->where('status', 'completed')->latest();
+        ])->where('status', 'completed');
+
+        if ($startDate) {
+            $prQuery->whereDate('updated_at', '>=', $startDate);
+            $srQuery->whereDate('updated_at', '>=', $startDate);
+        }
+        if ($endDate) {
+            $prQuery->whereDate('updated_at', '<=', $endDate);
+            $srQuery->whereDate('updated_at', '<=', $endDate);
+        }
+
+        $prQuery = $prQuery->latest();
+        $srQuery = $srQuery->latest();
 
         if ($user->role !== 'purchasing') {
             $prQuery->where('user_id', $user->id);

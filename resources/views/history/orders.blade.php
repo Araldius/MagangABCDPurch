@@ -1,10 +1,20 @@
 @extends('layouts.app')
-@php $pageTitle = 'Procurement History'; @endphp
+@php 
+$pageTitle = 'Procurement History'; 
+$sd = request('start_date');
+$ed = request('end_date');
+if ($sd && $ed) $rangeText = \Carbon\Carbon::parse($sd)->format('d M Y') . ' - ' . \Carbon\Carbon::parse($ed)->format('d M Y');
+elseif ($sd) $rangeText = 'Since ' . \Carbon\Carbon::parse($sd)->format('d M Y');
+elseif ($ed) $rangeText = 'Until ' . \Carbon\Carbon::parse($ed)->format('d M Y');
+else $rangeText = 'All Time';
+@endphp
 @section('content')
 
-<div style="margin-bottom:20px">
-    <h1 style="font-size:20px;font-weight:700;color:#111827;margin:0 0 3px">Procurement History</h1>
-    <p style="font-size:12.5px;color:#6b7280;margin:0">All selected vendors and completed procurement records.</p>
+<div style="display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:20px">
+    <div>
+        <h1 style="font-size:20px;font-weight:700;color:#111827;margin:0 0 3px">Procurement History</h1>
+        <p style="font-size:12.5px;color:#6b7280;margin:0">All selected vendors and completed procurement records.</p>
+    </div>
 </div>
 
 {{-- STAT CARDS --}}
@@ -12,22 +22,22 @@
     <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:18px 20px">
         <div style="font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.07em">Total Orders</div>
         <div style="font-size:28px;font-weight:800;color:#111827;margin:8px 0 5px;line-height:1">{{ $records->count() }}</div>
-        <div style="font-size:11.5px;color:#9ca3af">Throughout {{ now()->year }}</div>
+        <div style="font-size:11.5px;color:#9ca3af">{{ $rangeText }}</div>
     </div>
     <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:18px 20px">
         <div style="font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.07em">Total Value</div>
-        <div style="font-size:22px;font-weight:800;color:#111827;margin:8px 0 5px;line-height:1">Rp {{ number_format($totalValue/1000000,0) }} Jt</div>
-        <div style="font-size:11.5px;color:#9ca3af">Jan–{{ now()->format('M Y') }}</div>
+        <div style="font-size:22px;font-weight:800;color:#111827;margin:8px 0 5px;line-height:28px">Rp {{ number_format($totalValue/1000000,0) }} Jt</div>
+        <div style="font-size:11.5px;color:#9ca3af">{{ $rangeText }}</div>
     </div>
     <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:18px 20px">
-        <div style="font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.07em">PR Completed</div>
+        <div style="font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.07em">Request Completed</div>
         <div style="font-size:28px;font-weight:800;color:#16a34a;margin:8px 0 5px;line-height:1">{{ $prsCompleted }}</div>
-        <div style="font-size:11.5px;color:#9ca3af">Year {{ now()->year }}</div>
+        <div style="font-size:11.5px;color:#9ca3af">{{ $rangeText }}</div>
     </div>
     <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:18px 20px">
         <div style="font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.07em">Avg. Lead Time</div>
         <div style="font-size:28px;font-weight:800;color:#d97706;margin:8px 0 5px;line-height:1">{{ $avgLeadDays }} Days</div>
-        <div style="font-size:11.5px;color:#9ca3af">PR to goods received</div>
+        <div style="font-size:11.5px;color:#9ca3af">Request to goods received</div>
     </div>
 </div>
 
@@ -47,11 +57,11 @@
                     <option value="{{ $d }}">{{ $d }}</option>
                 @endforeach
             </select>
-            <div style="display:flex;align-items:center;gap:6px;background:#f9fafb;border:1px solid #d1d5db;border-radius:6px;padding:0 10px;height:34px;">
-                <span style="font-size:10.5px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;">Date Range</span>
-                <input type="date" id="hist-start-date" onchange="applyHFilters()" style="border:none;background:transparent;font-size:12.5px;outline:none;color:#111827;cursor:pointer;padding:0">
-                <span style="color:#9ca3af;font-size:11px;">to</span>
-                <input type="date" id="hist-end-date" onchange="applyHFilters()" style="border:none;background:transparent;font-size:12.5px;outline:none;color:#111827;cursor:pointer;padding:0">
+            <div style="display:flex;align-items:center;gap:6px;background:#f3f4f6;padding:4px 8px;border-radius:6px;border:1px solid #d1d5db">
+                <span style="font-size:11px;font-weight:600;color:#6b7280">DATE RANGE</span>
+                <input type="date" id="hist-start-date" value="{{ request('start_date') }}" onchange="updateHistoryRange()" style="border:none;background:transparent;font-size:12.5px;outline:none;color:#111827;cursor:pointer;padding:0">
+                <span style="color:#9ca3af;font-size:12px">to</span>
+                <input type="date" id="hist-end-date" value="{{ request('end_date') }}" onchange="updateHistoryRange()" style="border:none;background:transparent;font-size:12.5px;outline:none;color:#111827;cursor:pointer;padding:0">
             </div>
         </div>
     </div>
@@ -96,6 +106,15 @@
 <script>
 let histSortState = { col: null, dir: 'asc' };
 let histPage = 1, histPageSize = 10;
+
+function updateHistoryRange() {
+    const s = document.getElementById('hist-start-date').value;
+    const e = document.getElementById('hist-end-date').value;
+    let url = new URL(window.location.href);
+    if (s) url.searchParams.set('start_date', s); else url.searchParams.delete('start_date');
+    if (e) url.searchParams.set('end_date', e); else url.searchParams.delete('end_date');
+    window.location.href = url.toString();
+}
 
 function applyHFilters() {
     const q      = (document.getElementById('hist-search')?.value || '').toLowerCase();
