@@ -4,8 +4,8 @@
 @php $pageTitle = 'Master Vendor Detail'; @endphp
 
 <div style="margin-bottom:24px;">
-    <a href="{{ route('history.master.vendors') }}" style="color:#6b7280;text-decoration:none;font-size:13px;display:flex;align-items:center;gap:6px;margin-bottom:12px;">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Back to Master Vendor
+    <a href="javascript:history.back()" style="color:#6b7280;text-decoration:none;font-size:13px;display:flex;align-items:center;gap:6px;margin-bottom:12px;">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Back
     </a>
     <h1 style="font-size:24px;font-weight:700;color:#111827;margin:0;">{{ $vendor->vendor_name ?? $vendor->name }}</h1>
     <p style="color:#6b7280;margin:4px 0 0;font-size:14px;">Location: {{ $vendor->location ?? '-' }} &nbsp;|&nbsp; Total Supplied Value: Rp {{ number_format($totalValue, 0, ',', '.') }}</p>

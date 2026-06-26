@@ -250,15 +250,9 @@ class QuotationController extends Controller
 
     public function generateVendorLink(Request $request, Rfq $rfq)
     {
-        // 1 tautan spesifik untuk 1 RFQ (berlaku untuk beberapa vendor). Kedaluwarsa 7 hari.
+        // 1 tautan spesifik untuk 1 RFQ (berlaku untuk beberapa vendor). Berlaku selama PR masih open.
         if (!$rfq->vendor_token) {
             $rfq->vendor_token = \Illuminate\Support\Str::random(32);
-            $rfq->token_expires_at = now()->addDays(7);
-            $rfq->save();
-        } else if ($rfq->token_expires_at < now()) {
-            // Jika token sudah kedaluwarsa tapi kita ingin buat yang baru
-            $rfq->vendor_token = \Illuminate\Support\Str::random(32);
-            $rfq->token_expires_at = now()->addDays(7);
             $rfq->save();
         }
 

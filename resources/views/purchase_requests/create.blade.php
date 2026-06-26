@@ -218,8 +218,20 @@
             <div><div class="modal-title">Select Item</div><div class="modal-desc">Search catalog items</div></div>
             <button class="modal-close" onclick="closeItemModal()">&times;</button>
         </div>
-        <div style="padding: 16px 20px 12px; border-bottom: 1px solid var(--border); background: #fafafa;">
-            <input class="form-control mb-2" id="item-search" placeholder="Search..." oninput="filterItems(this.value)">
+        <div style="padding: 16px 20px 12px; border-bottom: 1px solid var(--border); background: #fafafa; display:flex; flex-direction:column; gap:8px;">
+            <div style="display:flex; gap:8px;">
+                <input class="form-control" id="item-search" placeholder="Search..." oninput="filterItems()" style="flex:1;">
+                <select class="form-control" id="item-filter-unit" onchange="filterItems()" style="width:120px;">
+                    <option value="">All Units</option>
+                    @php $allUnits = collect($existingItems ?? [])->pluck('unit')->unique()->sort()->values(); @endphp
+                    @foreach($allUnits as $u) <option value="{{$u}}">{{$u}}</option> @endforeach
+                </select>
+                <select class="form-control" id="item-sort" onchange="filterItems()" style="width:140px;">
+                    <option value="name_asc">Name (A-Z)</option>
+                    <option value="name_desc">Name (Z-A)</option>
+                    <option value="id_asc">ID (A-Z)</option>
+                </select>
+            </div>
             <button type="button" class="btn btn-outline btn-sm" onclick="openNewItemModal()" style="width:100%; justify-content:center;">+ Create New Item ID</button>
         </div>
         <div class="modal-body" style="padding-top: 12px;">
@@ -264,8 +276,15 @@
             <div><div class="modal-title">Select Service</div><div class="modal-desc">Search from previous service templates</div></div>
             <button class="modal-close" onclick="closeSvcListModal()">&times;</button>
         </div>
-        <div style="padding: 16px 20px 12px; border-bottom: 1px solid var(--border); background: #fafafa;">
-            <input class="form-control mb-2" id="svc-search" placeholder="Search services..." oninput="filterSvcList(this.value)">
+        <div style="padding: 16px 20px 12px; border-bottom: 1px solid var(--border); background: #fafafa; display:flex; flex-direction:column; gap:8px;">
+            <div style="display:flex; gap:8px;">
+                <input class="form-control" id="svc-search" placeholder="Search services..." oninput="filterSvcList()" style="flex:1;">
+                <select class="form-control" id="svc-sort" onchange="filterSvcList()" style="width:160px;">
+                    <option value="name_asc">Name (A-Z)</option>
+                    <option value="name_desc">Name (Z-A)</option>
+                    <option value="jobs_desc">Most Jobs</option>
+                </select>
+            </div>
             <button type="button" class="btn btn-outline btn-sm" onclick="openNewSvcModal()" style="width:100%; justify-content:center;">+ Create New Service Form</button>
         </div>
         <div class="modal-body" style="padding-top: 12px;">
@@ -331,17 +350,30 @@ function setTab(t) {
 const catalog = @json($existingItems ?? []);
 let selectedItemId = null, addedItems = [], itemCounter = 0;
 
-function filterItems(q) { renderItemList(q.toLowerCase()); }
-function renderItemList(q='') {
-    const filtered = catalog.filter(i => !q || i.name.toLowerCase().includes(q) || (i.spec && i.spec.toLowerCase().includes(q)));
+function filterItems() {
+    const q = document.getElementById('item-search').value.toLowerCase();
+    const u = document.getElementById('item-filter-unit').value;
+    const s = document.getElementById('item-sort').value;
+    renderItemList(q, u, s);
+}
+function renderItemList(q='', u='', s='name_asc') {
+    let filtered = catalog.filter(i => {
+        const matchQ = !q || i.name.toLowerCase().includes(q) || (i.spec && i.spec.toLowerCase().includes(q));
+        const matchU = !u || i.unit === u;
+        return matchQ && matchU;
+    });
+    if (s === 'name_asc') filtered.sort((a,b) => a.name.localeCompare(b.name));
+    else if (s === 'name_desc') filtered.sort((a,b) => b.name.localeCompare(a.name));
+    else if (s === 'id_asc') filtered.sort((a,b) => a.id.localeCompare(b.id));
+
     document.getElementById('item-list').innerHTML = filtered.map(i=>`
         <div class="item-option ${selectedItemId===i.id?'selected':''}" onclick="selectItem('${i.id}')">
             <div class="item-option-name">[${i.id}] ${i.name}</div>
             <div class="item-option-desc">Spec: ${i.spec || '—'} | Unit: ${i.unit}</div>
         </div>`).join('');
 }
-function selectItem(id){ selectedItemId=id; renderItemList(document.getElementById('item-search').value.toLowerCase()); }
-function openItemModal(){ selectedItemId=null; document.getElementById('item-search').value=''; renderItemList(); document.getElementById('item-modal').classList.add('open'); }
+function selectItem(id){ selectedItemId=id; filterItems(); }
+function openItemModal(){ selectedItemId=null; document.getElementById('item-search').value=''; document.getElementById('item-filter-unit').value=''; document.getElementById('item-sort').value='name_asc'; filterItems(); document.getElementById('item-modal').classList.add('open'); }
 function closeItemModal(){ document.getElementById('item-modal').classList.remove('open'); }
 function addSelectedItem(){
     if(!selectedItemId){alert('Please select an item.');return;}
@@ -409,17 +441,25 @@ let modalJobsList = [];
 let modalJobIdCounter = 0;
 let modalItemIdCounter = 0;
 
-function filterSvcList(q) { renderSvcSelectionList(q.toLowerCase()); }
-function renderSvcSelectionList(q='') {
-    const filtered = existingServices.filter(s => !q || s.service_name.toLowerCase().includes(q));
-    document.getElementById('svc-list-container').innerHTML = filtered.map(s => `
-        <div class="item-option ${selectedSvcTemplateId===s.id?'selected':''}" onclick="selectSvcTemplate('${s.id}')">
-            <div class="item-option-name">${s.service_name}</div>
-            <div class="item-option-desc">${s.doc_number ? s.doc_number+' — ' : ''}${s.jobs.length} job scope(s)</div>
+function filterSvcList() {
+    const q = document.getElementById('svc-search').value.toLowerCase();
+    const s = document.getElementById('svc-sort').value;
+    renderSvcSelectionList(q, s);
+}
+function renderSvcSelectionList(q='', s='name_asc') {
+    let filtered = existingServices.filter(sv => !q || sv.service_name.toLowerCase().includes(q));
+    if (s === 'name_asc') filtered.sort((a,b) => a.service_name.localeCompare(b.service_name));
+    else if (s === 'name_desc') filtered.sort((a,b) => b.service_name.localeCompare(a.service_name));
+    else if (s === 'jobs_desc') filtered.sort((a,b) => (b.jobs?.length || 0) - (a.jobs?.length || 0));
+
+    document.getElementById('svc-list-container').innerHTML = filtered.map(sv => `
+        <div class="item-option ${selectedSvcTemplateId===sv.id?'selected':''}" onclick="selectSvcTemplate('${sv.id}')">
+            <div class="item-option-name">${sv.service_name}</div>
+            <div class="item-option-desc">${sv.doc_number ? sv.doc_number+' — ' : ''}${(sv.jobs||[]).length} job scope(s)</div>
         </div>`).join('');
 }
-function selectSvcTemplate(id) { selectedSvcTemplateId=id; renderSvcSelectionList(document.getElementById('svc-search').value.toLowerCase()); }
-function openSvcListModal() { selectedSvcTemplateId=null; document.getElementById('svc-search').value=''; renderSvcSelectionList(); document.getElementById('svc-list-modal').classList.add('open'); }
+function selectSvcTemplate(id) { selectedSvcTemplateId=id; filterSvcList(); }
+function openSvcListModal() { selectedSvcTemplateId=null; document.getElementById('svc-search').value=''; document.getElementById('svc-sort').value='name_asc'; filterSvcList(); document.getElementById('svc-list-modal').classList.add('open'); }
 function closeSvcListModal() { document.getElementById('svc-list-modal').classList.remove('open'); }
 function addSelectedSvcTemplate() {
     if(!selectedSvcTemplateId) { alert('Please select a template.'); return; }

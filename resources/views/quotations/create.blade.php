@@ -205,8 +205,14 @@
             <div><div class="modal-title">Vendor Catalog</div><div class="modal-desc">Search and select registered vendors</div></div>
             <button type="button" class="modal-close" onclick="closeVendorModal()">&times;</button>
         </div>
-        <div style="padding: 16px 20px 12px; border-bottom: 1px solid var(--border); background: #fafafa;">
-            <input class="form-control mb-2" id="vendor-search" placeholder="Search vendor name..." oninput="filterVendors(this.value)">
+        <div style="padding: 16px 20px 12px; border-bottom: 1px solid var(--border); background: #fafafa; display:flex; flex-direction:column; gap:8px;">
+            <div style="display:flex; gap:8px;">
+                <input class="form-control" id="vendor-search" placeholder="Search vendor name..." oninput="filterVendors()" style="flex:1;">
+                <select class="form-control" id="vendor-sort" onchange="filterVendors()" style="width:160px;">
+                    <option value="name_asc">Name (A-Z)</option>
+                    <option value="name_desc">Name (Z-A)</option>
+                </select>
+            </div>
         </div>
         <div class="modal-body" style="padding-top: 12px;">
             <div id="vendor-list" style="display:flex;flex-direction:column;"></div>
@@ -285,9 +291,16 @@
         }
     });
 
-    function filterVendors(q) { renderVendorList(q.toLowerCase()); }
-    function renderVendorList(q='') {
-        const filtered = vendors.filter(v => !q || v.vendor_name.toLowerCase().includes(q));
+    function filterVendors() {
+        const q = document.getElementById('vendor-search').value.toLowerCase();
+        const s = document.getElementById('vendor-sort').value;
+        renderVendorList(q, s);
+    }
+    function renderVendorList(q='', s='name_asc') {
+        let filtered = vendors.filter(v => !q || v.vendor_name.toLowerCase().includes(q));
+        if (s === 'name_asc') filtered.sort((a,b) => a.vendor_name.localeCompare(b.vendor_name));
+        else if (s === 'name_desc') filtered.sort((a,b) => b.vendor_name.localeCompare(a.vendor_name));
+
         document.getElementById('vendor-list').innerHTML = filtered.map(v => {
             const isSelected = String(selectedVendorId) === String(v.id);
             return `
@@ -298,17 +311,8 @@
         }).join('');
     }
 
-    function selectVendorModal(id) { 
-        selectedVendorId = id; 
-        renderVendorList(document.getElementById('vendor-search').value.toLowerCase()); 
-    }
-    
-    function openVendorModal() { 
-        selectedVendorId = null; 
-        document.getElementById('vendor-search').value = ''; 
-        renderVendorList(); 
-        document.getElementById('vendor-modal').classList.add('open'); 
-    }
+    function selectVendorModal(id) { selectedVendorId = id; filterVendors(); }
+    function openVendorModal() { selectedVendorId = null; document.getElementById('vendor-search').value = ''; document.getElementById('vendor-sort').value = 'name_asc'; filterVendors(); document.getElementById('vendor-modal').classList.add('open'); }
     
     function closeVendorModal() { 
         document.getElementById('vendor-modal').classList.remove('open'); 

@@ -25,9 +25,7 @@ class VendorPortalController extends Controller
         $closedDate = $neededDate ? $neededDate->copy()->subDay()->endOfDay() : null;
 
         $closedReason = null;
-        if ($rfq->token_expires_at < now()) {
-            $closedReason = 'expired';
-        } elseif ($pr && !in_array($pr->status, ['vendor_search', 'vendor_selection', 'submitted'])) {
+        if ($pr && !in_array($pr->status, ['vendor_search', 'vendor_selection', 'submitted'])) {
             $closedReason = 'completed';
         }
 
@@ -53,9 +51,7 @@ class VendorPortalController extends Controller
         $closedDate = $neededDate ? $neededDate->copy()->subDay()->endOfDay() : null;
 
         $closedReason = null;
-        if ($rfq->token_expires_at < now()) {
-            $closedReason = 'expired';
-        } elseif ($pr && !in_array($pr->status, ['vendor_search', 'vendor_selection', 'submitted'])) {
+        if ($pr && !in_array($pr->status, ['vendor_search', 'vendor_selection', 'submitted'])) {
             $closedReason = 'completed';
         }
 
