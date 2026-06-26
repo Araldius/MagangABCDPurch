@@ -84,12 +84,12 @@
     </div>
     
     <div style="padding:20px;border-bottom:1px solid #e5e7eb">
-        <input type="hidden" name="vendor_id" id="hidden_vendor_id" value="new">
+        <input type="hidden" name="vendor_id" id="hidden_vendor_id" value="">
         
         <div class="form-group flex-1" style="margin-bottom:16px;">
             <label class="form-label flex-between" style="width:100%">
                 <span>Vendor Name <span class="req">*</span></span>
-                <a href="#" onclick="openVendorModal(); return false;" style="font-size:12px; color:#3b5bdb; text-decoration:none;">Select from Catalog</a>
+                <a href="#" onclick="openVendorModal(); return false;" style="font-size:12px; color:#3b5bdb; text-decoration:underline;">Select from Catalog</a>
             </label>
             <input class="form-control" name="new_vendor_name" id="new_vendor_name" placeholder="Enter vendor name manually or select from catalog" required>
         </div>
@@ -101,7 +101,7 @@
             </div>
             <div class="form-group flex-1" style="margin-bottom:0;">
                 <label class="form-label">Email</label>
-                <input class="form-control" type="email" name="new_vendor_email" id="vendor_contact" placeholder="vendor@email.com">
+                <input class="form-control" type="email" name="new_vendor_email" id="vendor_contact" placeholder="vendor@email.com" oninvalid="this.setCustomValidity('Email must contain \'@\'')" oninput="this.setCustomValidity('')">
             </div>
         </div>
     </div>
@@ -230,7 +230,7 @@
         });
 
     function resetVendorId() {
-        document.getElementById('hidden_vendor_id').value = 'new';
+        document.getElementById('hidden_vendor_id').value = '';
     }
 
     // Auto-caps and Autofill logic

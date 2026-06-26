@@ -72,15 +72,17 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
                     </svg>
                 </div>
-                <h1 style="font-size: 20px; font-weight: 700; color: #111827; margin-bottom: 12px;">Akses Penawaran Ditutup</h1>
+                <h1 style="font-size: 20px; font-weight: 700; color: #111827; margin-bottom: 12px;">Quotation Access Closed</h1>
                 <p style="font-size: 14px; color: #6b7280; line-height: 1.6; margin-bottom: 24px;">
                     @if($closedReason === 'completed')
-                        Permintaan ini sudah selesai diproses dan tidak menerima penawaran lagi. Terima kasih atas partisipasi Anda.
+                        This request has been completely processed and is no longer accepting quotations. Thank you for your participation.
                     @else
-                        Tautan ini sudah kedaluwarsa. Tautan hanya berlaku selama periode pengumpulan penawaran dibuka.
+                        This link has expired. The link is only valid during the quotation submission period.
                     @endif
+                    <br><br>
+                    If you have any questions, please contact <a href="mailto:purchasing@duniakimiajaya.com" style="color: #3b5bdb; text-decoration: none;">purchasing@duniakimiajaya.com</a>.
                 </p>
-                <button onclick="window.close(); history.back();" style="background: #1e3a5f; color: #fff; border: none; padding: 10px 24px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; width: 100%;">Tutup / Kembali</button>
+                <button onclick="window.close(); history.back();" style="background: #1e3a5f; color: #fff; border: none; padding: 10px 24px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; width: 100%;">Close / Go Back</button>
             </div>
         </div>
     </div>
@@ -108,6 +110,48 @@
             </div>
         @endif
 
+        @if(session('overwrite_warning'))
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const overlay = document.createElement('div');
+                    overlay.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.65); backdrop-filter: blur(4px); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;';
+                    
+                    const box = document.createElement('div');
+                    box.style.cssText = 'background: #fff; border-radius: 12px; width: 100%; max-width: 450px; text-align: center; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.2); padding: 32px 24px;';
+                    
+                    box.innerHTML = `
+                        <div style="width: 64px; height: 64px; background: #fef3c7; color: #d97706; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width: 32px; height: 32px;">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                            </svg>
+                        </div>
+                        <h1 style="font-size: 20px; font-weight: 700; color: #111827; margin-bottom: 12px;">Quotation Already Exists</h1>
+                        <p style="font-size: 14px; color: #6b7280; line-height: 1.6; margin-bottom: 24px;">
+                            {{ session('overwrite_warning') }}
+                        </p>
+                        <div style="display: flex; gap: 12px;">
+                            <button onclick="this.closest('div').parentElement.remove(); document.body.style.overflow = 'auto';" style="flex:1; background: #f3f4f6; color: #374151; border: none; padding: 10px 24px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer;">Cancel</button>
+                            <button onclick="confirmOverwrite()" style="flex:1; background: #d97706; color: #fff; border: none; padding: 10px 24px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer;">Yes, Overwrite</button>
+                        </div>
+                    `;
+                    
+                    overlay.appendChild(box);
+                    document.body.appendChild(overlay);
+                    document.body.style.overflow = 'hidden';
+                });
+
+                function confirmOverwrite() {
+                    const form = document.getElementById('quote-form');
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'confirm_overwrite';
+                    input.value = '1';
+                    form.appendChild(input);
+                    form.submit();
+                }
+            </script>
+        @endif
+
         @if(!session('success'))
 
         <form id="quote-form" method="POST" action="{{ route('vendors.quote.submit', $rfq->vendor_token) }}">
@@ -118,22 +162,22 @@
                     <div class="card-desc">Please provide your company details and quotation for the items below.</div>
                 </div>
                 <div class="card-body">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-                        <div class="form-group">
-                            <label class="form-label flex-between">
-                                <span>Company Name *</span>
-                                <a href="#" onclick="openVendorModal(); return false;" style="font-size:12px; color:var(--primary); text-decoration:none; font-weight:600;">Select from Catalog</a>
-                            </label>
-                            <input type="text" class="form-control" name="vendor_name" id="vendor_name_input" required placeholder="PT. ABC XYZ">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Email *</label>
-                            <input type="email" class="form-control" name="email" id="vendor_contact" required placeholder="email@company.com">
-                        </div>
+                    <div class="form-group" style="margin-bottom:16px;">
+                        <label class="form-label flex-between">
+                            <span>Company Name *</span>
+                            <a href="#" onclick="openVendorModal(); return false;" style="font-size:12px; color:#3b5bdb; text-decoration:underline;">Select from Catalog</a>
+                        </label>
+                        <input type="text" class="form-control" name="vendor_name" id="vendor_name_input" value="{{ old('vendor_name') }}" required placeholder="Enter vendor name manually or select from catalog">
                     </div>
-                    <div class="form-group" style="margin-bottom:0;">
-                        <label class="form-label">Company Location / Address</label>
-                        <input type="text" class="form-control" name="vendor_location" id="vendor_location" placeholder="Jakarta, Indonesia">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label class="form-label">Company Location / Address</label>
+                            <input type="text" class="form-control" name="vendor_location" id="vendor_location" value="{{ old('vendor_location') }}" placeholder="Jakarta, Indonesia">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label class="form-label">Email *</label>
+                            <input type="email" class="form-control" name="email" id="vendor_contact" value="{{ old('email') }}" required placeholder="email@company.com" oninvalid="this.setCustomValidity('Email must contain \'@\'')" oninput="this.setCustomValidity('')">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -172,16 +216,16 @@
                                                 </td>
                                                 <td>
                                                     <div style="display:flex;align-items:center;gap:6px;">
-                                                        <input type="number" step="0.01" class="form-control" name="items[{{ $idx }}][quantity]" value="{{ $item->quantity }}" required style="width:80px; text-align:center;" readonly>
+                                                        <input type="number" step="0.01" class="form-control" name="items[{{ $idx }}][quantity]" value="{{ old('items.'.$idx.'.quantity', $item->quantity) }}" required style="width:80px; text-align:center;" readonly>
                                                         <select class="form-control" name="items[{{ $idx }}][unit]" required style="width:85px; padding:8px;">
                                                             @foreach(['Pcs', 'Unit', 'Box', 'Kg', 'Liter', 'Meter', 'Roll', 'Set', 'Lot', 'Jasa', 'Pack'] as $u)
-                                                                <option value="{{ $u }}" {{ strtolower($item->unit) == strtolower($u) ? 'selected' : '' }}>{{ $u }}</option>
+                                                                <option value="{{ $u }}" {{ (old('items.'.$idx.'.unit') ?? strtolower($item->unit)) == strtolower($u) ? 'selected' : '' }}>{{ $u }}</option>
                                                             @endforeach
                                                         </select>
                                                     </div>
                                                 </td>
                                                 <td>
-                                                    <input type="text" inputmode="decimal" class="form-control price-input" name="items[{{ $idx }}][price]" required placeholder="Rp. 0" oninput="formatPriceInput(this)">
+                                                    <input type="text" inputmode="decimal" class="form-control price-input" name="items[{{ $idx }}][price]" value="{{ old('items.'.$idx.'.price') }}" required placeholder="Rp. 0" oninput="formatPriceInput(this)">
                                                 </td>
                                             </tr>
                                             @php $idx++; @endphp
@@ -198,16 +242,16 @@
                                             </td>
                                             <td>
                                                 <div style="display:flex;align-items:center;gap:6px;">
-                                                    <input type="number" step="0.01" class="form-control" name="items[{{ $idx }}][quantity]" value="{{ $item->quantity }}" required style="width:80px; text-align:center;">
+                                                    <input type="number" step="0.01" class="form-control" name="items[{{ $idx }}][quantity]" value="{{ old('items.'.$idx.'.quantity', $item->quantity) }}" required style="width:80px; text-align:center;">
                                                     <select class="form-control" name="items[{{ $idx }}][unit]" required style="width:85px; padding:8px;">
                                                         @foreach(['Pcs', 'Unit', 'Box', 'Kg', 'Liter', 'Meter', 'Roll', 'Set', 'Lot', 'Jasa', 'Pack'] as $u)
-                                                            <option value="{{ $u }}" {{ strtolower($item->unit) == strtolower($u) ? 'selected' : '' }}>{{ $u }}</option>
+                                                            <option value="{{ $u }}" {{ (old('items.'.$idx.'.unit') ?? strtolower($item->unit)) == strtolower($u) ? 'selected' : '' }}>{{ $u }}</option>
                                                         @endforeach
                                                     </select>
                                                 </div>
                                             </td>
                                             <td>
-                                                <input type="text" inputmode="decimal" class="form-control price-input" name="items[{{ $idx }}][price]" required placeholder="Rp. 0" oninput="formatPriceInput(this)">
+                                                <input type="text" inputmode="decimal" class="form-control price-input" name="items[{{ $idx }}][price]" value="{{ old('items.'.$idx.'.price') }}" required placeholder="Rp. 0" oninput="formatPriceInput(this)">
                                             </td>
                                         </tr>
                                         @php $idx++; @endphp
@@ -220,7 +264,7 @@
                 <div class="card-body" style="border-top:1px solid var(--border);">
                     <div class="form-group" style="margin-bottom:0;">
                         <label class="form-label">Remarks / Notes</label>
-                        <textarea class="form-control" name="note" rows="3" placeholder="Enter notes or conclusion for this quotation..."></textarea>
+                        <textarea class="form-control" name="note" rows="3" placeholder="Enter notes or conclusion for this quotation...">{{ old('note') }}</textarea>
                     </div>
                 </div>
                 <div class="card-body" style="background:#f9fafb; border-top:1px solid var(--border); text-align:right;">

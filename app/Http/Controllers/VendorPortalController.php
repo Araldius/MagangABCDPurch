@@ -101,6 +101,10 @@ class VendorPortalController extends Controller
             ->where('vendor_id', $vendor->id)
             ->first();
 
+        if ($quotation && !$request->has('confirm_overwrite')) {
+            return back()->withInput()->with('overwrite_warning', 'You have previously submitted a quotation for this request. Do you want to overwrite your previous submission?');
+        }
+
         if ($quotation) {
             // Update
             $quotation->update([
