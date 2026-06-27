@@ -213,12 +213,20 @@
                                                     <strong>{{ $item->name ?? $item->item_name }}</strong>
                                                     <input type="hidden" name="items[{{ $idx }}][item_id]" value="{{ $item->id }}">
                                                     <div style="color:var(--text-muted); font-size:12px; margin-top:4px;">{{ $item->specification ?? '-' }}</div>
+                                                    <div style="margin-top:8px;">
+                                                        <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
+                                                            <input type="checkbox" class="diff-toggle" onchange="toggleDiff(this, {{ $idx }})">
+                                                            <span>Terdapat perbedaan Spesifikasi/Unit?</span>
+                                                        </label>
+                                                        <div id="diff-alert-{{ $idx }}" style="display:none;margin-top:6px;padding:6px 10px;background:#fef3c7;color:#d97706;border-radius:6px;font-size:11px;line-height:1.4;">
+                                                            <strong>Peringatan:</strong> Jelaskan detail perbedaannya secara spesifik pada kotak "Remarks / Notes" di bagian bawah.
+                                                        </div>
+                                                    </div>
                                                 </td>
                                                 <td>
                                                     <div style="display:flex;align-items:center;gap:6px;">
                                                         <input type="number" step="0.01" class="form-control" name="items[{{ $idx }}][quantity]" value="{{ old('items.'.$idx.'.quantity', $item->quantity) }}" required style="width:80px; text-align:center;" readonly>
-                                                        <select class="form-control" name="items[{{ $idx }}][unit]" required style="width:85px; padding:8px;">
-                                                            @foreach(['Pcs', 'Unit', 'Box', 'Kg', 'Liter', 'Meter', 'Roll', 'Set', 'Lot', 'Jasa', 'Pack'] as $u)
+                                                            <select class="form-control" name="items[{{ $idx }}][unit]" required style="width:85px; padding:8px;" onchange="checkUnitChange(this, {{ $idx }}, '{{ strtolower($item->unit) }}')">                                                            @foreach(['Pcs', 'Unit', 'Box', 'Kg', 'Liter', 'Meter', 'Roll', 'Set', 'Lot', 'Jasa', 'Pack'] as $u)
                                                                 <option value="{{ $u }}" {{ (old('items.'.$idx.'.unit') ?? strtolower($item->unit)) == strtolower($u) ? 'selected' : '' }}>{{ $u }}</option>
                                                             @endforeach
                                                         </select>
@@ -239,6 +247,15 @@
                                                 <strong>{{ $item->name ?? $item->item_name }}</strong>
                                                 <input type="hidden" name="items[{{ $idx }}][item_id]" value="{{ $item->id }}">
                                                 <div style="color:var(--text-muted); font-size:12px; margin-top:4px;">{{ $item->specification ?? '-' }}</div>
+                                                <div style="margin-top:8px;">
+                                                    <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
+                                                        <input type="checkbox" class="diff-toggle" onchange="toggleDiff(this, {{ $idx }})">
+                                                        <span>Terdapat perbedaan Spesifikasi/Unit?</span>
+                                                    </label>
+                                                    <div id="diff-alert-{{ $idx }}" style="display:none;margin-top:6px;padding:6px 10px;background:#fef3c7;color:#d97706;border-radius:6px;font-size:11px;line-height:1.4;">
+                                                        <strong>Peringatan:</strong> Jelaskan detail perbedaannya secara spesifik pada kotak "Remarks / Notes" di bagian bawah.
+                                                    </div>
+                                                </div>
                                             </td>
                                             <td>
                                                 <div style="display:flex;align-items:center;gap:6px;">
@@ -413,6 +430,36 @@
                     input.value = parsePriceValue(input.value);
                 });
             });
+            function toggleDiff(checkbox, idx) {
+                const alertBox = document.getElementById('diff-alert-' + idx);
+                alertBox.style.display = checkbox.checked ? 'block' : 'none';
+                
+                // Jika ada satu saja item yang beda, kotak "Notes" global di bawah akan menjadi REQUIRED
+                const anyChecked = document.querySelectorAll('.diff-toggle:checked').length > 0;
+                const globalNote = document.querySelector('textarea[name="note"]');
+                
+                if (globalNote) {
+                    globalNote.required = anyChecked;
+                    if (anyChecked) {
+                        globalNote.placeholder = "WAJIB DIISI: Jelaskan perbedaan spesifikasi/unit pada item yang Anda ubah...";
+                        globalNote.style.border = "1px solid #ef4444";
+                    } else {
+                        globalNote.placeholder = "Enter notes or conclusion for this quotation...";
+                        globalNote.style.border = "1px solid #d1d5db";
+                    }
+                }
+            }
+
+            // Ter-trigger otomatis jika Vendor mengganti unit di dropdown
+            function checkUnitChange(selectObj, idx, originalUnit) {
+                const toggle = document.querySelector(`.diff-toggle[onchange*="${idx}"]`);
+                if (toggle) {
+                    if (selectObj.value.toLowerCase() !== originalUnit.toLowerCase()) {
+                        toggle.checked = true;
+                    }
+                    toggleDiff(toggle, idx);
+                }
+            }
         </script>
     </div>
 </body>

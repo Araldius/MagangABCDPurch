@@ -202,6 +202,14 @@
                         Ø Cancel Request
                     </button>
                 </form>
+                <form id="detail-reopen-form" method="POST" action="{{ route('requests.reopen') }}" style="display:none; margin:0">
+                    @csrf
+                    <input type="hidden" name="id" id="reopen-id">
+                    <input type="hidden" name="type" id="reopen-type">
+                    <button type="submit" onclick="return confirm('Kembalikan status ke Vendor Selection untuk memperpanjang waktu pengadaan (Link Vendor akan otomatis aktif kembali)?');" style="padding:7px 18px;background:#3b82f6;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+                        ↺ Re-open (Extend Time)
+                    </button>
+                </form>
                 <a id="detail-add-quotation-btn" href="#"
                     style="display:none;padding:7px 18px;background:#f8fafc;color:#475569;border:1px solid #cbd5e1;border-radius:7px;font-size:13px;font-weight:600;text-decoration:none;align-items:center;gap:6px">
                     + Add Quotation
@@ -453,6 +461,8 @@ function openPRDetail(id, category) {
     const approveForm = document.getElementById('detail-approve-form');
     const rejectForm = document.getElementById('detail-reject-form');
     const cancelForm = document.getElementById('detail-cancel-form');
+    const reopenForm = document.getElementById('detail-reopen-form');
+    if (reopenForm) reopenForm.style.display = 'none';
     if (approveForm) approveForm.style.display = 'none';
     if (rejectForm) rejectForm.style.display = 'none';
     if (cancelForm) cancelForm.style.display = 'none';
@@ -482,6 +492,12 @@ function openPRDetail(id, category) {
                 cancelForm.style.display = 'block';
                 document.getElementById('cancel-id').value = pr.id;
                 document.getElementById('cancel-type').value = category;
+            }
+        } else if (pr.status === 'completed') {
+            if (reopenForm) {
+                reopenForm.style.display = 'block';
+                document.getElementById('reopen-id').value = pr.id;
+                document.getElementById('reopen-type').value = category;
             }
         }
     }

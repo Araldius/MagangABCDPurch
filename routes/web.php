@@ -38,6 +38,7 @@ Route::middleware('auth')->group(function () {
     Route::post('request/approve',          [PurchaseRequestController::class, 'approve'])->name('requests.approve');
     Route::post('request/reject',           [PurchaseRequestController::class, 'reject'])->name('requests.reject');
     Route::post('request/cancel',           [PurchaseRequestController::class, 'cancel'])->name('requests.cancel');
+    Route::post('request/reopen', [PurchaseRequestController::class, 'reopen'])->name('requests.reopen');
 
     /* Procurement History */
     Route::prefix('procurement-history')->name('history.')->group(function () {

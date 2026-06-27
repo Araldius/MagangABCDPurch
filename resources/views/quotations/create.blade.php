@@ -138,8 +138,7 @@
                                 <td>
                                     <div style="display:flex;align-items:center;gap:6px;">
                                         <input type="number" step="0.01" class="form-control qty-input" name="items[{{ $idx }}][quantity]" value="{{ $item->quantity }}" required style="width:80px; text-align:center;" readonly>
-                                        <select class="form-control unit-select" name="items[{{ $idx }}][unit]" required style="width:75px; padding:6px; font-size:11.5px; height:auto;">
-                                            @foreach(['Pcs', 'Unit', 'Box', 'Kg', 'Liter', 'Meter', 'Roll', 'Set', 'Lot', 'Jasa', 'Pack'] as $u)
+                                            <select class="form-control" name="items[{{ $idx }}][unit]" required style="width:85px; padding:8px;" onchange="checkUnitChange(this, {{ $idx }}, '{{ strtolower($item->unit) }}')">                                            @foreach(['Pcs', 'Unit', 'Box', 'Kg', 'Liter', 'Meter', 'Roll', 'Set', 'Lot', 'Jasa', 'Pack'] as $u)
                                                 <option value="{{ $u }}" {{ strtolower($item->unit) == strtolower($u) ? 'selected' : '' }}>{{ $u }}</option>
                                             @endforeach
                                         </select>
@@ -395,5 +394,35 @@
             input.value = parsePriceValue(input.value);
         });
     });
+    function toggleDiff(checkbox, idx) {
+        const alertBox = document.getElementById('diff-alert-' + idx);
+        alertBox.style.display = checkbox.checked ? 'block' : 'none';
+        
+        // Jika ada satu saja item yang beda, kotak "Notes" global di bawah akan menjadi REQUIRED
+        const anyChecked = document.querySelectorAll('.diff-toggle:checked').length > 0;
+        const globalNote = document.querySelector('textarea[name="note"]');
+        
+        if (globalNote) {
+            globalNote.required = anyChecked;
+            if (anyChecked) {
+                globalNote.placeholder = "WAJIB DIISI: Jelaskan perbedaan spesifikasi/unit pada item yang Anda ubah...";
+                globalNote.style.border = "1px solid #ef4444";
+            } else {
+                globalNote.placeholder = "Enter notes or conclusion for this quotation...";
+                globalNote.style.border = "1px solid #d1d5db";
+            }
+        }
+    }
+
+    // Ter-trigger otomatis jika Vendor mengganti unit di dropdown
+    function checkUnitChange(selectObj, idx, originalUnit) {
+        const toggle = document.querySelector(`.diff-toggle[onchange*="${idx}"]`);
+        if (toggle) {
+            if (selectObj.value.toLowerCase() !== originalUnit.toLowerCase()) {
+                toggle.checked = true;
+            }
+            toggleDiff(toggle, idx);
+        }
+    }
 </script>
 @endsection
