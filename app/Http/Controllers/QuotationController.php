@@ -101,6 +101,26 @@ class QuotationController extends Controller
             'action_date' => now(),
         ]);
 
+                // Mulai: Kirim Notifikasi
+        $vendorModel = \App\Models\Vendor::find($vendorId);
+        if ($vendorModel) {
+            
+            // 1. Kirim ke User Pembuat PR/SR (Peminta Barang)
+            if ($pr && $pr->user_id) {
+                $userCreator = \App\Models\User::find($pr->user_id);
+                if ($userCreator) {
+                    $userCreator->notify(new \App\Notifications\VendorQuotationSubmitted($rfq, $vendorModel));
+                }
+            }
+            
+            // 2. Kirim juga ke Seluruh Tim Purchasing (termasuk Anda)
+            $purchasingUsers = \App\Models\User::where('role', 'purchasing')->get();
+            if ($purchasingUsers->count() > 0) {
+                \Illuminate\Support\Facades\Notification::send($purchasingUsers, new \App\Notifications\VendorQuotationSubmitted($rfq, $vendorModel));
+            }
+        }
+        // Selesai: Kirim Notifikasi
+
         return redirect()->route('dashboard')->with('success', 'Manual quotation saved successfully.');
     }
 

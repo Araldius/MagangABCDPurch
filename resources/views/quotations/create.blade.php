@@ -114,31 +114,43 @@
         <table class="item-table" style="margin:0;">
             <thead style="background:#f9fafb;">
                 <tr>
-                    <th style="width:50px;">NO</th>
-                    <th>ITEM NAME</th>
-                    <th>SPEC / NOTES</th>
+                    <th style="width:40px;">#</th>
+                    <th>NAMA ITEM</th>
                     <th style="width:100px;">REQUESTED QTY</th>
                     <th style="width:150px;">UNIT PRICE (Rp) <span class="req">*</span></th>
                     <th style="width:150px;text-align:right;">SUBTOTAL (Rp)</th>
                 </tr>
             </thead>
-            <tbody>
+                        <tbody>
                 @php $idx = 0; @endphp
                 @if($isService)
                     @foreach($rfq->serviceRequest->jobs as $job)
-                        <tr><td colspan="6" style="background:#f0f4f8; font-weight:700; color:#374151;">{{ $job->description ?? $job->job_description }}</td></tr>
+                        <tr><td colspan="5" style="background:#f0f4f8; font-weight:700; color:#374151;">{{ $job->description ?? $job->job_description }}</td></tr>
                         @foreach($job->items as $item)
                             <tr>
                                 <td>{{ ++$idx }}</td>
-                                <td style="font-weight:600; color:var(--primary);">
-                                    {{ $item->name ?? $item->item_name }}
+                                <td>
+                                    <strong>{{ $item->name ?? $item->item_name }}</strong>
                                     <input type="hidden" name="items[{{ $idx }}][item_id]" value="{{ $item->id }}">
+                                    <div style="color:var(--text-muted); font-size:12px; margin-top:4px;">{{ $item->specification ?? '-' }}</div>
+                                    <div style="margin-top:8px;">
+                                        <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
+                                            <input type="checkbox" class="diff-toggle" onchange="document.getElementById('spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'">
+                                            <span>Terdapat perbedaan Spesifikasi/Unit?</span>
+                                        </label>
+                                        <div id="spec-diff-{{ $idx }}" style="display:none;margin-top:8px;">
+                                            <input type="text" class="form-control" name="items[{{ $idx }}][specification]" placeholder="Tuliskan spesifikasi yang ditawarkan..." style="font-size:12px;padding:8px 10px;">
+                                        </div>
+                                    </div>
+                                    <div style="margin-top:8px;">
+                                        <textarea class="form-control" name="items[{{ $idx }}][notes]" rows="2" placeholder="Catatan untuk item ini (opsional)..." style="font-size:12px;padding:8px 10px;resize:vertical;"></textarea>
+                                    </div>
                                 </td>
-                                <td style="color:var(--text-muted); font-size:12px;">{{ $item->specification ?? '-' }}</td>
                                 <td>
                                     <div style="display:flex;align-items:center;gap:6px;">
                                         <input type="number" step="0.01" class="form-control qty-input" name="items[{{ $idx }}][quantity]" value="{{ $item->quantity }}" required style="width:80px; text-align:center;" readonly>
-                                            <select class="form-control" name="items[{{ $idx }}][unit]" required style="width:85px; padding:8px;" onchange="checkUnitChange(this, {{ $idx }}, '{{ strtolower($item->unit) }}')">                                            @foreach(['Pcs', 'Unit', 'Box', 'Kg', 'Liter', 'Meter', 'Roll', 'Set', 'Lot', 'Jasa', 'Pack'] as $u)
+                                        <select class="form-control" name="items[{{ $idx }}][unit]" required style="width:85px; padding:8px;" onchange="checkUnitChange(this, {{ $idx }}, '{{ strtolower($item->unit) }}')">
+                                            @foreach(['Pcs', 'Unit', 'Box', 'Kg', 'Liter', 'Meter', 'Roll', 'Set', 'Lot', 'Jasa', 'Pack'] as $u)
                                                 <option value="{{ $u }}" {{ strtolower($item->unit) == strtolower($u) ? 'selected' : '' }}>{{ $u }}</option>
                                             @endforeach
                                         </select>
@@ -155,15 +167,28 @@
                     @foreach($rfq->purchaseRequest->items as $item)
                         <tr>
                             <td>{{ ++$idx }}</td>
-                            <td style="font-weight:600; color:var(--primary);">
-                                {{ $item->name ?? $item->item_name }}
+                            <td>
+                                <strong>{{ $item->name ?? $item->item_name }}</strong>
                                 <input type="hidden" name="items[{{ $idx }}][item_id]" value="{{ $item->id }}">
+                                <div style="color:var(--text-muted); font-size:12px; margin-top:4px;">{{ $item->specification ?? '-' }}</div>
+                                <div style="margin-top:8px;">
+                                    <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
+                                        <input type="checkbox" class="diff-toggle" onchange="document.getElementById('spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'">
+                                        <span>Terdapat perbedaan Spesifikasi/Unit?</span>
+                                    </label>
+                                    <div id="spec-diff-{{ $idx }}" style="display:none;margin-top:8px;">
+                                        <input type="text" class="form-control" name="items[{{ $idx }}][specification]" placeholder="Tuliskan spesifikasi yang ditawarkan..." style="font-size:12px;padding:8px 10px;">
+                                    </div>
+                                </div>
+                                <div style="margin-top:8px;">
+                                    <textarea class="form-control" name="items[{{ $idx }}][notes]" rows="2" placeholder="Catatan untuk item ini (opsional)..." style="font-size:12px;padding:8px 10px;resize:vertical;"></textarea>
+                                </div>
                             </td>
-                            <td style="color:var(--text-muted); font-size:12px;">{{ $item->specification ?? '-' }}</td>
                             <td>
                                 <div style="display:flex;align-items:center;gap:6px;">
+                                    <!-- TIDAK ADA READONLY UNTUK GOODS -->
                                     <input type="number" step="0.01" class="form-control qty-input" name="items[{{ $idx }}][quantity]" value="{{ $item->quantity }}" required style="width:80px; text-align:center;">
-                                    <select class="form-control unit-select" name="items[{{ $idx }}][unit]" required style="width:75px; padding:6px; font-size:11.5px; height:auto;">
+                                    <select class="form-control" name="items[{{ $idx }}][unit]" required style="width:85px; padding:8px;" onchange="checkUnitChange(this, {{ $idx }}, '{{ strtolower($item->unit) }}')">
                                         @foreach(['Pcs', 'Unit', 'Box', 'Kg', 'Liter', 'Meter', 'Roll', 'Set', 'Lot', 'Jasa', 'Pack'] as $u)
                                             <option value="{{ $u }}" {{ strtolower($item->unit) == strtolower($u) ? 'selected' : '' }}>{{ $u }}</option>
                                         @endforeach
@@ -171,7 +196,7 @@
                                 </div>
                             </td>
                             <td>
-                                <input type="text" inputmode="decimal" class="form-control price-input" name="items[{{ $idx }}][price]" required placeholder="Rp.0" oninput="formatPriceInput(this)">
+                                <input type="text" inputmode="decimal" class="form-control price-input" name="items[{{ $idx }}][price]" required placeholder="Rp. 0" oninput="formatPriceInput(this)">
                             </td>
                             <td class="subtotal-cell" style="font-weight:700; font-family:monospace; font-size:14px; text-align:right;">Rp. 0</td>
                         </tr>
@@ -180,16 +205,11 @@
             </tbody>
             <tfoot>
                 <tr style="background:#f9fafb;">
-                    <td colspan="5" style="text-align:right; font-weight:700; color:var(--text-muted);">Grand Total</td>
+                    <td colspan="4" style="text-align:right; font-weight:700; color:var(--text-muted);">Grand Total</td>
                     <td id="grand-total" style="font-weight:800; font-size:16px; color:#111827; font-family:monospace; text-align:right;">Rp. 0</td>
                 </tr>
             </tfoot>
         </table>
-    </div>
-
-    <div style="padding:16px 20px;border-top:1px solid #f3f4f6;">
-        <label style="display:block; font-size:12px; font-weight:600; color:var(--text-main); margin-bottom:6px;">Remarks / Notes</label>
-        <textarea class="form-control" name="note" rows="3" placeholder="Enter notes or conclusion for this quotation..."></textarea>
     </div>
 
     <div style="padding:16px 20px;border-top:1px solid #f3f4f6;display:flex;justify-content:flex-end;gap:12px;background:#fafafa">

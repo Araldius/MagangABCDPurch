@@ -321,12 +321,17 @@
             if(data.notifications && data.notifications.length > 0) {
                 list.innerHTML = '';
                 data.notifications.forEach(n => {
-                    const d = n.data;
-                    const link = \`/vendor-selection?key=\${d.category}_\${d.pr_id || d.rfq_id}\`;
+                    const d = typeof n.data === 'string' ? JSON.parse(n.data) : n.data;
+                    let link = `/vendor-selection?key=${d.category}_${d.pr_id || d.rfq_id}`;
+                    
+                    if (n.type && n.type.includes('VendorSelectedNotification')) {
+                        const baseUrl = "{{ Auth::user()->role === 'purchasing' ? route('pr.list') : route('dashboard') }}";
+                        link = `${baseUrl}?open_pr=${d.pr_id}&category=${d.category}`;
+                    }
                     
                     // Check if it's new and unread, then show toast
                     if (n.read_at === null && !lastNotifIds.has(n.id) && lastNotifIds.size > 0) {
-                        showToast(\`<b>\${d.vendor_name}</b> \${d.message} <b>\${d.document_number}</b>\`, link);
+                        showToast('New Quotation', `<b>${d.vendor_name}</b> ${d.message} <b>${d.document_number}</b>`, link);
                     }
                     lastNotifIds.add(n.id);
 
@@ -335,14 +340,14 @@
                     item.onclick = () => {
                         markNotifAsRead(n.id, link);
                     };
-                    item.innerHTML = \`
+                    item.innerHTML = `
                         <div style="font-size:12px;color:#374151;line-height:1.4;">
-                            <span style="font-weight:600;color:#111827;">\${d.vendor_name}</span> \${d.message} <span style="font-family:monospace;font-weight:600;color:#3b5bdb;">\${d.document_number}</span>
+                            <span style="font-weight:600;color:#111827;">${d.vendor_name}</span> ${d.message} <span style="font-family:monospace;font-weight:600;color:#3b5bdb;">${d.document_number}</span>
                         </div>
                         <div style="font-size:10px;color:#9ca3af;margin-top:4px;">
-                            \${new Date(n.created_at).toLocaleString('id-ID', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+                            ${new Date(n.created_at).toLocaleString('id-ID', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}
                         </div>
-                    \`;
+                    `;
                     list.appendChild(item);
                 });
             } else {
@@ -377,6 +382,19 @@
         const dd = document.getElementById('notif-dropdown');
         if (dd && dd.style.display === 'block' && bell && !bell.contains(e.target) && !dd.contains(e.target)) {
             dd.style.display = 'none';
+        }
+    });
+
+    // Auto-open modal if URL contains open_pr
+    document.addEventListener('DOMContentLoaded', function() {
+        const params = new URLSearchParams(window.location.search);
+        const openPrId = params.get('open_pr');
+        const openCategory = params.get('category');
+        if(openPrId && openCategory) {
+            setTimeout(() => {
+                if(typeof openPRDetail === 'function') openPRDetail(openPrId, openCategory);
+                if(typeof openDetailModal === 'function') openDetailModal(openPrId, openCategory);
+            }, 500);
         }
     });
 

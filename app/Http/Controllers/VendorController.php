@@ -190,6 +190,19 @@ class VendorController extends Controller
             }
 
             $pr->update(['status' => 'completed']);
+            $userId = $pr->user_id ?? null;
+            if ($userId) {
+                $userCreator = \App\Models\User::find($userId);
+                if ($userCreator) {
+                    $userCreator->notify(new \App\Notifications\VendorSelectedNotification($pr, $isService ? 'service' : 'goods'));
+                }
+            }
+            
+            // Notify all purchasing users as well
+            $purchasingUsers = \App\Models\User::where('role', 'purchasing')->get();
+            if ($purchasingUsers->count() > 0) {
+                \Illuminate\Support\Facades\Notification::send($purchasingUsers, new \App\Notifications\VendorSelectedNotification($pr, $isService ? 'service' : 'goods'));
+            }
 
             return response()->json([
                 'success'   => true,

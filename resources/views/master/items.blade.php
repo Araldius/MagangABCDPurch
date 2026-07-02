@@ -8,7 +8,7 @@
         <p style="font-size:12.5px;color:#6b7280;margin:0">Manage catalog items for goods and service requests.</p>
     </div>
     <div style="display:flex;gap:10px;">
-        <a href="{{ route('items.export') }}" style="display:inline-block;padding:8px 14px;background:#fff;border:1px solid #e5e7eb;border-radius:6px;font-size:12.5px;font-weight:600;color:#374151;text-decoration:none;cursor:pointer;">Download Excel</a>
+        <a id="btn-export" href="{{ route('items.export') }}" style="display:inline-block;padding:8px 14px;background:#fff;border:1px solid #e5e7eb;border-radius:6px;font-size:12.5px;font-weight:600;color:#374151;text-decoration:none;cursor:pointer;">Download Excel</a>
         <button onclick="openAddModal()" style="padding:8px 14px;background:#111827;border:1px solid #111827;border-radius:6px;font-size:12.5px;font-weight:600;color:#fff;cursor:pointer;">+ Add New Item</button>
     </div>
 </div>
@@ -66,7 +66,9 @@
                         <button onclick='openEditModal(@json($item))' style="background:#fff;border:1px solid #e5e7eb;color:#374151;border-radius:6px;cursor:pointer;font-weight:600;font-size:11.5px;padding:4px 10px;margin-right:4px;">Edit</button>
                         <form id="archive-form-{{ $item->id }}" action="{{ route('items.archive', $item->id) }}" method="POST" style="display:inline-block;margin:0;">
                             @csrf
-                            <button type="button" class="btn-archive-item" data-id="{{ $item->id }}" data-archived="{{ $item->is_archived ? 'true' : 'false' }}" style="background:#fff;border:1px solid #e5e7eb;color:{{ $item->is_archived ? '#16a34a' : '#ef4444' }};border-radius:6px;cursor:pointer;font-weight:600;font-size:11.5px;padding:4px 10px;">
+                            <button type="button" 
+                                    onclick="if(confirm('Apakah Anda yakin ingin {{ $item->is_archived ? 'mengaktifkan kembali' : 'mengarsipkan' }} item ini?')) this.closest('form').submit();"
+                                    style="background:#fff;border:1px solid #e5e7eb;color:{{ $item->is_archived ? '#16a34a' : '#ef4444' }};border-radius:6px;cursor:pointer;font-weight:600;font-size:11.5px;padding:4px 10px;">
                                 {{ $item->is_archived ? 'Restore' : 'Archive' }}
                             </button>
                         </form>
@@ -210,6 +212,13 @@ textarea.form-control { height:auto; padding:8px 10px; resize:vertical; }
         if (q) newUrl.searchParams.set('search', searchInput.value);
         else newUrl.searchParams.delete('search');
         window.history.replaceState({}, '', newUrl);
+        const exportBtn = document.getElementById('btn-export');
+        if (exportBtn) {
+            const exportUrl = new URL('{{ route("items.export") }}');
+            if (status !== 'active') exportUrl.searchParams.set('status', status);
+            if (q) exportUrl.searchParams.set('search', q);
+            exportBtn.href = exportUrl.toString();
+        }
         
         let rows = Array.from(document.querySelectorAll('#item-tbody tr:not(#item-empty):not(#item-empty-js)'));
         let filtered = rows.filter(r => {

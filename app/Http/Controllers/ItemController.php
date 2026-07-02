@@ -89,8 +89,26 @@ class ItemController extends Controller
         return back()->with('success', "Item berhasil {$action}.");
     }
 
-    public function export()
+    public function export(Request $request)
     {
+        $search = $request->get('search');
+        $status = $request->get('status', 'active');
+        
+        $query = Item::query();
+        
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('item_name', 'like', "%{$search}%")
+                  ->orWhere('item_code', 'like', "%{$search}%")
+                  ->orWhere('specification', 'like', "%{$search}%");
+            });
+        }
+        
+        if ($status === 'active') {
+            $query->where('is_archived', false);
+        } elseif ($status === 'archived') {
+            $query->where('is_archived', true);
+        }
         $items = Item::orderBy('item_name')->get();
         $xlsFileName = 'master_items_' . date('Ymd_His') . '.xls';
         $headers = [
