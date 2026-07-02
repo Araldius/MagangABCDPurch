@@ -105,6 +105,8 @@ class VendorController extends Controller
             'selections.*.unit_price'  => ['required', 'numeric', 'min:0'],
             'selections.*.quantity'    => ['required', 'numeric', 'min:0'],
             'selections.*.notes'       => ['nullable', 'string'],
+            'selections.*.unit'        => ['nullable', 'string'],
+            'selections.*.specification'=> ['nullable', 'string'],
         ]);
 
         $isService = ($request->item_type === 'service');
@@ -171,6 +173,8 @@ class VendorController extends Controller
                         'final_price_per_item'      => $row['unit_price'],
                         'final_quantity'            => $row['quantity'],
                         'notes'                     => $row['notes'] ?? 'Selected',
+                        'final_unit'                => $row['unit'] ?? null,
+                        'final_specification'       => $row['specification'] ?? null,
                         'purchase_request_item_id'  => $isService ? null : $row['item_id'],
                         'service_request_item_id'   => $isService ? $row['item_id'] : null,
                     ]);

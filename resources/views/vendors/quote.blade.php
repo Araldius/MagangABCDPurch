@@ -209,6 +209,14 @@
                                     @foreach($rfq->serviceRequest->jobs as $job)
                                         <tr><td colspan="4" style="background:#f0f4f8; font-weight:700; color:#374151;">{{ $job->description ?? $job->job_description }}</td></tr>
                                         @foreach($job->items as $item)
+                                            @php
+                                                $ex = $existingItems[$item->id] ?? null;
+                                                $defQty = $ex ? $ex->offered_quantity : $item->quantity;
+                                                $defUnit = $ex ? $ex->offered_unit : $item->unit;
+                                                $defPrice = $ex ? $ex->offered_price_per_item : '';
+                                                $defSpec = $ex ? $ex->offered_specification : '';
+                                                $defNotes = $ex ? $ex->item_notes : '';
+                                            @endphp
                                             <tr>
                                                 <td>{{ $idx + 1 }}</td>
                                                 <td>
@@ -217,35 +225,35 @@
                                                     <div style="color:var(--text-muted); font-size:12px; margin-top:4px;">{{ $item->specification ?? '-' }}</div>
                                                     <div style="margin-top:8px;">
                                                         <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
-                                                            <input type="checkbox" class="diff-toggle" onchange="document.getElementById('spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'">
+                                                            <input type="checkbox" class="diff-toggle" onchange="document.getElementById('spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'" {{ $defSpec ? 'checked' : '' }}>
                                                             <span>Terdapat perbedaan Spesifikasi/Unit?</span>
                                                         </label>
-                                                        <div id="spec-diff-{{ $idx }}" style="display:none;margin-top:8px;">
-                                                            <input type="text" class="form-control" name="items[{{ $idx }}][specification]" placeholder="Tuliskan spesifikasi yang Anda tawarkan..." style="font-size:12px;padding:8px 10px;">
+                                                        <div id="spec-diff-{{ $idx }}" style="display:{{ $defSpec ? 'block' : 'none' }};margin-top:8px;">
+                                                            <input type="text" class="form-control" name="items[{{ $idx }}][specification]" value="{{ old('items.'.$idx.'.specification', $defSpec) }}" placeholder="Tuliskan spesifikasi yang Anda tawarkan..." style="font-size:12px;padding:8px 10px;">
                                                         </div>
                                                     </div>
                                                     <div style="margin-top:8px;">
-                                                        <textarea class="form-control" name="items[{{ $idx }}][notes]" rows="2" placeholder="Catatan untuk item ini (opsional)..." style="font-size:12px;padding:8px 10px;resize:vertical;"></textarea>
+                                                        <textarea class="form-control" name="items[{{ $idx }}][notes]" rows="2" placeholder="Catatan untuk item ini (opsional)..." style="font-size:12px;padding:8px 10px;resize:vertical;">{{ old('items.'.$idx.'.notes', $defNotes) }}</textarea>
                                                     </div>
                                                 </td>
                                                 <td>
                                                     <div style="font-size:11px;color:#6b7280;margin-bottom:4px;font-weight:600;">Target: {{ $item->quantity }} {{ $item->unit }}</div>
                                                     <div style="display:flex;align-items:center;gap:6px;">
-                                                        <input type="number" step="0.01" class="form-control" name="items[{{ $idx }}][quantity]" value="{{ old('items.'.$idx.'.quantity', $item->quantity) }}" required style="width:80px; text-align:center;" readonly>
+                                                        <input type="number" step="0.01" class="form-control" name="items[{{ $idx }}][quantity]" value="{{ old('items.'.$idx.'.quantity', $defQty) }}" required style="width:80px; text-align:center;" readonly>
                                                         <select class="form-control" name="items[{{ $idx }}][unit]" required style="width:85px; padding:8px;">
                                                             @php
                                                                 $baseUnits = ['Pcs', 'Unit', 'Box', 'Kg', 'Liter', 'Meter', 'Roll', 'Set', 'Lot', 'Jasa', 'Pack'];
-                                                                $itemUnit = ucfirst(strtolower($item->unit));
+                                                                $itemUnit = ucfirst(strtolower(trim($defUnit)));
                                                                 if (!in_array($itemUnit, $baseUnits)) array_unshift($baseUnits, $itemUnit);
                                                             @endphp
                                                             @foreach($baseUnits as $u)
-                                                                <option value="{{ $u }}" {{ (old('items.'.$idx.'.unit') ?? strtolower($item->unit)) == strtolower($u) ? 'selected' : '' }}>{{ $u }}</option>
+                                                                <option value="{{ $u }}" {{ strtolower(trim(old('items.'.$idx.'.unit') ?? $defUnit)) == strtolower(trim($u)) ? 'selected' : '' }}>{{ $u }}</option>
                                                             @endforeach
                                                         </select>
                                                     </div>
                                                 </td>
                                                 <td>
-                                                    <input type="text" inputmode="decimal" class="form-control price-input" name="items[{{ $idx }}][price]" value="{{ old('items.'.$idx.'.price') }}" required placeholder="Rp. 0" oninput="formatPriceInput(this)">
+                                                    <input type="text" inputmode="decimal" class="form-control price-input" name="items[{{ $idx }}][price]" value="{{ old('items.'.$idx.'.price', $defPrice) }}" required placeholder="Rp. 0" oninput="formatPriceInput(this)">
                                                 </td>
                                             </tr>
                                             @php $idx++; @endphp
@@ -253,6 +261,14 @@
                                     @endforeach
                                 @else
                                     @foreach($items as $item)
+                                        @php
+                                            $ex = $existingItems[$item->id] ?? null;
+                                            $defQty = $ex ? $ex->offered_quantity : $item->quantity;
+                                            $defUnit = $ex ? $ex->offered_unit : $item->unit;
+                                            $defPrice = $ex ? $ex->offered_price_per_item : '';
+                                            $defSpec = $ex ? $ex->offered_specification : '';
+                                            $defNotes = $ex ? $ex->item_notes : '';
+                                        @endphp
                                         <tr>
                                             <td>{{ $idx + 1 }}</td>
                                             <td>
@@ -261,35 +277,35 @@
                                                 <div style="color:var(--text-muted); font-size:12px; margin-top:4px;">{{ $item->specification ?? '-' }}</div>
                                                     <div style="margin-top:8px;">
                                                         <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
-                                                            <input type="checkbox" class="diff-toggle" onchange="document.getElementById('spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'">
+                                                            <input type="checkbox" class="diff-toggle" onchange="document.getElementById('spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'" {{ $defSpec ? 'checked' : '' }}>
                                                             <span>Terdapat perbedaan Spesifikasi/Unit?</span>
                                                         </label>
-                                                        <div id="spec-diff-{{ $idx }}" style="display:none;margin-top:8px;">
-                                                            <input type="text" class="form-control" name="items[{{ $idx }}][specification]" placeholder="Tuliskan spesifikasi yang Anda tawarkan..." style="font-size:12px;padding:8px 10px;">
+                                                        <div id="spec-diff-{{ $idx }}" style="display:{{ $defSpec ? 'block' : 'none' }};margin-top:8px;">
+                                                            <input type="text" class="form-control" name="items[{{ $idx }}][specification]" value="{{ old('items.'.$idx.'.specification', $defSpec) }}" placeholder="Tuliskan spesifikasi yang Anda tawarkan..." style="font-size:12px;padding:8px 10px;">
                                                         </div>
                                                     </div>
                                                     <div style="margin-top:8px;">
-                                                        <textarea class="form-control" name="items[{{ $idx }}][notes]" rows="2" placeholder="Catatan untuk item ini (opsional)..." style="font-size:12px;padding:8px 10px;resize:vertical;"></textarea>
+                                                        <textarea class="form-control" name="items[{{ $idx }}][notes]" rows="2" placeholder="Catatan untuk item ini (opsional)..." style="font-size:12px;padding:8px 10px;resize:vertical;">{{ old('items.'.$idx.'.notes', $defNotes) }}</textarea>
                                                     </div>
                                             </td>
                                             <td>
                                                 <div style="font-size:11px;color:#6b7280;margin-bottom:4px;font-weight:600;">Target: {{ $item->quantity }} {{ $item->unit }}</div>
                                                 <div style="display:flex;align-items:center;gap:6px;">
-                                                    <input type="number" step="0.01" class="form-control" name="items[{{ $idx }}][quantity]" value="{{ old('items.'.$idx.'.quantity', $item->quantity) }}" required style="width:80px; text-align:center;">
+                                                    <input type="number" step="0.01" class="form-control" name="items[{{ $idx }}][quantity]" value="{{ old('items.'.$idx.'.quantity', $defQty) }}" required style="width:80px; text-align:center;">
                                                     <select class="form-control" name="items[{{ $idx }}][unit]" required style="width:85px; padding:8px;">
                                                         @php
                                                             $baseUnits = ['Pcs', 'Unit', 'Box', 'Kg', 'Liter', 'Meter', 'Roll', 'Set', 'Lot', 'Jasa', 'Pack'];
-                                                            $itemUnit = ucfirst(strtolower($item->unit));
+                                                            $itemUnit = ucfirst(strtolower(trim($defUnit)));
                                                             if (!in_array($itemUnit, $baseUnits)) array_unshift($baseUnits, $itemUnit);
                                                         @endphp
                                                         @foreach($baseUnits as $u)
-                                                            <option value="{{ $u }}" {{ (old('items.'.$idx.'.unit') ?? strtolower($item->unit)) == strtolower($u) ? 'selected' : '' }}>{{ $u }}</option>
+                                                            <option value="{{ $u }}" {{ strtolower(trim(old('items.'.$idx.'.unit') ?? $defUnit)) == strtolower(trim($u)) ? 'selected' : '' }}>{{ $u }}</option>
                                                         @endforeach
                                                     </select>
                                                 </div>
                                             </td>
                                             <td>
-                                                <input type="text" inputmode="decimal" class="form-control price-input" name="items[{{ $idx }}][price]" value="{{ old('items.'.$idx.'.price') }}" required placeholder="Rp. 0" oninput="formatPriceInput(this)">
+                                                <input type="text" inputmode="decimal" class="form-control price-input" name="items[{{ $idx }}][price]" value="{{ old('items.'.$idx.'.price', $defPrice) }}" required placeholder="Rp. 0" oninput="formatPriceInput(this)">
                                             </td>
                                         </tr>
                                         @php $idx++; @endphp

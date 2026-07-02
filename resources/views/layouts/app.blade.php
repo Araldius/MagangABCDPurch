@@ -206,27 +206,11 @@
     </footer>
 </div>
 
-<!-- Toast Container -->
-<div id="toast-container" class="toast-container"></div>
 
-<!-- Global Confirm Modal -->
-<div id="global-confirm-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(2px);">
-    <div style="background:#fff;border-radius:12px;width:100%;max-width:400px;box-shadow:0 10px 25px rgba(0,0,0,0.1);">
-        <div style="padding:16px 20px;border-bottom:1px solid #f3f4f6;display:flex;justify-content:space-between;align-items:center;">
-            <div id="global-confirm-title" style="font-size:16px;font-weight:700;color:#111827;">Konfirmasi</div>
-            <button type="button" onclick="closeGlobalConfirm()" style="background:none;border:none;font-size:24px;color:#9ca3af;cursor:pointer;line-height:1;">&times;</button>
-        </div>
-        <div id="global-confirm-msg" style="padding:20px;font-size:14px;color:#374151;">
-            Apakah Anda yakin?
-        </div>
-        <div style="padding:16px 20px;border-top:1px solid #f3f4f6;display:flex;justify-content:flex-end;gap:12px;background:#fafafa;border-bottom-left-radius:12px;border-bottom-right-radius:12px;">
-            <button type="button" onclick="closeGlobalConfirm()" style="padding:8px 16px;background:#fff;border:1px solid #e5e7eb;border-radius:6px;font-size:12.5px;font-weight:600;color:#374151;cursor:pointer;">Cancel</button>
-            <button type="button" id="global-confirm-btn" onclick="executeGlobalConfirm()" style="padding:8px 16px;background:#111827;border:1px solid #111827;border-radius:6px;font-size:12.5px;font-weight:600;color:#fff;cursor:pointer;">Proceed</button>
-        </div>
-    </div>
-</div>
 
 @auth
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     let lastNotifIds = new Set();
     
@@ -235,68 +219,62 @@
         dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
     }
 
-    function showToast(title, message, link = null) {
-        const container = document.getElementById('toast-container');
-        const toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.innerHTML = `
-            <div style="display:flex;align-items:center;gap:10px;">
-                <div style="width:36px;height:36px;background:#e0e7ff;color:#4338ca;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </div>
-                <div>
-                    <div style="font-weight:600;color:#111827;font-size:13px;margin-bottom:2px;">${title}</div>
-                    <div style="color:#6b7280;font-size:12px;line-height:1.4;">${message}</div>
-                </div>
-            </div>
-        `;
-        if(link) {
-            toast.style.cursor = 'pointer';
-            toast.onclick = () => window.location.href = link;
-        }
-        container.appendChild(toast);
-        
-        // Trigger reflow for animation
-        setTimeout(() => toast.classList.add('show'), 10);
-        setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => toast.remove(), 300);
-        }, 5000);
+    function showToast(title, message, link = null, icon = 'success') {
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'bottom-end',
+            showConfirmButton: false,
+            timer: 4000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer)
+                toast.addEventListener('mouseleave', Swal.resumeTimer)
+                if (link) {
+                    toast.style.cursor = 'pointer';
+                    toast.onclick = () => window.location.href = link;
+                }
+            }
+        });
+
+        Toast.fire({
+            icon: icon,
+            title: `<span style="font-size:14px;font-weight:600;">${title}</span>`,
+            html: `<span style="font-size:12px;">${message}</span>`
+        });
     }
 
     document.addEventListener('DOMContentLoaded', function() {
         @if(session('success'))
-            showToast('Success', "{!! addslashes(session('success')) !!}");
+            showToast('Berhasil', "{!! addslashes(session('success')) !!}", null, 'success');
+        @endif
+        @if(session('error'))
+            showToast('Gagal', "{!! addslashes(session('error')) !!}", null, 'error');
         @endif
         @if($errors->any())
-            showToast('Validation Error', 'Terdapat error pada input Anda. Silakan periksa kembali.');
+            showToast('Validation Error', 'Terdapat error pada input Anda. Silakan periksa kembali.', null, 'warning');
         @endif
     });
 
-    let _globalConfirmCallback = null;
     function showConfirmModal(title, message, confirmText, confirmColor, onConfirm) {
-        document.getElementById('global-confirm-title').textContent = title;
-        document.getElementById('global-confirm-msg').innerHTML = message;
-        
-        const btn = document.getElementById('global-confirm-btn');
-        btn.textContent = confirmText;
-        btn.style.background = confirmColor;
-        btn.style.borderColor = confirmColor;
-        
-        _globalConfirmCallback = onConfirm;
-        document.getElementById('global-confirm-modal').style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-    }
-
-    function closeGlobalConfirm() {
-        document.getElementById('global-confirm-modal').style.display = 'none';
-        document.body.style.overflow = '';
-        _globalConfirmCallback = null;
-    }
-
-    function executeGlobalConfirm() {
-        if (_globalConfirmCallback) _globalConfirmCallback();
-        closeGlobalConfirm();
+        Swal.fire({
+            title: `<span style="font-size:18px;font-weight:700;">${title}</span>`,
+            html: `<span style="font-size:14px;">${message}</span>`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: confirmColor || '#3b82f6',
+            cancelButtonColor: '#9ca3af',
+            confirmButtonText: confirmText || 'Lanjutkan',
+            cancelButtonText: 'Batal',
+            customClass: {
+                popup: 'swal-custom-popup',
+                confirmButton: 'swal-custom-btn',
+                cancelButton: 'swal-custom-btn'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                if (onConfirm) onConfirm();
+            }
+        });
     }
 
     function fetchNotifications() {

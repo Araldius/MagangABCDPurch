@@ -38,7 +38,16 @@ class VendorPortalController extends Controller
 
         $vendors = Vendor::select('id', 'vendor_name', 'email', 'location')->get();
 
-        return view('vendors.quote', compact('rfq', 'items', 'neededDate', 'closedDate', 'vendors', 'closedReason'));
+        $quotation = Quotation::with('details')->where('rfq_id', $rfq->id)->where('vendor_id', $rfq->vendor_id)->first();
+        $existingItems = [];
+        if ($quotation) {
+            foreach ($quotation->details as $det) {
+                $k = $det->purchase_request_item_id ?: $det->service_request_item_id;
+                $existingItems[$k] = $det;
+            }
+        }
+
+        return view('vendors.quote', compact('rfq', 'items', 'neededDate', 'closedDate', 'vendors', 'closedReason', 'existingItems'));
     }
 
     public function submit(Request $request, $token)

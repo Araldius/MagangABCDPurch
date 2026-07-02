@@ -394,6 +394,9 @@ function openPRDetail(id, category) {
                 unit_price: parseFloat(si.final_price_per_item) || 0,
                 qty:        parseInt(si.final_quantity) || 0,
                 total:      (parseFloat(si.final_price_per_item)||0) * (parseInt(si.final_quantity)||0),
+                unit:       si.final_unit || null,
+                spec:       si.final_specification || null,
+                notes:      si.notes || null,
             };
         });
     });
@@ -501,20 +504,6 @@ function openPRDetail(id, category) {
             }
         }
     }
-    
-    function triggerCancel(btn) {
-        const form = btn.closest('form');
-        showConfirmModal('Batalkan Request', 'Apakah Anda yakin ingin membatalkan Request ini?', 'Batalkan', '#f59e0b', function() {
-            form.submit();
-        });
-    }
-
-    function triggerReopen(btn) {
-        const form = btn.closest('form');
-        showConfirmModal('Kembalikan Status', 'Kembalikan status ke Vendor Selection untuk memperpanjang waktu pengadaan (Link Vendor akan otomatis aktif kembali)?', 'Lanjutkan', '#3b82f6', function() {
-            form.submit();
-        });
-    }
 
     // ── Progress bar ──
     const _steps = [{label:'PR\nSubmitted'},{label:'Vendor\nSearch'},{label:'Vendor\nSelection'},{label:'Completed'}];
@@ -568,10 +557,19 @@ function openPRDetail(id, category) {
                     <td style="${tdS};color:#9ca3af">${i+1}</td>
                     <td style="${tdS};font-weight:600;color:#111827;font-family:monospace">${it.item_id || '—'}</td>
                     <td style="${tdS};font-weight:600;color:#111827">${it.item_name || it.name || '-'}</td>
-                    <td style="${tdS};color:#6b7280;font-size:11.5px">${it.item_notes || it.description || '-'}</td>
-                    <td style="${tdS};color:#6b7280;font-size:11.5px">${it.specification || '-'}</td>
+                    <td style="${tdS};color:#6b7280;font-size:11.5px">
+                        ${it.item_notes || it.description || '-'}
+                        ${vs && vs.notes && vs.notes !== 'Selected' ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px">VENDOR NOTE</div>` : ''}
+                    </td>
+                    <td style="${tdS};color:#6b7280;font-size:11.5px">
+                        ${vs && vs.spec ? vs.spec : (it.specification || '-')}
+                        ${vs && vs.spec && vs.spec.toLowerCase() !== (it.specification||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Spec: ${it.specification || '-'}">DIFFERS</div>` : ''}
+                    </td>
                     <td style="${tdS};text-align:right;font-weight:600;color:#111827">${it.quantity || 0}</td>
-                    <td style="${tdS};color:#6b7280">${it.unit || '-'}</td>
+                    <td style="${tdS};color:#6b7280">
+                        ${vs && vs.unit ? vs.unit : (it.unit || '-')}
+                        ${vs && vs.unit && vs.unit.toLowerCase() !== (it.unit||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Unit: ${it.unit || '-'}">DIFFERS</div>` : ''}
+                    </td>
                     ${hasVS ? `
                     <td style="${tdS};font-family:monospace;font-weight:600;color:#111827;text-align:right;">${vs ? fmtRp(vs.unit_price) : '-'}</td>
                     <td style="${tdS};font-family:monospace;font-weight:700;color:#111827;text-align:right;">${vs ? fmtRp(vs.total) : '-'}</td>
@@ -622,10 +620,19 @@ function openPRDetail(id, category) {
                 <td style="${tdS}">${i+1}</td>
                 <td style="${tdS};font-family:monospace;color:#3b5bdb;font-weight:600">${it.item_id || '—'}</td>
                 <td style="${tdS};font-weight:500;color:#111827">${it.item_name || it.name || '—'}</td>
-                <td style="${tdS};color:#6b7280;font-size:11.5px">${it.item_notes || '—'}</td>
-                <td style="${tdS};color:#6b7280;font-size:11.5px">${it.specification || '—'}</td>
+                <td style="${tdS};color:#6b7280;font-size:11.5px">
+                    ${it.item_notes || '—'}
+                    ${vs && vs.notes && vs.notes !== 'Selected' ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px">VENDOR NOTE</div>` : ''}
+                </td>
+                <td style="${tdS};color:#6b7280;font-size:11.5px">
+                    ${vs && vs.spec ? vs.spec : (it.specification || '—')}
+                    ${vs && vs.spec && vs.spec.toLowerCase() !== (it.specification||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Spec: ${it.specification || '-'}">DIFFERS</div>` : ''}
+                </td>
                 <td style="${tdS};text-align:right;font-weight:600">${it.quantity || 0}</td>
-                <td style="${tdS};color:#6b7280">${it.unit || '—'}</td>
+                <td style="${tdS};color:#6b7280">
+                    ${vs && vs.unit ? vs.unit : (it.unit || '—')}
+                    ${vs && vs.unit && vs.unit.toLowerCase() !== (it.unit||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Unit: ${it.unit || '-'}">DIFFERS</div>` : ''}
+                </td>
                 ${hasPriceCol ? `
                 <td style="${tdS};font-family:monospace;font-weight:600">${vs ? fmtRp(vs.unit_price) : '—'}</td>
                 <td style="${tdS};font-family:monospace;font-weight:700;color:#111827">${vs ? fmtRp(vs.total) : '—'}</td>
@@ -783,6 +790,20 @@ function copyVendorLink() {
     setTimeout(() => {
         btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"/></svg> Copy`;
     }, 2000);
+}
+
+function triggerCancel(btn) {
+    const form = btn.closest('form');
+    showConfirmModal('Batalkan Request', 'Apakah Anda yakin ingin membatalkan Request ini?', 'Batalkan', '#f59e0b', function() {
+        form.submit();
+    });
+}
+
+function triggerReopen(btn) {
+    const form = btn.closest('form');
+    showConfirmModal('Kembalikan Status', 'Kembalikan status ke Vendor Selection untuk memperpanjang waktu pengadaan (Link Vendor akan otomatis aktif kembali)?', 'Lanjutkan', '#3b82f6', function() {
+        form.submit();
+    });
 }
 
 document.addEventListener('DOMContentLoaded', applyFilters);

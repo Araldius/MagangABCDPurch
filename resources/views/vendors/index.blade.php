@@ -75,24 +75,6 @@ h1 { font-size:20px;font-weight:700;color:#111827;margin:0 0 3px }
  
     {{-- Requirements table --}}
     <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:14px;overflow:hidden;">
-        <div id="last-selected-info" style="display:none;background:#fefce8;border:1px solid #fef08a;border-radius:12px;padding:16px 20px;margin-bottom:14px;align-items:center;justify-content:space-between">
-            <div>
-                <div style="font-size:13.5px;font-weight:700;color:#854d0e;display:flex;align-items:center;gap:6px">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> Previous Selection
-                </div>
-                <div style="font-size:12px;color:#a16207;margin-top:2px">You have previously selected vendors for this request. The progress is automatically restored below.</div>
-            </div>
-            <div style="text-align:right">
-                <div style="font-size:11px;font-weight:700;color:#854d0e;text-transform:uppercase;margin-bottom:4px">Progress</div>
-                <div style="display:flex;align-items:center;gap:10px">
-                    <div style="width:120px;height:8px;background:#fef08a;border-radius:999px;overflow:hidden">
-                        <div id="ls-progress-bar" style="height:100%;background:#eab308;width:0%;transition:width 0.3s"></div>
-                    </div>
-                    <div id="ls-progress-text" style="font-size:12px;font-weight:700;color:#a16207">0%</div>
-                </div>
-            </div>
-        </div>
-
         <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #f3f4f6">
             <div>
                 <div style="font-size:13.5px;font-weight:700;color:#111827">Item / Service Requirements</div>
@@ -286,8 +268,8 @@ function loadPR(uniqueKey) {
                                     vendor_id: sel.vendor_id,
                                     item_id: pItem.id,
                                     item_name: pItem.item_name || pItem.name,
-                                    unit_price: parseFloat(si.unit_price),
-                                    quantity: parseFloat(si.quantity),
+                                    unit_price: parseFloat(si.final_price_per_item || si.unit_price || 0),
+                                    quantity: parseFloat(si.final_quantity || si.quantity || 0),
                                     unit: si.offered_unit || pItem.unit,
                                     subtotal: parseFloat(si.quantity) * parseFloat(si.unit_price),
                                     notes: si.notes || '',
@@ -443,6 +425,16 @@ function renderVendorCards(){
         const vName = v.vendor_name || v.name || 'Vendor';
         const off = vendorOffers[v.id];
 
+        let wasPreviouslySelected = false;
+        if (currentPR.rfqs) {
+            currentPR.rfqs.forEach(rfq => {
+                if (rfq.vendor_selections && rfq.vendor_selections.some(sel => sel.vendor_id == v.id)) {
+                    wasPreviouslySelected = true;
+                }
+            });
+        }
+        const prevBadge = wasPreviouslySelected ? `<span style="background:#fef08a;color:#854d0e;padding:2px 6px;border-radius:4px;font-size:9.5px;font-weight:700;margin-left:8px;display:inline-block;">SELECTED PREVIOUSLY</span>` : '';
+
         let contentHtml = '';
         let isVendorChecked = false;
 
@@ -473,7 +465,9 @@ function renderVendorCards(){
 
         return `<div style="background:#f9fafb;border:1px solid ${isVendorChecked?'#3b5bdb':'#e5e7eb'};border-radius:12px;overflow:hidden;transition:all .15s">
             <div style="padding:12px 14px;border-bottom:1px solid #e5e7eb;background:${isVendorChecked?'#eff6ff':'#fff'};display:flex;justify-content:space-between;align-items:center;">
-                <div style="font-size:13.5px;font-weight:700;color:${isVendorChecked?'#1d4ed8':'#111827'}">${vName}</div>
+                <div style="font-size:13.5px;font-weight:700;color:${isVendorChecked?'#1d4ed8':'#111827'};display:flex;align-items:center;">
+                    ${vName} ${prevBadge}
+                </div>
             </div>
             <div style="padding:10px;max-height:650px;overflow-y:auto">${contentHtml}</div>
             <div style="padding:10px 14px;border-top:1px solid #e5e7eb;background:#fff;font-size:12.5px;font-weight:700;color:#111827">Total Quote <span id="vendor-total-${v.id}" style="float:right">${fmt(0)}</span></div>
@@ -564,11 +558,14 @@ function renderItemCard(v, item, off) {
             <div style="color:#9ca3af">Spec</div>
             <div style="color:#111827;line-height:1.2">
                 ${o.specification_offered ? o.specification_offered : (item.specification || '-')}
-                ${o.specification_offered && item.specification && o.specification_offered.toLowerCase() !== item.specification.toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-left:4px" title="Original PR Spec: ${item.specification}">DIFFERS</div>` : ''}
+                ${o.specification_offered && (!item.specification || o.specification_offered.toLowerCase() !== item.specification.toLowerCase()) ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-left:4px" title="Original PR Spec: ${item.specification || '-'}">DIFFERS</div>` : ''}
             </div>
 
             <div style="color:#9ca3af">Notes:</div>
-            <div style="color:#6b7280;font-style:italic">${combinedNotes}</div>
+            <div style="color:#6b7280;font-style:italic">
+                ${combinedNotes}
+                ${o.notes ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-left:4px">VENDOR NOTE</div>` : ''}
+            </div>
 
             <div style="color:#9ca3af">Subtotal</div>
             <div style="font-weight:700;color:#111827">${isSelected && !isService ? fmt(selections[`${v.id}_${item.id}`].quantity * o.unit_price) : fmt(o.qty_offered * o.unit_price)}</div>
@@ -601,7 +598,7 @@ function toggleVendorJob(vId, jIdx, isChecked) {
                     let remainingNeed = parseFloat(item.quantity) - qtyAlreadySelected;
                     let defaultBuyQty = Math.min(Math.max(1, remainingNeed), offer.qty_offered);
 
-                    selections[selKey] = { vendor_id: vId, item_id: item.id, item_name: item.item_name, unit_price: offer.unit_price, quantity: defaultBuyQty, unit: offer.unit_offered || item.unit, specification: offer.specification_offered || '' };
+                    selections[selKey] = { vendor_id: vId, item_id: item.id, item_name: item.item_name, unit_price: offer.unit_price, quantity: defaultBuyQty, unit: offer.unit_offered || item.unit, specification: offer.specification_offered || '', notes: offer.notes || '' };
                     selections[selKey].subtotal = defaultBuyQty * offer.unit_price;
                 }
             }
@@ -630,7 +627,7 @@ function toggleSelect(vId, itemId, forceRenderOnlyAtEnd = false) {
             let remainingNeed = parseFloat(item.quantity) - qtyAlreadySelected;
             let defaultBuyQty = Math.min(Math.max(1, remainingNeed), offer.qty_offered);
 
-            selections[selKey] = { vendor_id: vId, item_id: itemId, item_name: item.item_name, unit_price: offer.unit_price, quantity: defaultBuyQty, unit: offer.unit_offered || item.unit, specification: offer.specification_offered || '' };
+            selections[selKey] = { vendor_id: vId, item_id: itemId, item_name: item.item_name, unit_price: offer.unit_price, quantity: defaultBuyQty, unit: offer.unit_offered || item.unit, specification: offer.specification_offered || '', notes: offer.notes || '' };
             selections[selKey].subtotal = defaultBuyQty * offer.unit_price;
         }
     }
@@ -668,19 +665,6 @@ function updateCounts(){
         btn.style.opacity='1'; btn.style.pointerEvents='auto'; btn.style.background='#16a34a';
     } else {
         btn.style.opacity='.4'; btn.style.pointerEvents='none'; btn.style.background='#111827';
-    }
-    
-    // Update Last Selected Progress
-    const totalItems = currentPR ? currentPR.items.length : 1;
-    let pct = totalItems > 0 ? Math.round((itemsMet / totalItems) * 100) : 0;
-    
-    const lsInfo = document.getElementById('last-selected-info');
-    if (Object.keys(selections).length > 0) {
-        lsInfo.style.display = 'flex';
-        document.getElementById('ls-progress-bar').style.width = pct + '%';
-        document.getElementById('ls-progress-text').textContent = pct + '%';
-    } else {
-        lsInfo.style.display = 'none';
     }
 }
 

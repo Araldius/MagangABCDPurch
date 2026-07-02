@@ -453,6 +453,9 @@ function openDetailModal(id, category) {
                     unit_price: parseFloat(si.final_price_per_item) || 0,
                     qty:        parseInt(si.final_quantity) || 0,
                     total:      (parseFloat(si.final_price_per_item)||0) * (parseInt(si.final_quantity)||0),
+                    unit:       si.final_unit || null,
+                    spec:       si.final_specification || null,
+                    notes:      si.notes || null,
                 };
             }
         });
@@ -514,10 +517,19 @@ function openDetailModal(id, category) {
                     <td style="${tdStyle}">${i+1}</td>
                     <td style="${tdStyle}font-family:monospace;color:#3b5bdb;font-weight:600;">${it.item_id||'—'}</td>
                     <td style="${tdStyle}font-weight:500;">${it.item_name||it.name||'—'}</td>
-                    <td style="${tdStyle}color:#6b7280;font-size:11.5px;">${it.item_notes||it.description||'—'}</td>
-                    <td style="${tdStyle}color:#6b7280;font-size:11.5px;">${it.specification||'—'}</td>
+                    <td style="${tdStyle}color:#6b7280;font-size:11.5px;">
+                        ${it.item_notes||it.description||'—'}
+                        ${vs && vs.notes && vs.notes !== 'Selected' ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px">VENDOR NOTE</div>` : ''}
+                    </td>
+                    <td style="${tdStyle}color:#6b7280;font-size:11.5px;">
+                        ${vs && vs.spec ? vs.spec : (it.specification || '—')}
+                        ${vs && vs.spec && vs.spec.toLowerCase() !== (it.specification||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Spec: ${it.specification || '-'}">DIFFERS</div>` : ''}
+                    </td>
                     <td style="${tdStyle}text-align:right;font-weight:600;">${it.quantity}</td>
-                    <td style="${tdStyle}color:#6b7280;">${it.unit}</td>
+                    <td style="${tdStyle}color:#6b7280;">
+                        ${vs && vs.unit ? vs.unit : (it.unit || '—')}
+                        ${vs && vs.unit && vs.unit.toLowerCase() !== (it.unit||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Unit: ${it.unit || '-'}">DIFFERS</div>` : ''}
+                    </td>
                     ${hasVS ? `
                     <td style="${tdStyle}font-family:monospace;font-weight:600;color:#111827;">${vs ? fmtRp(vs.unit_price) : '—'}</td>
                     <td style="${tdStyle}font-family:monospace;font-weight:700;color:#111827;">${vs ? fmtRp(vs.total) : '—'}</td>
@@ -535,10 +547,19 @@ function openDetailModal(id, category) {
                 <td style="${tdStyle}">${i+1}</td>
                 <td style="${tdStyle}font-family:monospace;color:#3b5bdb;font-weight:600;">${it.item_id||it.item_code||'—'}</td>
                 <td style="${tdStyle}font-weight:500;">${it.item_name||it.name||'—'}</td>
-                <td style="${tdStyle}color:#6b7280;font-size:11.5px;">${it.item_notes||it.description||'—'}</td>
-                <td style="${tdStyle}color:#6b7280;font-size:11.5px;">${it.specification||'—'}</td>
+                <td style="${tdStyle}color:#6b7280;font-size:11.5px;">
+                    ${it.item_notes||it.description||'—'}
+                    ${vs && vs.notes && vs.notes !== 'Selected' ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px">VENDOR NOTE</div>` : ''}
+                </td>
+                <td style="${tdStyle}color:#6b7280;font-size:11.5px;">
+                    ${vs && vs.spec ? vs.spec : (it.specification || '—')}
+                    ${vs && vs.spec && vs.spec.toLowerCase() !== (it.specification||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Spec: ${it.specification || '-'}">DIFFERS</div>` : ''}
+                </td>
                 <td style="${tdStyle}text-align:right;font-weight:600;">${it.quantity}</td>
-                <td style="${tdStyle}color:#6b7280;">${it.unit}</td>
+                <td style="${tdStyle}color:#6b7280;">
+                    ${vs && vs.unit ? vs.unit : (it.unit || '—')}
+                    ${vs && vs.unit && vs.unit.toLowerCase() !== (it.unit||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Unit: ${it.unit || '-'}">DIFFERS</div>` : ''}
+                </td>
                 ${hasVS ? `
                 <td style="${tdStyle}font-family:monospace;font-weight:600;color:#111827;">${vs ? fmtRp(vs.unit_price) : '—'}</td>
                 <td style="${tdStyle}font-family:monospace;font-weight:700;color:#111827;">${vs ? fmtRp(vs.total) : '—'}</td>

@@ -67,7 +67,9 @@
                         <form id="archive-form-{{ $item->id }}" action="{{ route('items.archive', $item->id) }}" method="POST" style="display:inline-block;margin:0;">
                             @csrf
                             <button type="button" 
-                                    onclick="if(confirm('Apakah Anda yakin ingin {{ $item->is_archived ? 'mengaktifkan kembali' : 'mengarsipkan' }} item ini?')) this.closest('form').submit();"
+                                    class="btn-archive-item"
+                                    data-id="{{ $item->id }}"
+                                    data-archived="{{ $item->is_archived ? 'true' : 'false' }}"
                                     style="background:#fff;border:1px solid #e5e7eb;color:{{ $item->is_archived ? '#16a34a' : '#ef4444' }};border-radius:6px;cursor:pointer;font-weight:600;font-size:11.5px;padding:4px 10px;">
                                 {{ $item->is_archived ? 'Restore' : 'Archive' }}
                             </button>
