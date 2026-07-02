@@ -508,20 +508,21 @@ function renderItemCard(v, item, off) {
         }
     }
 
-    let unitBadge = '';
-    if (o.unit_offered && item.unit && o.unit_offered.toLowerCase() !== item.unit.toLowerCase()) {
-        unitBadge = `<span style="background:#fef08a;color:#854d0e;padding:2px 6px;border-radius:4px;font-size:9.5px;font-weight:700;margin-left:4px;">UNIT DIFFERS</span>`;
-    }
-
     const itemNotes = item.item_notes || item.notes || '';
     const offerNotes = o.notes || '';
     const combinedNotes = [itemNotes, offerNotes].filter(n => n && n.trim()).join(' - ') || 'No notes';
 
-    return `<div style="background:#fff;border:1px solid ${isSelected?'#3b5bdb':'#e5e7eb'};border-radius:8px;padding:14px;margin-bottom:12px;${!isService ? `cursor:${disableSel?'not-allowed':'pointer'}` : ''};opacity:${disableSel?'0.5':'1'};transition:all .15s"
+    const specDiffers = o.specification_offered && (!item.specification || o.specification_offered.toLowerCase() !== item.specification.toLowerCase());
+    const unitDiffers = o.unit_offered && item.unit && o.unit_offered.toLowerCase() !== item.unit.toLowerCase();
+
+    return `<div style="background:${specDiffers ? '#fef3c7' : '#fff'};border:1px solid ${isSelected?'#3b5bdb':(specDiffers ? '#fcd34d' : '#e5e7eb')};border-radius:8px;padding:14px;margin-bottom:12px;${!isService ? `cursor:${disableSel?'not-allowed':'pointer'}` : ''};opacity:${disableSel?'0.5':'1'};transition:all .15s"
         ${!isService && !disableSel ? `onclick="toggleSelect(${v.id}, '${item.id}')"` : ''}>
         
         <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
-            <div style="font-size:13px;font-weight:700;color:#111827;">${item.item_name}</div>
+            <div style="font-size:13px;font-weight:700;color:#111827;display:flex;align-items:center;">
+                ${item.item_name}
+                ${specDiffers ? `<span style="background:#f59e0b;color:#fff;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;margin-left:8px;letter-spacing:0.5px;">SPEC DIFFERS</span>` : ''}
+            </div>
             ${!isService ? `<input type="checkbox" ${isSelected?'checked':''} ${disableSel?'disabled':''} onclick="event.stopPropagation(); toggleSelect(${v.id}, '${item.id}')" style="width:16px;height:16px;accent-color:#3b5bdb;cursor:pointer;">` : ''}
         </div>
 
@@ -530,7 +531,6 @@ function renderItemCard(v, item, off) {
             <div style="font-weight:700;color:#111827;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
                 ${o.qty_offered} ${o.unit_offered || ''} / ${targetQty} ${item.unit || ''}
                 ${qtyBadge}
-                ${unitBadge}
             </div>
 
             ${isSelected && !isService ? `
@@ -539,14 +539,13 @@ function renderItemCard(v, item, off) {
                 <input type="number" min="1" max="${o.qty_offered}" value="${selections[`${v.id}_${item.id}`].quantity}"
                     onclick="event.stopPropagation()"
                     onchange="updateQty(${v.id}, '${item.id}', this.value)"
-                    style="width:80px;height:26px;border:1px solid #3b5bdb;border-radius:4px;padding:0 8px;font-size:12px;font-weight:600;outline:none;color:#3b5bdb">
+                    style="width:80px;height:26px;border:1px solid #3b5bdb;border-radius:4px;padding:0 8px;font-size:12px;font-weight:600;outline:none;color:#3b5bdb;background:${specDiffers ? '#fef3c7' : '#fff'}">
             </div>
             ` : ''}
 
             <div style="color:#9ca3af">Unit</div>
             <div style="color:#111827;line-height:1.2">
                 ${o.unit_offered ? o.unit_offered : item.unit}
-                ${o.unit_offered && item.unit && o.unit_offered.toLowerCase() !== item.unit.toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-left:4px" title="Original PR Unit: ${item.unit}">DIFFERS</div>` : ''}
             </div>
 
             <div style="color:#9ca3af">Unit Price</div>
@@ -558,7 +557,6 @@ function renderItemCard(v, item, off) {
             <div style="color:#9ca3af">Spec</div>
             <div style="color:#111827;line-height:1.2">
                 ${o.specification_offered ? o.specification_offered : (item.specification || '-')}
-                ${o.specification_offered && (!item.specification || o.specification_offered.toLowerCase() !== item.specification.toLowerCase()) ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-left:4px" title="Original PR Spec: ${item.specification || '-'}">DIFFERS</div>` : ''}
             </div>
 
             <div style="color:#9ca3af">Notes:</div>
@@ -799,7 +797,52 @@ function renderResultWorkspace() {
     `).join('');
 }
 
-function openSubmitModal(){document.getElementById('submit-modal').style.display='flex';}
+function openSubmitModal() {
+    let hasDiffers = false;
+    for (let key in selections) {
+        const s = selections[key];
+        const vId = s.vendor_id;
+        const itemId = s.item_id;
+        
+        let originalItem = null;
+        if (currentPR.type === 'service') {
+            currentPR.jobs.forEach(j => {
+                const found = j.items.find(i => i.id == itemId);
+                if(found) originalItem = found;
+            });
+        } else {
+            originalItem = currentPR.items.find(i => i.id == itemId);
+        }
+
+        if (originalItem) {
+            const specDiff = s.specification && (!originalItem.specification || s.specification.toLowerCase() !== originalItem.specification.toLowerCase());
+            const unitDiff = s.unit && originalItem.unit && s.unit.toLowerCase() !== originalItem.unit.toLowerCase();
+            
+            if (specDiff || unitDiff) {
+                hasDiffers = true;
+                break;
+            }
+        }
+    }
+
+    if (hasDiffers) {
+        Swal.fire({
+            title: 'Terdapat Perbedaan?',
+            html: 'Beberapa item yang Anda pilih memiliki <strong style="color:#b45309">spesifikasi</strong> atau <strong style="color:#b45309">unit</strong> yang berbeda dari permintaan asli.<br><br>Apakah Anda yakin ingin melanjutkan pemilihan vendor ini?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Lanjutkan',
+            cancelButtonText: 'Batal',
+            confirmButtonColor: '#3b5bdb',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('submit-modal').style.display = 'flex';
+            }
+        });
+    } else {
+        document.getElementById('submit-modal').style.display = 'flex';
+    }
+}
 function closeSubmitModal(){document.getElementById('submit-modal').style.display='none';}
 function closeSuccess(){document.getElementById('success-popup').style.display='none'; backToStep1();}
 

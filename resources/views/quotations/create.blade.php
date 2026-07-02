@@ -180,7 +180,7 @@
                                 <div style="margin-top:8px;">
                                     <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
                                         <input type="checkbox" class="diff-toggle" onchange="document.getElementById('spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'">
-                                        <span>Terdapat perbedaan Spesifikasi/Unit?</span>
+                                        <span>Terdapat perbedaan Spesifikasi?</span>
                                     </label>
                                     <div id="spec-diff-{{ $idx }}" style="display:none;margin-top:8px;">
                                         <input type="text" class="form-control" name="items[{{ $idx }}][specification]" placeholder="Tuliskan spesifikasi yang ditawarkan..." style="font-size:12px;padding:8px 10px;">
@@ -442,7 +442,7 @@
         if (globalNote) {
             globalNote.required = anyChecked;
             if (anyChecked) {
-                globalNote.placeholder = "WAJIB DIISI: Jelaskan perbedaan spesifikasi/unit pada item yang Anda ubah...";
+                globalNote.placeholder = "WAJIB DIISI: Jelaskan perbedaan spesifikasi pada item yang Anda ubah...";
                 globalNote.style.border = "1px solid #ef4444";
             } else {
                 globalNote.placeholder = "Enter notes or conclusion for this quotation...";

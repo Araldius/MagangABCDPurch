@@ -13,10 +13,6 @@
 
 <div style="display:flex;gap:24px;margin-bottom:24px">
     <div style="flex:1;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;">
-        <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:8px">Specification</div>
-        <div style="font-size:14px;color:#374151;">{{ $item->specification ?: 'No specification provided.' }}</div>
-    </div>
-    <div style="flex:1;background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;">
         <div style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:8px">Total Purchase Value</div>
         <div style="font-size:20px;font-weight:700;color:#111827;">Rp {{ number_format($totalValue, 0, ',', '.') }}</div>
     </div>
