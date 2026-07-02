@@ -25,9 +25,9 @@
 <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;">
     <div style="padding:16px 20px;border-bottom:1px solid #f3f4f6;display:flex;justify-content:space-between;align-items:center;">
         <h2 style="font-size:14px;font-weight:700;color:#111827;margin:0">Purchase History</h2>
-        <button onclick="exportTableToExcel('historyTable', 'History_{{ $item->item_code }}')" style="padding:6px 12px;background:#fff;border:1px solid #d1d5db;border-radius:6px;font-size:12px;font-weight:600;color:#374151;cursor:pointer;">
+        <a href="{{ route('items.exportHistory', $item->id) }}" style="display:inline-block;padding:6px 12px;background:#fff;border:1px solid #d1d5db;border-radius:6px;font-size:12px;font-weight:600;color:#374151;cursor:pointer;text-decoration:none;">
             Download Excel
-        </button>
+        </a>
     </div>
     
     <div style="overflow-x:auto">
@@ -74,23 +74,5 @@
     </div>
 </div>
 
-<script>
-function exportTableToExcel(tableID, filename = ''){
-    let downloadLink;
-    let dataType = 'application/vnd.ms-excel';
-    let tableSelect = document.getElementById(tableID);
-    let tableHTML = tableSelect.outerHTML;
-    filename = filename ? filename + '.xls' : 'excel_data.xls';
-    downloadLink = document.createElement("a");
-    document.body.appendChild(downloadLink);
-    if(navigator.msSaveOrOpenBlob){
-        let blob = new Blob(['\ufeff', tableHTML], { type: dataType });
-        navigator.msSaveOrOpenBlob(blob, filename);
-    } else {
-        downloadLink.href = 'data:' + dataType + ';charset=utf-8,' + encodeURIComponent(tableHTML);
-        downloadLink.download = filename;
-        downloadLink.click();
-    }
-}
-</script>
+
 @endsection

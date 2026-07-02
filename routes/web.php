@@ -57,6 +57,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/update/{id}', [ItemController::class, 'update'])->name('update');
         Route::post('/archive/{id}', [ItemController::class, 'archive'])->name('archive');
         Route::get('/export', [ItemController::class, 'export'])->name('export');
+        Route::get('/{id}/export-history', [ItemController::class, 'exportHistory'])->name('exportHistory');
         Route::get('/{id}', [ItemController::class, 'show'])->name('show');
     });
 

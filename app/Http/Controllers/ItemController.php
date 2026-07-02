@@ -110,42 +110,31 @@ class ItemController extends Controller
             $query->where('is_archived', true);
         }
         $items = Item::orderBy('item_name')->get();
-        $xlsFileName = 'master_items_' . date('Ymd_His') . '.xls';
-        $headers = [
-            "Content-type"        => "application/vnd.ms-excel",
-            "Content-Disposition" => "attachment; filename=$xlsFileName",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
+        $xlsFileName = 'master_items_' . date('Ymd_His') . '.xlsx';
+        
+        $data = [
+            ['ID', 'Item Code', 'Item Name', 'Unit', 'Specification', 'Notes', 'Status']
         ];
-
-        ob_start();
-        echo '<table border="1">';
-        echo '<tr>';
-        echo '<th style="background-color:#f3f4f6;">ID</th>';
-        echo '<th style="background-color:#f3f4f6;">Item Code</th>';
-        echo '<th style="background-color:#f3f4f6;">Item Name</th>';
-        echo '<th style="background-color:#f3f4f6;">Unit</th>';
-        echo '<th style="background-color:#f3f4f6;">Specification</th>';
-        echo '<th style="background-color:#f3f4f6;">Notes</th>';
-        echo '<th style="background-color:#f3f4f6;">Status</th>';
-        echo '</tr>';
-
+        
         foreach ($items as $item) {
-            echo '<tr>';
-            echo '<td>' . htmlspecialchars($item->id) . '</td>';
-            echo '<td>' . htmlspecialchars($item->item_code) . '</td>';
-            echo '<td>' . htmlspecialchars($item->item_name) . '</td>';
-            echo '<td>' . htmlspecialchars($item->unit) . '</td>';
-            echo '<td>' . htmlspecialchars($item->specification) . '</td>';
-            echo '<td>' . htmlspecialchars($item->item_notes) . '</td>';
-            echo '<td>' . ($item->is_archived ? 'Archived' : 'Active') . '</td>';
-            echo '</tr>';
+            $data[] = [
+                $item->id,
+                $item->item_code,
+                $item->item_name,
+                $item->unit,
+                $item->specification,
+                $item->item_notes,
+                $item->is_archived ? 'Archived' : 'Active'
+            ];
         }
-        echo '</table>';
-
-        $output = ob_get_clean();
-        return response($output, 200, $headers);
+        
+        $xlsx = \Shuchkin\SimpleXLSXGen::fromArray($data);
+        
+        return response((string) $xlsx, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="' . $xlsFileName . '"',
+            'Cache-Control' => 'max-age=0',
+        ]);
     }
 
     public function show($id)
@@ -224,5 +213,107 @@ class ItemController extends Controller
         usort($history, fn($a, $b) => strcmp($b['date'], $a['date']));
 
         return view('master.item_detail', compact('item', 'history', 'totalValue'));
+    }
+
+    public function exportHistory($id)
+    {
+        $item = Item::findOrFail($id);
+        
+        $prQuery = \App\Models\PurchaseRequest::with([
+            'items',
+            'rfqs.vendorSelections.vendor',
+            'rfqs.vendorSelections.selectionItems'
+        ])->where('status', 'completed')->get();
+        
+        $srQuery = \App\Models\ServiceRequest::with([
+            'jobs.items',
+            'rfqs.vendorSelections.vendor',
+            'rfqs.vendorSelections.selectionItems'
+        ])->where('status', 'completed')->get();
+
+        $history = [];
+        
+        foreach ([$prQuery, $srQuery] as $prs) {
+            foreach ($prs as $pr) {
+                foreach ($pr->rfqs as $rfq) {
+                    foreach ($rfq->vendorSelections as $sel) {
+                        $vendor = $sel->vendor;
+                        foreach ($sel->selectionItems as $si) {
+                            $pri = null;
+                            if (isset($pr->jobs)) {
+                                foreach ($pr->jobs as $job) {
+                                    $found = collect($job->items)->firstWhere('id', $si->service_request_item_id);
+                                    if ($found) { $pri = $found; break; }
+                                }
+                            } else {
+                                $pri = collect($pr->items)->firstWhere('id', $si->purchase_request_item_id);
+                            }
+                            
+                            if (!$pri) continue;
+                            
+                            $itemId = $pri->item_code ?? $pri->item_id ?? null;
+                            if ($itemId === $item->item_code || ($pri->item_name ?? $pri->name) === $item->item_name) {
+                                $qd = \App\Models\QuotationDetail::whereHas('quotation', function($q) use ($rfq, $vendor) {
+                                    $q->where('rfq_id', $rfq->id)->where('vendor_id', $vendor->id);
+                                })->where(function($q) use ($si) {
+                                    if ($si->purchase_request_item_id) {
+                                        $q->where('purchase_request_item_id', $si->purchase_request_item_id);
+                                    } elseif ($si->service_request_item_id) {
+                                        $q->where('service_request_item_id', $si->service_request_item_id);
+                                    }
+                                })->first();
+                                
+                                $history[] = [
+                                    'doc_no' => $pr->document_number,
+                                    'date' => $sel->decided_at ? \Carbon\Carbon::parse($sel->decided_at)->format('Y-m-d') : '-',
+                                    'vendor_name' => optional($vendor)->name ?? optional($vendor)->vendor_name ?? '-',
+                                    'qty' => $si->final_quantity,
+                                    'unit' => $qd->offered_unit ?? $pri->unit ?? '-',
+                                    'spec' => $qd->offered_specification ?? $pri->specification ?? '-',
+                                    'notes' => $qd->item_notes ?? $si->notes ?? '-',
+                                    'price' => $si->final_price_per_item,
+                                    'subtotal' => $si->final_price_per_item * $si->final_quantity,
+                                    'req_by' => $pr->user->name ?? '-'
+                                ];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        usort($history, fn($a, $b) => strcmp($b['date'], $a['date']));
+
+        $xlsFileName = 'History_Purchase_' . $item->item_code . '_' . date('Ymd_His') . '.xlsx';
+        
+        $data = [
+            ['DATE', 'DOC NO.', 'VENDOR', 'REQUESTED BY', 'SPEC', 'NOTES', 'QTY', 'UNIT', 'PRICE', 'SUBTOTAL']
+        ];
+        
+        foreach ($history as $h) {
+            $data[] = [
+                $h['date'],
+                $h['doc_no'],
+                $h['vendor_name'],
+                $h['req_by'],
+                $h['spec'],
+                $h['notes'],
+                $h['qty'],
+                $h['unit'],
+                $h['price'],
+                $h['subtotal']
+            ];
+        }
+        
+        $xlsx = \Shuchkin\SimpleXLSXGen::fromArray($data);
+        
+        // Add some basic styling
+        $xlsx->setDefaultFont('Calibri', 11);
+        
+        return response((string) $xlsx, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="' . $xlsFileName . '"',
+            'Cache-Control' => 'max-age=0',
+        ]);
     }
 }

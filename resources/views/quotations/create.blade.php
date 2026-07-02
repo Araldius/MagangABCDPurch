@@ -147,10 +147,16 @@
                                     </div>
                                 </td>
                                 <td>
+                                    <div style="font-size:11px;color:#6b7280;margin-bottom:4px;font-weight:600;">Target: {{ $item->quantity }} {{ $item->unit }}</div>
                                     <div style="display:flex;align-items:center;gap:6px;">
                                         <input type="number" step="0.01" class="form-control qty-input" name="items[{{ $idx }}][quantity]" value="{{ $item->quantity }}" required style="width:80px; text-align:center;" readonly>
                                         <select class="form-control" name="items[{{ $idx }}][unit]" required style="width:85px; padding:8px;" onchange="checkUnitChange(this, {{ $idx }}, '{{ strtolower($item->unit) }}')">
-                                            @foreach(['Pcs', 'Unit', 'Box', 'Kg', 'Liter', 'Meter', 'Roll', 'Set', 'Lot', 'Jasa', 'Pack'] as $u)
+                                            @php
+                                                $baseUnits = ['Pcs', 'Unit', 'Box', 'Kg', 'Liter', 'Meter', 'Roll', 'Set', 'Lot', 'Jasa', 'Pack'];
+                                                $itemUnit = ucfirst(strtolower($item->unit));
+                                                if (!in_array($itemUnit, $baseUnits)) array_unshift($baseUnits, $itemUnit);
+                                            @endphp
+                                            @foreach($baseUnits as $u)
                                                 <option value="{{ $u }}" {{ strtolower($item->unit) == strtolower($u) ? 'selected' : '' }}>{{ $u }}</option>
                                             @endforeach
                                         </select>
@@ -185,11 +191,17 @@
                                 </div>
                             </td>
                             <td>
+                                <div style="font-size:11px;color:#6b7280;margin-bottom:4px;font-weight:600;">Target: {{ $item->quantity }} {{ $item->unit }}</div>
                                 <div style="display:flex;align-items:center;gap:6px;">
                                     <!-- TIDAK ADA READONLY UNTUK GOODS -->
                                     <input type="number" step="0.01" class="form-control qty-input" name="items[{{ $idx }}][quantity]" value="{{ $item->quantity }}" required style="width:80px; text-align:center;">
                                     <select class="form-control" name="items[{{ $idx }}][unit]" required style="width:85px; padding:8px;" onchange="checkUnitChange(this, {{ $idx }}, '{{ strtolower($item->unit) }}')">
-                                        @foreach(['Pcs', 'Unit', 'Box', 'Kg', 'Liter', 'Meter', 'Roll', 'Set', 'Lot', 'Jasa', 'Pack'] as $u)
+                                        @php
+                                            $baseUnits = ['Pcs', 'Unit', 'Box', 'Kg', 'Liter', 'Meter', 'Roll', 'Set', 'Lot', 'Jasa', 'Pack'];
+                                            $itemUnit = ucfirst(strtolower($item->unit));
+                                            if (!in_array($itemUnit, $baseUnits)) array_unshift($baseUnits, $itemUnit);
+                                        @endphp
+                                        @foreach($baseUnits as $u)
                                             <option value="{{ $u }}" {{ strtolower($item->unit) == strtolower($u) ? 'selected' : '' }}>{{ $u }}</option>
                                         @endforeach
                                     </select>

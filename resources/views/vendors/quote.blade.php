@@ -233,7 +233,12 @@
                                                     <div style="display:flex;align-items:center;gap:6px;">
                                                         <input type="number" step="0.01" class="form-control" name="items[{{ $idx }}][quantity]" value="{{ old('items.'.$idx.'.quantity', $item->quantity) }}" required style="width:80px; text-align:center;" readonly>
                                                         <select class="form-control" name="items[{{ $idx }}][unit]" required style="width:85px; padding:8px;">
-                                                            @foreach(['Pcs', 'Unit', 'Box', 'Kg', 'Liter', 'Meter', 'Roll', 'Set', 'Lot', 'Jasa', 'Pack'] as $u)
+                                                            @php
+                                                                $baseUnits = ['Pcs', 'Unit', 'Box', 'Kg', 'Liter', 'Meter', 'Roll', 'Set', 'Lot', 'Jasa', 'Pack'];
+                                                                $itemUnit = ucfirst(strtolower($item->unit));
+                                                                if (!in_array($itemUnit, $baseUnits)) array_unshift($baseUnits, $itemUnit);
+                                                            @endphp
+                                                            @foreach($baseUnits as $u)
                                                                 <option value="{{ $u }}" {{ (old('items.'.$idx.'.unit') ?? strtolower($item->unit)) == strtolower($u) ? 'selected' : '' }}>{{ $u }}</option>
                                                             @endforeach
                                                         </select>
@@ -272,7 +277,12 @@
                                                 <div style="display:flex;align-items:center;gap:6px;">
                                                     <input type="number" step="0.01" class="form-control" name="items[{{ $idx }}][quantity]" value="{{ old('items.'.$idx.'.quantity', $item->quantity) }}" required style="width:80px; text-align:center;">
                                                     <select class="form-control" name="items[{{ $idx }}][unit]" required style="width:85px; padding:8px;">
-                                                        @foreach(['Pcs', 'Unit', 'Box', 'Kg', 'Liter', 'Meter', 'Roll', 'Set', 'Lot', 'Jasa', 'Pack'] as $u)
+                                                        @php
+                                                            $baseUnits = ['Pcs', 'Unit', 'Box', 'Kg', 'Liter', 'Meter', 'Roll', 'Set', 'Lot', 'Jasa', 'Pack'];
+                                                            $itemUnit = ucfirst(strtolower($item->unit));
+                                                            if (!in_array($itemUnit, $baseUnits)) array_unshift($baseUnits, $itemUnit);
+                                                        @endphp
+                                                        @foreach($baseUnits as $u)
                                                             <option value="{{ $u }}" {{ (old('items.'.$idx.'.unit') ?? strtolower($item->unit)) == strtolower($u) ? 'selected' : '' }}>{{ $u }}</option>
                                                         @endforeach
                                                     </select>
