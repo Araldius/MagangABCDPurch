@@ -231,7 +231,10 @@ function openDetail(idx) {
                 <td style="padding:10px 14px;font-weight:700">${it.item_id||it.item_code||'-'}</td>
                 <td style="padding:10px 14px;font-weight:600">${it.name||it.item_name||'-'}</td>
                 <td style="padding:10px 14px;font-size:11.5px;color:#6b7280">${it.description||'-'}</td>
-                <td style="padding:10px 14px;font-size:11.5px;color:#6b7280;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${it.specification||'-'}</td>
+                <td style="padding:10px 14px;font-size:11.5px;color:#6b7280;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                    <div style="font-weight:600;color:#374151;">${it.specification||'-'}</div>
+                    ${it.notes && it.notes !== '-' ? `<div style="font-size:10.5px;color:#9ca3af;font-style:italic;">Notes: ${it.notes}</div>` : ''}
+                </td>
                 <td style="padding:10px 14px;font-weight:600">${it.quantity}</td>
                 <td style="padding:10px 14px">${it.unit}</td>
                 <td style="padding:10px 14px;font-weight:600">Rp ${new Intl.NumberFormat('id-ID').format(uPrice)}</td>
@@ -243,12 +246,18 @@ function openDetail(idx) {
     document.getElementById('modal-items-tbody').innerHTML = itemHtml;
     document.getElementById('modal-tot-req-val').textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(pr.total_value);
 
-    // Show modal
     document.getElementById('pr-modal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
 }
-function closeModal() {
+
+function closePRModal() {
     document.getElementById('pr-modal').style.display = 'none';
+    document.body.style.overflow = '';
 }
+
+document.getElementById('pr-modal').addEventListener('click', function(e) {
+    if (e.target === this) closePRModal();
+});
 </script>
 
 {{-- Modal HTML --}}
@@ -256,7 +265,7 @@ function closeModal() {
     <div style="background:#fff;border-radius:12px;width:100%;max-width:1000px;max-height:95vh;display:flex;flex-direction:column;box-shadow:0 10px 25px -5px rgba(0,0,0,0.1)">
         <div style="padding:16px 24px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:flex-start">
             <h2 style="font-size:15px;font-weight:700;color:#111827;margin:0;line-height:1.4" id="modal-title-text"></h2>
-            <button onclick="closeModal()" style="background:none;border:none;color:#9ca3af;cursor:pointer;font-size:20px;line-height:1">x</button>
+            <button onclick="closePRModal()" style="background:none;border:none;color:#9ca3af;cursor:pointer;font-size:20px;line-height:1">x</button>
         </div>
         <div style="padding:24px;overflow-y:auto;flex:1">
             <!-- Progress Status -->
@@ -325,7 +334,7 @@ function closeModal() {
                                 <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">ITEM ID</th>
                                 <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">ITEM NAME</th>
                                 <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">DESCRIPTION</th>
-                                <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">SPEC</th>
+                                <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">SPEC & NOTES</th>
                                 <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">QTY</th>
                                 <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">UNIT</th>
                                 <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">UNIT PRICE (RP)</th>
@@ -356,9 +365,7 @@ function closeModal() {
                 </div>
             </div>
         </div>
-        <div style="padding:16px 24px;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:12px;background:#f9fafb;border-bottom-left-radius:12px;border-bottom-right-radius:12px">
-            <button onclick="closeModal()" style="padding:8px 16px;background:#fff;border:1px solid #d1d5db;border-radius:8px;font-size:12.5px;font-weight:600;color:#374151;cursor:pointer">Close</button>
-        </div>
+
     </div>
 </div>
 @endsection

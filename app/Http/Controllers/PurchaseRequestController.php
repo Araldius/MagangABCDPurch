@@ -64,11 +64,12 @@ class PurchaseRequestController extends Controller
 
     public function create()
     {
-        // Goods catalog — distinct items from all past PRs
-        $existingItems = PurchaseRequestItem::select('item_id', 'item_name', 'unit', 'specification', 'item_notes')
-            ->distinct()->get()->map(function ($item) {
+        // Goods catalog — from Master Items table
+        $existingItems = \App\Models\Item::where('is_archived', false)
+            ->orderBy('item_name')
+            ->get()->map(function ($item) {
                 return [
-                    'id'    => $item->item_id,
+                    'id'    => $item->item_code ?? 'ITM-' . $item->id,
                     'name'  => $item->item_name,
                     'unit'  => $item->unit,
                     'spec'  => $item->specification ?? '',

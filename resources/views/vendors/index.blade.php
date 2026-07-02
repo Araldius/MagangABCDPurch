@@ -67,12 +67,32 @@ h1 { font-size:20px;font-weight:700;color:#111827;margin:0 0 3px }
             <span id="ws-status-badge" style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;background:#fff7ed;font-size:12px;font-weight:600;color:#c2410c">
                 <span style="width:6px;height:6px;border-radius:50%;background:#f97316"></span>Awaiting Selection
             </span>
-            <button class="btn-outline" onclick="backToStep1()">← Back</button>
+            <button class="btn-back" onclick="backToStep1()">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Back
+            </button>
         </div>
     </div>
  
     {{-- Requirements table --}}
     <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:14px;overflow:hidden;">
+        <div id="last-selected-info" style="display:none;background:#fefce8;border:1px solid #fef08a;border-radius:12px;padding:16px 20px;margin-bottom:14px;align-items:center;justify-content:space-between">
+            <div>
+                <div style="font-size:13.5px;font-weight:700;color:#854d0e;display:flex;align-items:center;gap:6px">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> Previous Selection
+                </div>
+                <div style="font-size:12px;color:#a16207;margin-top:2px">You have previously selected vendors for this request. The progress is automatically restored below.</div>
+            </div>
+            <div style="text-align:right">
+                <div style="font-size:11px;font-weight:700;color:#854d0e;text-transform:uppercase;margin-bottom:4px">Progress</div>
+                <div style="display:flex;align-items:center;gap:10px">
+                    <div style="width:120px;height:8px;background:#fef08a;border-radius:999px;overflow:hidden">
+                        <div id="ls-progress-bar" style="height:100%;background:#eab308;width:0%;transition:width 0.3s"></div>
+                    </div>
+                    <div id="ls-progress-text" style="font-size:12px;font-weight:700;color:#a16207">0%</div>
+                </div>
+            </div>
+        </div>
+
         <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #f3f4f6">
             <div>
                 <div style="font-size:13.5px;font-weight:700;color:#111827">Item / Service Requirements</div>
@@ -121,8 +141,8 @@ h1 { font-size:20px;font-weight:700;color:#111827;margin:0 0 3px }
             <div id="res-pr-label" style="font-size:14px;font-weight:700;color:#111827;margin-top:3px"></div>
             <div style="font-size:12px;color:#6b7280;margin-top:2px">Review final split PO Anda sebelum diproses oleh Purchasing</div>
         </div>
-        <button onclick="document.getElementById('selection-workspace').style.display='block'; document.getElementById('result-workspace').style.display='none';" class="btn-outline">
-            ← Edit Selection
+        <button onclick="document.getElementById('selection-workspace').style.display='block'; document.getElementById('result-workspace').style.display='none';" class="btn-back">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Edit Selection
         </button>
     </div>
  
@@ -157,8 +177,8 @@ h1 { font-size:20px;font-weight:700;color:#111827;margin:0 0 3px }
 </div>
 
 {{-- MODALS --}}
-<div id="warning-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)"><div style="background:#fff;border-radius:12px;width:100%;max-width:440px;box-shadow:0 10px 40px rgba(0,0,0,.2);overflow:hidden"><div style="background:#fef2f2;padding:20px;border-bottom:1px solid #fee2e2;display:flex;align-items:center;gap:14px"><div style="width:44px;height:44px;background:#fee2e2;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#ef4444;flex-shrink:0"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg></div><div><div style="font-size:16px;font-weight:700;color:#991b1b;line-height:1.2">Peringatan Kuantitas</div><div style="font-size:12.5px;color:#b91c1c;margin-top:2px">Target Qty belum sepenuhnya terpenuhi</div></div></div><div style="padding:22px;font-size:13.5px;color:#374151;line-height:1.6">Masih ada item yang kuantitasnya <strong>BELUM TERPENUHI</strong>.<br>Apakah Anda yakin ingin mengabaikannya dan melanjutkan?</div><div style="padding:16px 22px;border-top:1px solid #f3f4f6;background:#f9fafb;display:flex;justify-content:flex-end;gap:10px"><button onclick="closeWarningModal()" class="btn-outline">Batalkan</button><button onclick="forceShowSelectionResult()" style="padding:9px 18px;background:#ef4444;color:#fff;border-radius:8px;font-size:13px;font-weight:600;border:none;cursor:pointer;">Ya, Lanjutkan</button></div></div></div>
-<div id="submit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:20px"><div style="background:#fff;border-radius:12px;width:100%;max-width:440px;"><div style="padding:18px 20px;border-bottom:1px solid #f3f4f6;display:flex;align-items:flex-start;justify-content:space-between"><div><div style="font-size:14px;font-weight:700;color:#111827">Submission Notes</div></div><button onclick="closeSubmitModal()" style="background:none;border:none;cursor:pointer;color:#9ca3af;padding:4px">✕</button></div><div style="padding:18px 20px"><textarea id="submit-notes" rows="4" placeholder="Catatan untuk tim Purchasing..." style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;outline:none"></textarea></div><div style="padding:14px 20px;border-top:1px solid #f3f4f6;display:flex;justify-content:flex-end;gap:10px"><button onclick="closeSubmitModal()" class="btn-outline">Cancel</button><button onclick="submitToServer()" style="padding:7px 18px;background:#16a34a;color:#fff;border-radius:7px;font-size:12.5px;font-weight:600;border:none;cursor:pointer;">Final Submit</button></div></div></div>
+<div id="warning-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)"><div style="background:#fff;border-radius:12px;width:100%;max-width:440px;box-shadow:0 10px 40px rgba(0,0,0,.2);overflow:hidden"><div style="background:#fef2f2;padding:20px;border-bottom:1px solid #fee2e2;display:flex;align-items:center;gap:14px"><div style="width:44px;height:44px;background:#fee2e2;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#ef4444;flex-shrink:0"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg></div><div><div style="font-size:16px;font-weight:700;color:#991b1b;line-height:1.2">Peringatan Kuantitas</div><div style="font-size:12.5px;color:#b91c1c;margin-top:2px">Target Qty belum sepenuhnya terpenuhi</div></div></div><div style="padding:22px;font-size:13.5px;color:#374151;line-height:1.6">Masih ada item yang kuantitasnya <strong>BELUM TERPENUHI</strong>.<br>Apakah Anda yakin ingin mengabaikannya dan melanjutkan?</div><div style="padding:16px 22px;border-top:1px solid #f3f4f6;background:#f9fafb;display:flex;justify-content:flex-end;gap:10px"><button onclick="closeWarningModal()" class="btn-back"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Batalkan</button><button onclick="forceShowSelectionResult()" style="padding:9px 18px;background:#ef4444;color:#fff;border-radius:8px;font-size:13px;font-weight:600;border:none;cursor:pointer;">Ya, Lanjutkan</button></div></div></div>
+<div id="submit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:20px"><div style="background:#fff;border-radius:12px;width:100%;max-width:440px;"><div style="padding:18px 20px;border-bottom:1px solid #f3f4f6;display:flex;align-items:flex-start;justify-content:space-between"><div><div style="font-size:14px;font-weight:700;color:#111827">Submission Notes</div></div><button onclick="closeSubmitModal()" style="background:none;border:none;cursor:pointer;color:#9ca3af;padding:4px">✕</button></div><div style="padding:18px 20px"><textarea id="submit-notes" rows="4" placeholder="Catatan untuk tim Purchasing..." style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;outline:none"></textarea></div><div style="padding:14px 20px;border-top:1px solid #f3f4f6;display:flex;justify-content:flex-end;gap:10px"><button onclick="closeSubmitModal()" class="btn-back"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Cancel</button><button onclick="submitToServer()" style="padding:7px 18px;background:#16a34a;color:#fff;border-radius:7px;font-size:12.5px;font-weight:600;border:none;cursor:pointer;">Final Submit</button></div></div></div>
 <div id="success-popup" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;align-items:center;justify-content:center;padding:20px"><div style="background:#fff;border-radius:12px;padding:32px;width:100%;max-width:400px;text-align:center;"><div style="font-size:22px;font-weight:700;color:#16a34a;margin-bottom:12px">Success!</div><div style="font-size:13px;color:#374151;margin-bottom:4px">PR/SR: <span id="popup-pr" style="font-weight:700"></span></div><button onclick="closeSuccess()" style="margin-top:20px;padding:8px 24px;border:1px solid #d1d5db;border-radius:8px;background:#fff;font-size:13px;font-weight:600;cursor:pointer">Close</button></div></div>
 
 <script>
@@ -200,7 +220,8 @@ function buildVendorOffers(pr, vendors) {
                             qty_offered: det.offered_quantity || det.quantity || 0,
                             unit_price: det.offered_price_per_item || det.price || 0,
                             unit_offered: det.offered_unit || '',
-                            notes: det.notes || det.item_notes || ''
+                            notes: det.notes || det.item_notes || '',
+                            specification_offered: det.offered_specification || ''
                         };
                     }
                 });
@@ -252,6 +273,34 @@ function loadPR(uniqueKey) {
     if (!currentPR) return;
     selections = {};
     
+    // PRELOAD existing selections if any (for re-open flow)
+    if (currentPR.rfqs && currentPR.rfqs.length > 0) {
+        currentPR.rfqs.forEach(rfq => {
+            if (rfq.vendor_selections) {
+                rfq.vendor_selections.forEach(sel => {
+                    if (sel.selection_items) {
+                        sel.selection_items.forEach(si => {
+                            const pItem = (currentPR.type === 'service' ? (currentPR.jobs ? currentPR.jobs.flatMap(j=>j.items||[]) : []) : (currentPR.items || [])).find(i => i.id == (si.purchase_request_item_id || si.service_request_item_id));
+                            if (pItem) {
+                                selections[`${sel.vendor_id}_${pItem.id}`] = {
+                                    vendor_id: sel.vendor_id,
+                                    item_id: pItem.id,
+                                    item_name: pItem.item_name || pItem.name,
+                                    unit_price: parseFloat(si.unit_price),
+                                    quantity: parseFloat(si.quantity),
+                                    unit: si.offered_unit || pItem.unit,
+                                    subtotal: parseFloat(si.quantity) * parseFloat(si.unit_price),
+                                    notes: si.notes || '',
+                                    specification: si.offered_specification || ''
+                                };
+                            }
+                        });
+                    }
+                });
+            }
+        });
+    }
+
     let flatItems = [];
     if (currentPR.type === 'service') {
         flatItems = currentPR.jobs ? currentPR.jobs.flatMap(j => j.items || []) : [];
@@ -465,6 +514,11 @@ function renderItemCard(v, item, off) {
         }
     }
 
+    let unitBadge = '';
+    if (o.unit_offered && item.unit && o.unit_offered.toLowerCase() !== item.unit.toLowerCase()) {
+        unitBadge = `<span style="background:#fef08a;color:#854d0e;padding:2px 6px;border-radius:4px;font-size:9.5px;font-weight:700;margin-left:4px;">UNIT DIFFERS</span>`;
+    }
+
     const itemNotes = item.item_notes || item.notes || '';
     const offerNotes = o.notes || '';
     const combinedNotes = [itemNotes, offerNotes].filter(n => n && n.trim()).join(' - ') || 'No notes';
@@ -479,9 +533,10 @@ function renderItemCard(v, item, off) {
 
         <div style="display:grid;grid-template-columns:65px 1fr;gap:8px 10px;align-items:center;font-size:11px;">
             <div style="color:#9ca3af">Qty Offer</div>
-            <div style="font-weight:700;color:#111827;display:flex;align-items:center;gap:6px">
-                ${o.qty_offered} / ${targetQty}
+            <div style="font-weight:700;color:#111827;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                ${o.qty_offered} ${o.unit_offered || ''} / ${targetQty} ${item.unit || ''}
                 ${qtyBadge}
+                ${unitBadge}
             </div>
 
             ${isSelected && !isService ? `
@@ -504,6 +559,12 @@ function renderItemCard(v, item, off) {
             <div style="font-weight:600;color:#111827;display:flex;align-items:center;gap:6px">
                 ${fmt(o.unit_price)}
                 ${(isBestItemPrice && !isService) ? `<span style="background:#e0f2fe;color:#0284c7;padding:2px 6px;border-radius:4px;font-size:9.5px;font-weight:700;">BEST PRICE</span>` : ''}
+            </div>
+
+            <div style="color:#9ca3af">Spec</div>
+            <div style="color:#111827;line-height:1.2">
+                ${o.specification_offered ? o.specification_offered : (item.specification || '-')}
+                ${o.specification_offered && item.specification && o.specification_offered.toLowerCase() !== item.specification.toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-left:4px" title="Original PR Spec: ${item.specification}">DIFFERS</div>` : ''}
             </div>
 
             <div style="color:#9ca3af">Notes:</div>
@@ -540,7 +601,7 @@ function toggleVendorJob(vId, jIdx, isChecked) {
                     let remainingNeed = parseFloat(item.quantity) - qtyAlreadySelected;
                     let defaultBuyQty = Math.min(Math.max(1, remainingNeed), offer.qty_offered);
 
-                    selections[selKey] = { vendor_id: vId, item_id: item.id, item_name: item.item_name, unit_price: offer.unit_price, quantity: defaultBuyQty, unit: item.unit };
+                    selections[selKey] = { vendor_id: vId, item_id: item.id, item_name: item.item_name, unit_price: offer.unit_price, quantity: defaultBuyQty, unit: offer.unit_offered || item.unit, specification: offer.specification_offered || '' };
                     selections[selKey].subtotal = defaultBuyQty * offer.unit_price;
                 }
             }
@@ -569,7 +630,7 @@ function toggleSelect(vId, itemId, forceRenderOnlyAtEnd = false) {
             let remainingNeed = parseFloat(item.quantity) - qtyAlreadySelected;
             let defaultBuyQty = Math.min(Math.max(1, remainingNeed), offer.qty_offered);
 
-            selections[selKey] = { vendor_id: vId, item_id: itemId, item_name: item.item_name, unit_price: offer.unit_price, quantity: defaultBuyQty, unit: item.unit };
+            selections[selKey] = { vendor_id: vId, item_id: itemId, item_name: item.item_name, unit_price: offer.unit_price, quantity: defaultBuyQty, unit: offer.unit_offered || item.unit, specification: offer.specification_offered || '' };
             selections[selKey].subtotal = defaultBuyQty * offer.unit_price;
         }
     }
@@ -607,6 +668,19 @@ function updateCounts(){
         btn.style.opacity='1'; btn.style.pointerEvents='auto'; btn.style.background='#16a34a';
     } else {
         btn.style.opacity='.4'; btn.style.pointerEvents='none'; btn.style.background='#111827';
+    }
+    
+    // Update Last Selected Progress
+    const totalItems = currentPR ? currentPR.items.length : 1;
+    let pct = totalItems > 0 ? Math.round((itemsMet / totalItems) * 100) : 0;
+    
+    const lsInfo = document.getElementById('last-selected-info');
+    if (Object.keys(selections).length > 0) {
+        lsInfo.style.display = 'flex';
+        document.getElementById('ls-progress-bar').style.width = pct + '%';
+        document.getElementById('ls-progress-text').textContent = pct + '%';
+    } else {
+        lsInfo.style.display = 'none';
     }
 }
 
@@ -751,7 +825,7 @@ function submitToServer(){
         purchase_request_id: currentPR.id,
         item_type: currentPR.type,
         selection_notes: notes,
-        selections: Object.values(selections).map(s => ({ vendor_id: s.vendor_id, item_id: s.item_id, unit_price: s.unit_price, quantity: s.quantity, notes: s.notes })),
+        selections: Object.values(selections).map(s => ({ vendor_id: s.vendor_id, item_id: s.item_id, unit_price: s.unit_price, quantity: s.quantity, notes: s.notes, unit: s.unit, specification: s.specification })),
         _token: document.querySelector('meta[name=csrf-token]')?.content||'',
     };
     

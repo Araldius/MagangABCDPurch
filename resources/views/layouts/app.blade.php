@@ -75,6 +75,28 @@
         .toast-container{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:12px;z-index:9999;}
         .toast{background:#fff;border-left:4px solid #3b5bdb;border-radius:8px;box-shadow:0 10px 25px rgba(0,0,0,.15);padding:14px 18px;width:340px;transform:translateX(120%);transition:transform .3s cubic-bezier(0.34, 1.56, 0.64, 1);opacity:0;}
         .toast.show{transform:translateX(0);opacity:1;}
+
+        /* UTILITIES */
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #4b5563;
+            background: #fff;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        .btn-back:hover {
+            background: #f9fafb;
+            color: #111827;
+            border-color: #9ca3af;
+        }
     </style>
 </head>
 <body>
@@ -115,6 +137,10 @@
         <a href="{{ route('history.master.vendors') }}" class="sidebar-link {{ request()->routeIs('history.master.vendors') || request()->routeIs('history.vendor.detail') ? 'active' : '' }}">
             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4M8 6h.01M16 6h.01M12 6h.01M8 10h.01M16 10h.01M12 10h.01M8 14h.01M16 14h.01M12 14h.01M8 18h.01M16 18h.01M12 18h.01"/></svg>
             Master Vendor
+        </a>
+        <a href="{{ route('items.index') }}" class="sidebar-link {{ request()->routeIs('items.*') ? 'active' : '' }}">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Master Item
         </a>
         <a href="{{ route('vendors.list') }}" class="sidebar-link {{ request()->routeIs('vendors.*') ? 'active' : '' }}">
             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -171,15 +197,6 @@
     </header>
  
     <main class="page-content">
-        @if(session('success'))
-        <div class="alert alert-success">✓ {{ session('success') }}</div>
-        @endif
-        @if($errors->any())
-        <div class="alert alert-danger">
-            <strong>Please fix:</strong>
-            <ul>@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
-        </div>
-        @endif
         @yield('content')
     </main>
  
@@ -192,6 +209,23 @@
 <!-- Toast Container -->
 <div id="toast-container" class="toast-container"></div>
 
+<!-- Global Confirm Modal -->
+<div id="global-confirm-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(2px);">
+    <div style="background:#fff;border-radius:12px;width:100%;max-width:400px;box-shadow:0 10px 25px rgba(0,0,0,0.1);">
+        <div style="padding:16px 20px;border-bottom:1px solid #f3f4f6;display:flex;justify-content:space-between;align-items:center;">
+            <div id="global-confirm-title" style="font-size:16px;font-weight:700;color:#111827;">Konfirmasi</div>
+            <button type="button" onclick="closeGlobalConfirm()" style="background:none;border:none;font-size:24px;color:#9ca3af;cursor:pointer;line-height:1;">&times;</button>
+        </div>
+        <div id="global-confirm-msg" style="padding:20px;font-size:14px;color:#374151;">
+            Apakah Anda yakin?
+        </div>
+        <div style="padding:16px 20px;border-top:1px solid #f3f4f6;display:flex;justify-content:flex-end;gap:12px;background:#fafafa;border-bottom-left-radius:12px;border-bottom-right-radius:12px;">
+            <button type="button" onclick="closeGlobalConfirm()" style="padding:8px 16px;background:#fff;border:1px solid #e5e7eb;border-radius:6px;font-size:12.5px;font-weight:600;color:#374151;cursor:pointer;">Cancel</button>
+            <button type="button" id="global-confirm-btn" onclick="executeGlobalConfirm()" style="padding:8px 16px;background:#111827;border:1px solid #111827;border-radius:6px;font-size:12.5px;font-weight:600;color:#fff;cursor:pointer;">Proceed</button>
+        </div>
+    </div>
+</div>
+
 @auth
 <script>
     let lastNotifIds = new Set();
@@ -201,7 +235,7 @@
         dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
     }
 
-    function showToast(message, link) {
+    function showToast(title, message, link = null) {
         const container = document.getElementById('toast-container');
         const toast = document.createElement('div');
         toast.className = 'toast';
@@ -211,7 +245,7 @@
                     <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </div>
                 <div>
-                    <div style="font-weight:600;color:#111827;font-size:13px;margin-bottom:2px;">New Quotation</div>
+                    <div style="font-weight:600;color:#111827;font-size:13px;margin-bottom:2px;">${title}</div>
                     <div style="color:#6b7280;font-size:12px;line-height:1.4;">${message}</div>
                 </div>
             </div>
@@ -228,6 +262,41 @@
             toast.classList.remove('show');
             setTimeout(() => toast.remove(), 300);
         }, 5000);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        @if(session('success'))
+            showToast('Success', "{!! addslashes(session('success')) !!}");
+        @endif
+        @if($errors->any())
+            showToast('Validation Error', 'Terdapat error pada input Anda. Silakan periksa kembali.');
+        @endif
+    });
+
+    let _globalConfirmCallback = null;
+    function showConfirmModal(title, message, confirmText, confirmColor, onConfirm) {
+        document.getElementById('global-confirm-title').textContent = title;
+        document.getElementById('global-confirm-msg').innerHTML = message;
+        
+        const btn = document.getElementById('global-confirm-btn');
+        btn.textContent = confirmText;
+        btn.style.background = confirmColor;
+        btn.style.borderColor = confirmColor;
+        
+        _globalConfirmCallback = onConfirm;
+        document.getElementById('global-confirm-modal').style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeGlobalConfirm() {
+        document.getElementById('global-confirm-modal').style.display = 'none';
+        document.body.style.overflow = '';
+        _globalConfirmCallback = null;
+    }
+
+    function executeGlobalConfirm() {
+        if (_globalConfirmCallback) _globalConfirmCallback();
+        closeGlobalConfirm();
     }
 
     function fetchNotifications() {

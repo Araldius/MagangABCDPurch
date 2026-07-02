@@ -7,6 +7,7 @@ use App\Http\Controllers\RfqController;
 use App\Http\Controllers\VendorController;
 use App\Http\Controllers\QuotationController;
 use App\Http\Controllers\HistoryController;
+use App\Http\Controllers\ItemController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => redirect()->route('login'));
@@ -47,6 +48,16 @@ Route::middleware('auth')->group(function () {
         Route::get('vendors', [HistoryController::class, 'vendors'])->name('vendors');
         Route::get('master-vendors', [HistoryController::class, 'masterVendors'])->name('master.vendors');
         Route::get('vendors/{id}', [HistoryController::class, 'vendorDetail'])->name('vendor.detail');
+    });
+
+    /* Master Items */
+    Route::prefix('master-items')->name('items.')->group(function () {
+        Route::get('/', [ItemController::class, 'index'])->name('index');
+        Route::post('/store', [ItemController::class, 'store'])->name('store');
+        Route::post('/update/{id}', [ItemController::class, 'update'])->name('update');
+        Route::post('/archive/{id}', [ItemController::class, 'archive'])->name('archive');
+        Route::get('/export', [ItemController::class, 'export'])->name('export');
+        Route::get('/{id}', [ItemController::class, 'show'])->name('show');
     });
 
     /* RFQ */

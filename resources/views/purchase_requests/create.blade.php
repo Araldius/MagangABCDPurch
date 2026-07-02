@@ -206,8 +206,10 @@
     </div>
 </div>
 
-<div style="display:flex;justify-content:flex-end;gap:12px;margin-top:24px;">
-    <a href="{{ route('dashboard') }}" class="btn btn-outline">Cancel</a>
+<div class="actions" style="display:flex; justify-content:flex-end; gap:12px; margin-top:24px;">
+    <a href="{{ route('dashboard') }}" class="btn-back">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Cancel
+    </a>
     <button type="submit" class="btn btn-primary">Submit Request</button>
 </div>
 </form>
@@ -238,7 +240,9 @@
             <div id="item-list" style="display:flex;flex-direction:column;"></div>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-outline" onclick="closeItemModal()">Cancel</button>
+            <button type="button" class="btn-back" onclick="closeItemModal()">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Cancel
+            </button>
             <button type="button" class="btn btn-primary" onclick="addSelectedItem()">Add Selected</button>
         </div>
     </div>
@@ -264,7 +268,9 @@
             <div class="form-group" style="margin-bottom:0;"><label class="form-label">Notes</label><textarea class="form-control" id="new-item-notes"></textarea></div>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-outline" onclick="closeNewItemModal()">Cancel</button>
+            <button type="button" class="btn-back" onclick="closeNewItemModal()">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Cancel
+            </button>
             <button type="button" class="btn btn-primary" onclick="saveNewItem()">Save & Add</button>
         </div>
     </div>
@@ -291,7 +297,9 @@
             <div id="svc-list-container" style="display:flex;flex-direction:column;"></div>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-outline" onclick="closeSvcListModal()">Cancel</button>
+            <button type="button" class="btn-back" onclick="closeSvcListModal()">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Cancel
+            </button>
             <button type="button" class="btn btn-primary" onclick="addSelectedSvcTemplate()">Add Selected</button>
         </div>
     </div>
@@ -314,7 +322,9 @@
             </button>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-outline" onclick="closeNewSvcModal()">Cancel</button>
+            <button type="button" class="btn-back" onclick="closeNewSvcModal()">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Cancel
+            </button>
             <button type="button" class="btn btn-primary" onclick="commitModalServiceToMainTable()">Save Service & Add</button>
         </div>
     </div>
@@ -373,8 +383,8 @@ function renderItemList(q='', u='', s='name_asc') {
         </div>`).join('');
 }
 function selectItem(id){ selectedItemId=id; filterItems(); }
-function openItemModal(){ selectedItemId=null; document.getElementById('item-search').value=''; document.getElementById('item-filter-unit').value=''; document.getElementById('item-sort').value='name_asc'; filterItems(); document.getElementById('item-modal').classList.add('open'); }
-function closeItemModal(){ document.getElementById('item-modal').classList.remove('open'); }
+function openItemModal(){ selectedItemId=null; document.getElementById('item-search').value=''; document.getElementById('item-filter-unit').value=''; document.getElementById('item-sort').value='name_asc'; filterItems(); document.getElementById('item-modal').classList.add('open'); document.body.style.overflow = 'hidden'; }
+function closeItemModal(){ document.getElementById('item-modal').classList.remove('open'); document.body.style.overflow = ''; }
 function addSelectedItem(){
     if(!selectedItemId){alert('Please select an item.');return;}
     const i=catalog.find(x=>x.id===selectedItemId); if(!i)return;
@@ -382,8 +392,8 @@ function addSelectedItem(){
     renderGoodsTable(); closeItemModal();
 }
 function removeGoods(idx){ addedItems=addedItems.filter(i=>i.idx!==idx); renderGoodsTable(); }
-function openNewItemModal(){ closeItemModal(); document.getElementById('new-item-modal').classList.add('open'); }
-function closeNewItemModal(){ document.getElementById('new-item-modal').classList.remove('open'); }
+function openNewItemModal(){ closeItemModal(); document.getElementById('new-item-modal').classList.add('open'); document.body.style.overflow = 'hidden'; }
+function closeNewItemModal(){ document.getElementById('new-item-modal').classList.remove('open'); document.body.style.overflow = ''; }
 function saveNewItem(){
     saveCurrentGoodsInputValuesToState();
     const name=document.getElementById('new-item-name').value.trim();
@@ -459,8 +469,8 @@ function renderSvcSelectionList(q='', s='name_asc') {
         </div>`).join('');
 }
 function selectSvcTemplate(id) { selectedSvcTemplateId=id; filterSvcList(); }
-function openSvcListModal() { selectedSvcTemplateId=null; document.getElementById('svc-search').value=''; document.getElementById('svc-sort').value='name_asc'; filterSvcList(); document.getElementById('svc-list-modal').classList.add('open'); }
-function closeSvcListModal() { document.getElementById('svc-list-modal').classList.remove('open'); }
+function openSvcListModal() { selectedSvcTemplateId=null; document.getElementById('svc-search').value=''; document.getElementById('svc-sort').value='name_asc'; filterSvcList(); document.getElementById('svc-list-modal').classList.add('open'); document.body.style.overflow = 'hidden'; }
+function closeSvcListModal() { document.getElementById('svc-list-modal').classList.remove('open'); document.body.style.overflow = ''; }
 function addSelectedSvcTemplate() {
     if(!selectedSvcTemplateId) { alert('Please select a template.'); return; }
     const template = existingServices.find(x => x.id === selectedSvcTemplateId);
@@ -473,8 +483,9 @@ function openNewSvcModal() {
     modalJobsList = [];
     addJobBlockToModal();
     document.getElementById('new-svc-modal').classList.add('open');
+    document.body.style.overflow = 'hidden';
 }
-function closeNewSvcModal() { document.getElementById('new-svc-modal').classList.remove('open'); }
+function closeNewSvcModal() { document.getElementById('new-svc-modal').classList.remove('open'); document.body.style.overflow = ''; }
 
 function addJobBlockToModal() {
     const jId = modalJobIdCounter++;

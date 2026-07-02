@@ -193,7 +193,9 @@
     </div>
 
     <div style="padding:16px 20px;border-top:1px solid #f3f4f6;display:flex;justify-content:flex-end;gap:12px;background:#fafafa">
-        <a href="{{ route('dashboard') }}" class="btn btn-outline" style="border-radius:7px;font-size:12.5px;padding:8px 16px;box-shadow:0 1px 2px rgba(0,0,0,0.05)">Cancel</a>
+        <a href="{{ route('dashboard') }}" class="btn-back">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Cancel
+        </a>
         <button type="submit" class="btn btn-primary" style="border-radius:7px;font-size:12.5px;padding:8px 16px;box-shadow:0 1px 2px rgba(0,0,0,0.05)">Save Quotation</button>
     </div>
 </div>
@@ -217,7 +219,9 @@
             <div id="vendor-list" style="display:flex;flex-direction:column;"></div>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-outline" onclick="closeVendorModal()">Cancel</button>
+            <button type="button" class="btn-back" onclick="closeVendorModal()">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Cancel
+            </button>
             <button type="button" class="btn btn-primary" onclick="addSelectedVendor()">Select Vendor</button>
         </div>
     </div>
@@ -311,10 +315,11 @@
     }
 
     function selectVendorModal(id) { selectedVendorId = id; filterVendors(); }
-    function openVendorModal() { selectedVendorId = null; document.getElementById('vendor-search').value = ''; document.getElementById('vendor-sort').value = 'name_asc'; filterVendors(); document.getElementById('vendor-modal').classList.add('open'); }
+    function openVendorModal() { selectedVendorId = null; document.getElementById('vendor-search').value = ''; document.getElementById('vendor-sort').value = 'name_asc'; filterVendors(); document.getElementById('vendor-modal').classList.add('open'); document.body.style.overflow = 'hidden'; }
     
     function closeVendorModal() { 
         document.getElementById('vendor-modal').classList.remove('open'); 
+        document.body.style.overflow = '';
     }
     
     function addSelectedVendor() {
@@ -332,7 +337,7 @@
     
     // Close modal when clicking outside
     document.getElementById('vendor-modal').addEventListener('click', function(e) {
-        if(e.target === this) this.classList.remove('open');
+        if(e.target === this) closeVendorModal();
     });
 
     // Helper: ubah "1.500,75" -> 1500.75 (number biasa)

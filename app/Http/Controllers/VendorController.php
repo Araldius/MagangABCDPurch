@@ -24,7 +24,7 @@ class VendorController extends Controller
         $user = auth()->user();
         $validStatuses = ['vendor_search', 'vendor_selection'];
 
-        $prs = PurchaseRequest::with(['items', 'rfqs.quotations.details'])
+        $prs = PurchaseRequest::with(['items', 'rfqs.quotations.details', 'rfqs.vendorSelections.selectionItems'])
             ->whereIn('status', $validStatuses)
             ->when($user->role !== 'purchasing', fn($q) => $q->where('user_id', $user->id))
             ->latest()
@@ -38,7 +38,7 @@ class VendorController extends Controller
                 return $pr;
             });
 
-        $srs = ServiceRequest::with(['jobs.items', 'rfqs.quotations.details'])
+        $srs = ServiceRequest::with(['jobs.items', 'rfqs.quotations.details', 'rfqs.vendorSelections.selectionItems'])
             ->whereIn('status', $validStatuses)
             ->when($user->role !== 'purchasing', fn($q) => $q->where('user_id', $user->id))
             ->latest()

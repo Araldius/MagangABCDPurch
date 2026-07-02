@@ -103,13 +103,18 @@ class HistoryController extends Controller
                         foreach(optional($pr)->items ?? [] as $item) {
                             $si = $selectionItems->get($item->id);
                             if (!$si) continue;
+                            $qd = \App\Models\QuotationDetail::whereHas('quotation', function($q) use ($rfq, $vendor) {
+                                $q->where('rfq_id', $rfq->id)->where('vendor_id', $vendor->id);
+                            })->where('purchase_request_item_id', $item->id)->first();
+                            
                             $rec->items->push((object)[
                                 'item_id' => $item->item_id ?? $item->item_code,
                                 'name' => $item->item_name,
                                 'description' => $item->description,
-                                'specification' => $item->specification,
+                                'specification' => $qd->offered_specification ?? $item->specification,
                                 'quantity' => $si->final_quantity,
-                                'unit' => $item->unit,
+                                'unit' => $qd->offered_unit ?? $item->unit,
+                                'notes' => $qd->item_notes ?? $si->notes,
                                 'final_price_per_item' => $si->final_price_per_item,
                                 'vendor_name' => $vName,
                             ]);
@@ -119,13 +124,18 @@ class HistoryController extends Controller
                             foreach(optional($job)->items ?? [] as $item) {
                                 $si = $selectionItems->get($item->id);
                                 if (!$si) continue;
+                                $qd = \App\Models\QuotationDetail::whereHas('quotation', function($q) use ($rfq, $vendor) {
+                                    $q->where('rfq_id', $rfq->id)->where('vendor_id', $vendor->id);
+                                })->where('service_request_item_id', $item->id)->first();
+
                                 $rec->items->push((object)[
                                     'item_id' => $item->item_id ?? $item->item_code ?? '-',
                                     'name' => $item->item_name,
                                     'description' => $job->job_description,
-                                    'specification' => $item->specification,
+                                    'specification' => $qd->offered_specification ?? $item->specification,
                                     'quantity' => $si->final_quantity,
-                                    'unit' => $item->unit,
+                                    'unit' => $qd->offered_unit ?? $item->unit,
+                                    'notes' => $qd->item_notes ?? $si->notes,
                                     'final_price_per_item' => $si->final_price_per_item,
                                     'vendor_name' => $vName,
                                 ]);
@@ -197,14 +207,25 @@ class HistoryController extends Controller
                             $itemMap[$itemId]['last_value'] = $si->final_price_per_item * $si->final_quantity;
                         }
 
+                        $qd = \App\Models\QuotationDetail::whereHas('quotation', function($q) use ($rfq, $vendor) {
+                            $q->where('rfq_id', $rfq->id)->where('vendor_id', $vendor->id);
+                        })->where(function($q) use ($si) {
+                            if ($si->purchase_request_item_id) {
+                                $q->where('purchase_request_item_id', $si->purchase_request_item_id);
+                            } elseif ($si->service_request_item_id) {
+                                $q->where('service_request_item_id', $si->service_request_item_id);
+                            }
+                        })->first();
+
                         $itemMap[$itemId]['history'][] = [
                             'item_name' => $pri->item_name ?? $pri->name ?? '-',
                             'vendor' => $vName,
                             'vendor_city' => optional($vendor)->location ?? '',
                             'value' => $si->final_price_per_item * $si->final_quantity,
                             'qty' => $si->final_quantity,
-                            'unit' => $pri->unit ?? '-',
-                            'spec' => $pri->specification ?? '-',
+                            'unit' => $qd->offered_unit ?? $pri->unit ?? '-',
+                            'spec' => $qd->offered_specification ?? $pri->specification ?? '-',
+                            'notes' => $qd->item_notes ?? $si->notes ?? '-',
                             'requested_by' => $pr->user->name ?? '-',
                             'lead_time' => $leadDays ? $leadDays . ' days' : '-',
                             'req_date' => $pr->requested_date ? \Carbon\Carbon::parse($pr->requested_date)->format('Y-m-d') : '-',
@@ -366,13 +387,22 @@ class HistoryController extends Controller
         $masterVendors = collect($vendorList)->sortBy('vendor_name')->values();
         $locations = $masterVendors->pluck('vendor_city')->filter(fn($c) => $c !== '-')->unique()->sort()->values();
 
-        return view('history.master_vendors', compact('masterVendors', 'locations'));
+        return view('master.vendors', compact('masterVendors', 'locations'));
     }
 
     public function vendorDetail($id)
     {
         $vendor = \App\Models\Vendor::findOrFail($id);
-        $quotations = \App\Models\Quotation::with(['rfq.purchaseRequest', 'rfq.serviceRequest', 'details'])
+        $quotations = \App\Models\Quotation::with([
+            'rfq.purchaseRequest.items',
+            'rfq.purchaseRequest.rfqs.vendorSelections.vendor',
+            'rfq.purchaseRequest.rfqs.vendorSelections.selectionItems',
+            'rfq.serviceRequest.jobs.items',
+            'rfq.serviceRequest.rfqs.vendorSelections.vendor',
+            'rfq.serviceRequest.rfqs.vendorSelections.selectionItems',
+            'details.purchaseRequestItem', 
+            'details.serviceRequestItem'
+        ])
             ->where('vendor_id', $id)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -393,6 +423,76 @@ class HistoryController extends Controller
                 $totalValue += $subtotal;
             }
             
+            $itemsList = $q->details->map(function($d) {
+                $originalItem = $d->purchaseRequestItem ?? $d->serviceRequestItem;
+                return [
+                    'name' => $originalItem ? $originalItem->item_name : '-',
+                    'qty' => $d->offered_quantity,
+                    'unit' => $d->offered_unit ?? ($originalItem ? $originalItem->unit : '-'),
+                    'price' => $d->offered_price_per_item,
+                    'subtotal' => ($d->offered_quantity ?? 0) * ($d->offered_price_per_item ?? 0),
+                ];
+            })->toArray();
+
+            // Compute PR full data for modal
+            $isPR = $pr instanceof \App\Models\PurchaseRequest;
+            $winnerNames = [];
+            $winnerTotal = 0;
+            $winnerDecidedAt = null;
+            $prItemsData = [];
+            
+            foreach ($pr->rfqs ?? [] as $prRfq) {
+                foreach ($prRfq->vendorSelections ?? [] as $sel) {
+                    $vName = optional($sel->vendor)->name ?? optional($sel->vendor)->vendor_name ?? '—';
+                    if ($vName !== '—') $winnerNames[] = $vName;
+
+                    $selTotal = $sel->selectionItems->sum(fn($si) => ($si->final_price_per_item ?? 0) * ($si->final_quantity ?? 0));
+                    $winnerTotal += $selTotal;
+
+                    if ($sel->decided_at && (!$winnerDecidedAt || $sel->decided_at > $winnerDecidedAt)) {
+                        $winnerDecidedAt = $sel->decided_at;
+                    }
+
+                    $selectionItems = $sel->selectionItems->keyBy(function($si) use ($isPR) {
+                        return $isPR ? $si->purchase_request_item_id : $si->service_request_item_id;
+                    });
+
+                    if ($isPR) {
+                        foreach(optional($pr)->items ?? [] as $item) {
+                            $si = $selectionItems->get($item->id);
+                            if (!$si) continue;
+                            $prItemsData[] = [
+                                'item_id' => $item->item_id ?? $item->item_code,
+                                'name' => $item->item_name,
+                                'description' => $item->description,
+                                'specification' => $item->specification,
+                                'quantity' => $si->final_quantity,
+                                'unit' => $item->unit,
+                                'final_price_per_item' => $si->final_price_per_item,
+                                'vendor_name' => $vName,
+                            ];
+                        }
+                    } else {
+                        foreach(optional($pr)->jobs ?? [] as $job) {
+                            foreach(optional($job)->items ?? [] as $item) {
+                                $si = $selectionItems->get($item->id);
+                                if (!$si) continue;
+                                $prItemsData[] = [
+                                    'item_id' => $item->item_id ?? $item->item_code ?? '-',
+                                    'name' => $item->item_name,
+                                    'description' => $job->job_description,
+                                    'specification' => $item->specification,
+                                    'quantity' => $si->final_quantity,
+                                    'unit' => $item->unit,
+                                    'final_price_per_item' => $si->final_price_per_item,
+                                    'vendor_name' => $vName,
+                                ];
+                            }
+                        }
+                    }
+                }
+            }
+
             $history[] = [
                 'doc_no' => $pr->document_number ?? '-',
                 'req_date' => $pr->requested_date ? \Carbon\Carbon::parse($pr->requested_date)->format('Y-m-d') : '-',
@@ -402,10 +502,20 @@ class HistoryController extends Controller
                 'is_selected' => $isSelected,
                 'status' => $isSelected ? 'Selected' : 'Not Selected',
                 'pr_id' => $pr->id,
-                'type' => $pr->type ?? 'goods'
+                'type' => $pr->type ?? 'goods',
+                'items' => $itemsList,
+                'pr_data' => [
+                    'doc_number' => $pr->document_number ?? '-',
+                    'department' => $pr->department ?? optional($pr->user)->department ?? '—',
+                    'vendor_name' => collect($winnerNames)->unique()->implode(', ') ?: '—',
+                    'total_value' => $winnerTotal,
+                    'decided_at' => $winnerDecidedAt,
+                    'items' => $prItemsData,
+                    'status' => $pr->status,
+                ]
             ];
         }
 
-        return view('history.vendor_detail', compact('vendor', 'history', 'totalValue'));
+        return view('master.vendor_detail', compact('vendor', 'history', 'totalValue'));
     }
 }

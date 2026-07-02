@@ -198,7 +198,7 @@
                     @csrf
                     <input type="hidden" name="id" id="cancel-id">
                     <input type="hidden" name="type" id="cancel-type">
-                    <button type="submit" onclick="return confirm('Apakah Anda yakin ingin membatalkan Request ini?');" style="padding:7px 18px;background:#f59e0b;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+                    <button type="button" onclick="triggerCancel(this)" style="padding:7px 18px;background:#f59e0b;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
                         Ø Cancel Request
                     </button>
                 </form>
@@ -206,7 +206,7 @@
                     @csrf
                     <input type="hidden" name="id" id="reopen-id">
                     <input type="hidden" name="type" id="reopen-type">
-                    <button type="submit" onclick="return confirm('Kembalikan status ke Vendor Selection untuk memperpanjang waktu pengadaan (Link Vendor akan otomatis aktif kembali)?');" style="padding:7px 18px;background:#3b82f6;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
+                    <button type="button" onclick="triggerReopen(this)" style="padding:7px 18px;background:#3b82f6;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px">
                         ↺ Re-open (Extend Time)
                     </button>
                 </form>
@@ -500,6 +500,20 @@ function openPRDetail(id, category) {
                 document.getElementById('reopen-type').value = category;
             }
         }
+    }
+    
+    function triggerCancel(btn) {
+        const form = btn.closest('form');
+        showConfirmModal('Batalkan Request', 'Apakah Anda yakin ingin membatalkan Request ini?', 'Batalkan', '#f59e0b', function() {
+            form.submit();
+        });
+    }
+
+    function triggerReopen(btn) {
+        const form = btn.closest('form');
+        showConfirmModal('Kembalikan Status', 'Kembalikan status ke Vendor Selection untuk memperpanjang waktu pengadaan (Link Vendor akan otomatis aktif kembali)?', 'Lanjutkan', '#3b82f6', function() {
+            form.submit();
+        });
     }
 
     // ── Progress bar ──

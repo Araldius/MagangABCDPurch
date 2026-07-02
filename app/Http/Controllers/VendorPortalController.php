@@ -83,6 +83,8 @@ class VendorPortalController extends Controller
             'items.*.price' => 'required|numeric|min:0',
             'items.*.quantity' => 'required|numeric|min:0',
             'items.*.unit' => 'nullable|string',
+            'items.*.specification' => 'nullable|string',
+            'items.*.notes' => 'nullable|string',
             'note' => 'nullable|string',
         ]);
 
@@ -129,6 +131,8 @@ class VendorPortalController extends Controller
                 'offered_price_per_item' => $it['price'],
                 'offered_quantity' => $it['quantity'],
                 'offered_unit' => $it['unit'] ?? null,
+                'offered_specification' => $it['specification'] ?? null,
+                'item_notes' => $it['notes'] ?? null,
             ]);
         }
 

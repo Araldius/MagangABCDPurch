@@ -82,7 +82,9 @@
                     <br><br>
                     If you have any questions, please contact <a href="mailto:purchasing@duniakimiajaya.com" style="color: #3b5bdb; text-decoration: none;">purchasing@duniakimiajaya.com</a>.
                 </p>
-                <button onclick="window.close(); history.back();" style="background: #1e3a5f; color: #fff; border: none; padding: 10px 24px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; width: 100%;">Close / Go Back</button>
+                <button onclick="window.close(); history.back();" class="btn-back" style="width: 100%; justify-content: center;">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Close / Go Back
+                </button>
             </div>
         </div>
     </div>
@@ -215,18 +217,23 @@
                                                     <div style="color:var(--text-muted); font-size:12px; margin-top:4px;">{{ $item->specification ?? '-' }}</div>
                                                     <div style="margin-top:8px;">
                                                         <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
-                                                            <input type="checkbox" class="diff-toggle" onchange="toggleDiff(this, {{ $idx }})">
+                                                            <input type="checkbox" class="diff-toggle" onchange="document.getElementById('spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'">
                                                             <span>Terdapat perbedaan Spesifikasi/Unit?</span>
                                                         </label>
-                                                        <div id="diff-alert-{{ $idx }}" style="display:none;margin-top:6px;padding:6px 10px;background:#fef3c7;color:#d97706;border-radius:6px;font-size:11px;line-height:1.4;">
-                                                            <strong>Peringatan:</strong> Jelaskan detail perbedaannya secara spesifik pada kotak "Remarks / Notes" di bagian bawah.
+                                                        <div id="spec-diff-{{ $idx }}" style="display:none;margin-top:8px;">
+                                                            <input type="text" class="form-control" name="items[{{ $idx }}][specification]" placeholder="Tuliskan spesifikasi yang Anda tawarkan..." style="font-size:12px;padding:8px 10px;">
                                                         </div>
+                                                    </div>
+                                                    <div style="margin-top:8px;">
+                                                        <textarea class="form-control" name="items[{{ $idx }}][notes]" rows="2" placeholder="Catatan untuk item ini (opsional)..." style="font-size:12px;padding:8px 10px;resize:vertical;"></textarea>
                                                     </div>
                                                 </td>
                                                 <td>
+                                                    <div style="font-size:11px;color:#6b7280;margin-bottom:4px;font-weight:600;">Target: {{ $item->quantity }} {{ $item->unit }}</div>
                                                     <div style="display:flex;align-items:center;gap:6px;">
                                                         <input type="number" step="0.01" class="form-control" name="items[{{ $idx }}][quantity]" value="{{ old('items.'.$idx.'.quantity', $item->quantity) }}" required style="width:80px; text-align:center;" readonly>
-                                                            <select class="form-control" name="items[{{ $idx }}][unit]" required style="width:85px; padding:8px;" onchange="checkUnitChange(this, {{ $idx }}, '{{ strtolower($item->unit) }}')">                                                            @foreach(['Pcs', 'Unit', 'Box', 'Kg', 'Liter', 'Meter', 'Roll', 'Set', 'Lot', 'Jasa', 'Pack'] as $u)
+                                                        <select class="form-control" name="items[{{ $idx }}][unit]" required style="width:85px; padding:8px;">
+                                                            @foreach(['Pcs', 'Unit', 'Box', 'Kg', 'Liter', 'Meter', 'Roll', 'Set', 'Lot', 'Jasa', 'Pack'] as $u)
                                                                 <option value="{{ $u }}" {{ (old('items.'.$idx.'.unit') ?? strtolower($item->unit)) == strtolower($u) ? 'selected' : '' }}>{{ $u }}</option>
                                                             @endforeach
                                                         </select>
@@ -247,17 +254,21 @@
                                                 <strong>{{ $item->name ?? $item->item_name }}</strong>
                                                 <input type="hidden" name="items[{{ $idx }}][item_id]" value="{{ $item->id }}">
                                                 <div style="color:var(--text-muted); font-size:12px; margin-top:4px;">{{ $item->specification ?? '-' }}</div>
-                                                <div style="margin-top:8px;">
-                                                    <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
-                                                        <input type="checkbox" class="diff-toggle" onchange="toggleDiff(this, {{ $idx }})">
-                                                        <span>Terdapat perbedaan Spesifikasi/Unit?</span>
-                                                    </label>
-                                                    <div id="diff-alert-{{ $idx }}" style="display:none;margin-top:6px;padding:6px 10px;background:#fef3c7;color:#d97706;border-radius:6px;font-size:11px;line-height:1.4;">
-                                                        <strong>Peringatan:</strong> Jelaskan detail perbedaannya secara spesifik pada kotak "Remarks / Notes" di bagian bawah.
+                                                    <div style="margin-top:8px;">
+                                                        <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
+                                                            <input type="checkbox" class="diff-toggle" onchange="document.getElementById('spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'">
+                                                            <span>Terdapat perbedaan Spesifikasi/Unit?</span>
+                                                        </label>
+                                                        <div id="spec-diff-{{ $idx }}" style="display:none;margin-top:8px;">
+                                                            <input type="text" class="form-control" name="items[{{ $idx }}][specification]" placeholder="Tuliskan spesifikasi yang Anda tawarkan..." style="font-size:12px;padding:8px 10px;">
+                                                        </div>
                                                     </div>
-                                                </div>
+                                                    <div style="margin-top:8px;">
+                                                        <textarea class="form-control" name="items[{{ $idx }}][notes]" rows="2" placeholder="Catatan untuk item ini (opsional)..." style="font-size:12px;padding:8px 10px;resize:vertical;"></textarea>
+                                                    </div>
                                             </td>
                                             <td>
+                                                <div style="font-size:11px;color:#6b7280;margin-bottom:4px;font-weight:600;">Target: {{ $item->quantity }} {{ $item->unit }}</div>
                                                 <div style="display:flex;align-items:center;gap:6px;">
                                                     <input type="number" step="0.01" class="form-control" name="items[{{ $idx }}][quantity]" value="{{ old('items.'.$idx.'.quantity', $item->quantity) }}" required style="width:80px; text-align:center;">
                                                     <select class="form-control" name="items[{{ $idx }}][unit]" required style="width:85px; padding:8px;">
@@ -278,12 +289,7 @@
                         </table>
                     </div>
                 </div>
-                <div class="card-body" style="border-top:1px solid var(--border);">
-                    <div class="form-group" style="margin-bottom:0;">
-                        <label class="form-label">Remarks / Notes</label>
-                        <textarea class="form-control" name="note" rows="3" placeholder="Enter notes or conclusion for this quotation...">{{ old('note') }}</textarea>
-                    </div>
-                </div>
+
                 <div class="card-body" style="background:#f9fafb; border-top:1px solid var(--border); text-align:right;">
                     <button type="submit" class="btn btn-primary" style="padding: 12px 32px; font-size: 15px;">Submit Quotation</button>
                     <p style="font-size:11px; color:var(--text-muted); margin-top:10px;">By submitting, you agree to provide the items at the quoted prices.</p>
@@ -332,15 +338,11 @@
                 renderVendorList(document.getElementById('vendor-search').value.toLowerCase()); 
             }
             
-            function openVendorModal() { 
-                selectedVendorId = null; 
-                document.getElementById('vendor-search').value = ''; 
-                renderVendorList(); 
-                document.getElementById('vendor-modal').classList.add('open'); 
-            }
+            function openVendorModal() { selectedVendorId = null; document.getElementById('vendor-search').value = ''; renderVendorList(); document.getElementById('vendor-modal').classList.add('open'); document.body.style.overflow = 'hidden'; }
             
             function closeVendorModal() { 
                 document.getElementById('vendor-modal').classList.remove('open'); 
+                document.body.style.overflow = '';
             }
             
             function addSelectedVendor() {
@@ -355,8 +357,8 @@
                 closeVendorModal();
             }
             
-            document.getElementById('vendor-modal')?.addEventListener('click', function(e) {
-                if(e.target === this) this.classList.remove('open');
+            document.getElementById('vendor-modal').addEventListener('click', function(e) {
+                if(e.target === this) closeVendorModal();
             });
             const vendorNameInput = document.getElementById('vendor_name_input');
             if(vendorNameInput) {

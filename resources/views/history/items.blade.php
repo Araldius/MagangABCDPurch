@@ -133,7 +133,7 @@ else $rangeText = 'All Time';
                         <th style="padding:9px 14px;text-align:left;font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase">VALUE (RP)</th>
                         <th style="padding:9px 14px;text-align:left;font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase">QTY</th>
                         <th style="padding:9px 14px;text-align:left;font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase">UNIT</th>
-                        <th style="padding:9px 14px;text-align:left;font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase">SPEC</th>
+                        <th style="padding:9px 14px;text-align:left;font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase">SPEC & NOTES</th>
                         <th style="padding:9px 14px;text-align:left;font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase">REQUESTED BY</th>
                         <th style="padding:9px 14px;text-align:left;font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase">LEAD TIME</th>
                         <th style="padding:9px 14px;text-align:left;font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase">REQ DATE</th>
@@ -166,7 +166,10 @@ function openItemDetail(idx) {
             <td style="padding:10px 14px;font-weight:700">${new Intl.NumberFormat('id-ID').format(h.value)}</td>
             <td style="padding:10px 14px">${h.qty}</td>
             <td style="padding:10px 14px">${h.unit}</td>
-            <td style="padding:10px 14px;font-size:11.5px;color:#6b7280;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${h.spec}">${h.spec}</td>
+            <td style="padding:10px 14px;font-size:11.5px;color:#6b7280;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${h.spec}">
+                <div style="font-weight:600;color:#374151;">${h.spec}</div>
+                ${h.notes && h.notes !== '-' ? `<div style="font-size:10.5px;color:#9ca3af;font-style:italic;">Notes: ${h.notes}</div>` : ''}
+            </td>
             <td style="padding:10px 14px">${h.requested_by}</td>
             <td style="padding:10px 14px">${h.lead_time}</td>
             <td style="padding:10px 14px">${h.req_date}</td>
@@ -176,10 +179,17 @@ function openItemDetail(idx) {
     });
     document.getElementById('item-modal-tbody').innerHTML = tbody;
     document.getElementById('item-modal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
 }
+
 function closeItemDetail() {
     document.getElementById('item-modal').style.display = 'none';
+    document.body.style.overflow = '';
 }
+
+document.getElementById('item-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeItemDetail();
+});
 
 let histSortState = { col: null, dir: 'asc' };
 let histPage = 1, histPageSize = 10;
