@@ -57,7 +57,12 @@
                         <div style="font-size:11px;color:#9ca3af;margin-top:1px">{{ $vendor['vendor_city'] }}</div>
                     </td>
                     <td style="padding:13px 14px;font-size:12.5px;color:#374151">{{ $vendor['last_submitted'] }}</td>
-                    <td style="padding:13px 14px;font-size:12.5px;font-weight:600;color:#111827">{{ $vendor['quotation_count'] }}</td>
+                    <td style="padding:13px 14px;font-size:12.5px;font-weight:600;color:#111827">
+                        {{ $vendor['quotation_count'] }} 
+                        @if($vendor['completed_count'] > 0)
+                            <span style="color:#10b981;font-size:11px;font-weight:600;margin-left:4px;">({{ $vendor['completed_count'] }} completed)</span>
+                        @endif
+                    </td>
                     <td style="padding:13px 20px"><button onclick="window.location.href='{{ route('history.vendor.detail', $vendor['vendor_id']) }}'" style="padding:4px 10px;font-size:11.5px;font-weight:600;color:#374151;background:#fff;border:1px solid #e5e7eb;border-radius:6px;cursor:pointer">Detail</button></td>
                 </tr>
                 @empty

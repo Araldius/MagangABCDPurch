@@ -84,12 +84,12 @@
     </div>
     
     <div style="padding:20px;border-bottom:1px solid #e5e7eb">
-        <input type="hidden" name="vendor_id" id="hidden_vendor_id" value="new">
+        <input type="hidden" name="vendor_id" id="hidden_vendor_id" value="">
         
         <div class="form-group flex-1" style="margin-bottom:16px;">
             <label class="form-label flex-between" style="width:100%">
                 <span>Vendor Name <span class="req">*</span></span>
-                <a href="#" onclick="openVendorModal(); return false;" style="font-size:12px; color:#3b5bdb; text-decoration:none;">Select from Catalog</a>
+                <a href="#" onclick="openVendorModal(); return false;" style="font-size:12px; color:#3b5bdb; text-decoration:underline;">Select from Catalog</a>
             </label>
             <input class="form-control" name="new_vendor_name" id="new_vendor_name" placeholder="Enter vendor name manually or select from catalog" required>
         </div>
@@ -101,7 +101,7 @@
             </div>
             <div class="form-group flex-1" style="margin-bottom:0;">
                 <label class="form-label">Email</label>
-                <input class="form-control" type="email" name="new_vendor_email" id="vendor_contact" placeholder="vendor@email.com">
+                <input class="form-control" type="email" name="new_vendor_email" id="vendor_contact" placeholder="vendor@email.com" oninvalid="this.setCustomValidity('Email must contain \'@\'')" oninput="this.setCustomValidity('')">
             </div>
         </div>
     </div>
@@ -114,32 +114,49 @@
         <table class="item-table" style="margin:0;">
             <thead style="background:#f9fafb;">
                 <tr>
-                    <th style="width:50px;">NO</th>
-                    <th>ITEM NAME</th>
-                    <th>SPEC / NOTES</th>
+                    <th style="width:40px;">#</th>
+                    <th>NAMA ITEM</th>
                     <th style="width:100px;">REQUESTED QTY</th>
                     <th style="width:150px;">UNIT PRICE (Rp) <span class="req">*</span></th>
                     <th style="width:150px;text-align:right;">SUBTOTAL (Rp)</th>
                 </tr>
             </thead>
-            <tbody>
+                        <tbody>
                 @php $idx = 0; @endphp
                 @if($isService)
                     @foreach($rfq->serviceRequest->jobs as $job)
-                        <tr><td colspan="6" style="background:#f0f4f8; font-weight:700; color:#374151;">{{ $job->description ?? $job->job_description }}</td></tr>
+                        <tr><td colspan="5" style="background:#f0f4f8; font-weight:700; color:#374151;">{{ $job->description ?? $job->job_description }}</td></tr>
                         @foreach($job->items as $item)
                             <tr>
                                 <td>{{ ++$idx }}</td>
-                                <td style="font-weight:600; color:var(--primary);">
-                                    {{ $item->name ?? $item->item_name }}
-                                    <input type="hidden" name="items[{{ $idx }}][item_id]" value="{{ $item->id }}">
-                                </td>
-                                <td style="color:var(--text-muted); font-size:12px;">{{ $item->specification ?? '-' }}</td>
                                 <td>
+                                    <strong>{{ $item->name ?? $item->item_name }}</strong>
+                                    <input type="hidden" name="items[{{ $idx }}][item_id]" value="{{ $item->id }}">
+                                    <div style="color:var(--text-muted); font-size:12px; margin-top:4px;">{{ $item->specification ?? '-' }}</div>
+                                    <div style="margin-top:8px;">
+                                        <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
+                                            <input type="checkbox" class="diff-toggle" onchange="document.getElementById('spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'">
+                                            <span>Terdapat perbedaan Spesifikasi/Unit?</span>
+                                        </label>
+                                        <div id="spec-diff-{{ $idx }}" style="display:none;margin-top:8px;">
+                                            <input type="text" class="form-control" name="items[{{ $idx }}][specification]" placeholder="Tuliskan spesifikasi yang ditawarkan..." style="font-size:12px;padding:8px 10px;">
+                                        </div>
+                                    </div>
+                                    <div style="margin-top:8px;">
+                                        <textarea class="form-control" name="items[{{ $idx }}][notes]" rows="2" placeholder="Catatan untuk item ini (opsional)..." style="font-size:12px;padding:8px 10px;resize:vertical;"></textarea>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div style="font-size:11px;color:#6b7280;margin-bottom:4px;font-weight:600;">Target: {{ $item->quantity }} {{ $item->unit }}</div>
                                     <div style="display:flex;align-items:center;gap:6px;">
                                         <input type="number" step="0.01" class="form-control qty-input" name="items[{{ $idx }}][quantity]" value="{{ $item->quantity }}" required style="width:80px; text-align:center;" readonly>
-                                        <select class="form-control unit-select" name="items[{{ $idx }}][unit]" required style="width:75px; padding:6px; font-size:11.5px; height:auto;">
-                                            @foreach(['Pcs', 'Unit', 'Box', 'Kg', 'Liter', 'Meter', 'Roll', 'Set', 'Lot', 'Jasa', 'Pack'] as $u)
+                                        <select class="form-control" name="items[{{ $idx }}][unit]" required style="width:85px; padding:8px;" onchange="checkUnitChange(this, {{ $idx }}, '{{ strtolower($item->unit) }}')">
+                                            @php
+                                                $baseUnits = ['Pcs', 'Unit', 'Box', 'Kg', 'Liter', 'Meter', 'Roll', 'Set', 'Lot', 'Jasa', 'Pack'];
+                                                $itemUnit = ucfirst(strtolower($item->unit));
+                                                if (!in_array($itemUnit, $baseUnits)) array_unshift($baseUnits, $itemUnit);
+                                            @endphp
+                                            @foreach($baseUnits as $u)
                                                 <option value="{{ $u }}" {{ strtolower($item->unit) == strtolower($u) ? 'selected' : '' }}>{{ $u }}</option>
                                             @endforeach
                                         </select>
@@ -156,23 +173,42 @@
                     @foreach($rfq->purchaseRequest->items as $item)
                         <tr>
                             <td>{{ ++$idx }}</td>
-                            <td style="font-weight:600; color:var(--primary);">
-                                {{ $item->name ?? $item->item_name }}
-                                <input type="hidden" name="items[{{ $idx }}][item_id]" value="{{ $item->id }}">
-                            </td>
-                            <td style="color:var(--text-muted); font-size:12px;">{{ $item->specification ?? '-' }}</td>
                             <td>
+                                <strong>{{ $item->name ?? $item->item_name }}</strong>
+                                <input type="hidden" name="items[{{ $idx }}][item_id]" value="{{ $item->id }}">
+                                <div style="color:var(--text-muted); font-size:12px; margin-top:4px;">{{ $item->specification ?? '-' }}</div>
+                                <div style="margin-top:8px;">
+                                    <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
+                                        <input type="checkbox" class="diff-toggle" onchange="document.getElementById('spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'">
+                                        <span>Terdapat perbedaan Spesifikasi?</span>
+                                    </label>
+                                    <div id="spec-diff-{{ $idx }}" style="display:none;margin-top:8px;">
+                                        <input type="text" class="form-control" name="items[{{ $idx }}][specification]" placeholder="Tuliskan spesifikasi yang ditawarkan..." style="font-size:12px;padding:8px 10px;">
+                                    </div>
+                                </div>
+                                <div style="margin-top:8px;">
+                                    <textarea class="form-control" name="items[{{ $idx }}][notes]" rows="2" placeholder="Catatan untuk item ini (opsional)..." style="font-size:12px;padding:8px 10px;resize:vertical;"></textarea>
+                                </div>
+                            </td>
+                            <td>
+                                <div style="font-size:11px;color:#6b7280;margin-bottom:4px;font-weight:600;">Target: {{ $item->quantity }} {{ $item->unit }}</div>
                                 <div style="display:flex;align-items:center;gap:6px;">
+                                    <!-- TIDAK ADA READONLY UNTUK GOODS -->
                                     <input type="number" step="0.01" class="form-control qty-input" name="items[{{ $idx }}][quantity]" value="{{ $item->quantity }}" required style="width:80px; text-align:center;">
-                                    <select class="form-control unit-select" name="items[{{ $idx }}][unit]" required style="width:75px; padding:6px; font-size:11.5px; height:auto;">
-                                        @foreach(['Pcs', 'Unit', 'Box', 'Kg', 'Liter', 'Meter', 'Roll', 'Set', 'Lot', 'Jasa', 'Pack'] as $u)
+                                    <select class="form-control" name="items[{{ $idx }}][unit]" required style="width:85px; padding:8px;" onchange="checkUnitChange(this, {{ $idx }}, '{{ strtolower($item->unit) }}')">
+                                        @php
+                                            $baseUnits = ['Pcs', 'Unit', 'Box', 'Kg', 'Liter', 'Meter', 'Roll', 'Set', 'Lot', 'Jasa', 'Pack'];
+                                            $itemUnit = ucfirst(strtolower($item->unit));
+                                            if (!in_array($itemUnit, $baseUnits)) array_unshift($baseUnits, $itemUnit);
+                                        @endphp
+                                        @foreach($baseUnits as $u)
                                             <option value="{{ $u }}" {{ strtolower($item->unit) == strtolower($u) ? 'selected' : '' }}>{{ $u }}</option>
                                         @endforeach
                                     </select>
                                 </div>
                             </td>
                             <td>
-                                <input type="text" inputmode="decimal" class="form-control price-input" name="items[{{ $idx }}][price]" required placeholder="Rp.0" oninput="formatPriceInput(this)">
+                                <input type="text" inputmode="decimal" class="form-control price-input" name="items[{{ $idx }}][price]" required placeholder="Rp. 0" oninput="formatPriceInput(this)">
                             </td>
                             <td class="subtotal-cell" style="font-weight:700; font-family:monospace; font-size:14px; text-align:right;">Rp. 0</td>
                         </tr>
@@ -181,20 +217,17 @@
             </tbody>
             <tfoot>
                 <tr style="background:#f9fafb;">
-                    <td colspan="5" style="text-align:right; font-weight:700; color:var(--text-muted);">Grand Total</td>
+                    <td colspan="4" style="text-align:right; font-weight:700; color:var(--text-muted);">Grand Total</td>
                     <td id="grand-total" style="font-weight:800; font-size:16px; color:#111827; font-family:monospace; text-align:right;">Rp. 0</td>
                 </tr>
             </tfoot>
         </table>
     </div>
 
-    <div style="padding:16px 20px;border-top:1px solid #f3f4f6;">
-        <label style="display:block; font-size:12px; font-weight:600; color:var(--text-main); margin-bottom:6px;">Remarks / Notes</label>
-        <textarea class="form-control" name="note" rows="3" placeholder="Enter notes or conclusion for this quotation..."></textarea>
-    </div>
-
     <div style="padding:16px 20px;border-top:1px solid #f3f4f6;display:flex;justify-content:flex-end;gap:12px;background:#fafafa">
-        <a href="{{ route('dashboard') }}" class="btn btn-outline" style="border-radius:7px;font-size:12.5px;padding:8px 16px;box-shadow:0 1px 2px rgba(0,0,0,0.05)">Cancel</a>
+        <a href="{{ route('dashboard') }}" class="btn-back">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Cancel
+        </a>
         <button type="submit" class="btn btn-primary" style="border-radius:7px;font-size:12.5px;padding:8px 16px;box-shadow:0 1px 2px rgba(0,0,0,0.05)">Save Quotation</button>
     </div>
 </div>
@@ -205,14 +238,22 @@
             <div><div class="modal-title">Vendor Catalog</div><div class="modal-desc">Search and select registered vendors</div></div>
             <button type="button" class="modal-close" onclick="closeVendorModal()">&times;</button>
         </div>
-        <div style="padding: 16px 20px 12px; border-bottom: 1px solid var(--border); background: #fafafa;">
-            <input class="form-control mb-2" id="vendor-search" placeholder="Search vendor name..." oninput="filterVendors(this.value)">
+        <div style="padding: 16px 20px 12px; border-bottom: 1px solid var(--border); background: #fafafa; display:flex; flex-direction:column; gap:8px;">
+            <div style="display:flex; gap:8px;">
+                <input class="form-control" id="vendor-search" placeholder="Search vendor name..." oninput="filterVendors()" style="flex:1;">
+                <select class="form-control" id="vendor-sort" onchange="filterVendors()" style="width:160px;">
+                    <option value="name_asc">Name (A-Z)</option>
+                    <option value="name_desc">Name (Z-A)</option>
+                </select>
+            </div>
         </div>
         <div class="modal-body" style="padding-top: 12px;">
             <div id="vendor-list" style="display:flex;flex-direction:column;"></div>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-outline" onclick="closeVendorModal()">Cancel</button>
+            <button type="button" class="btn-back" onclick="closeVendorModal()">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Cancel
+            </button>
             <button type="button" class="btn btn-primary" onclick="addSelectedVendor()">Select Vendor</button>
         </div>
     </div>
@@ -230,7 +271,7 @@
         });
 
     function resetVendorId() {
-        document.getElementById('hidden_vendor_id').value = 'new';
+        document.getElementById('hidden_vendor_id').value = '';
     }
 
     // Auto-caps and Autofill logic
@@ -285,9 +326,16 @@
         }
     });
 
-    function filterVendors(q) { renderVendorList(q.toLowerCase()); }
-    function renderVendorList(q='') {
-        const filtered = vendors.filter(v => !q || v.vendor_name.toLowerCase().includes(q));
+    function filterVendors() {
+        const q = document.getElementById('vendor-search').value.toLowerCase();
+        const s = document.getElementById('vendor-sort').value;
+        renderVendorList(q, s);
+    }
+    function renderVendorList(q='', s='name_asc') {
+        let filtered = vendors.filter(v => !q || v.vendor_name.toLowerCase().includes(q));
+        if (s === 'name_asc') filtered.sort((a,b) => a.vendor_name.localeCompare(b.vendor_name));
+        else if (s === 'name_desc') filtered.sort((a,b) => b.vendor_name.localeCompare(a.vendor_name));
+
         document.getElementById('vendor-list').innerHTML = filtered.map(v => {
             const isSelected = String(selectedVendorId) === String(v.id);
             return `
@@ -298,20 +346,12 @@
         }).join('');
     }
 
-    function selectVendorModal(id) { 
-        selectedVendorId = id; 
-        renderVendorList(document.getElementById('vendor-search').value.toLowerCase()); 
-    }
-    
-    function openVendorModal() { 
-        selectedVendorId = null; 
-        document.getElementById('vendor-search').value = ''; 
-        renderVendorList(); 
-        document.getElementById('vendor-modal').classList.add('open'); 
-    }
+    function selectVendorModal(id) { selectedVendorId = id; filterVendors(); }
+    function openVendorModal() { selectedVendorId = null; document.getElementById('vendor-search').value = ''; document.getElementById('vendor-sort').value = 'name_asc'; filterVendors(); document.getElementById('vendor-modal').classList.add('open'); document.body.style.overflow = 'hidden'; }
     
     function closeVendorModal() { 
         document.getElementById('vendor-modal').classList.remove('open'); 
+        document.body.style.overflow = '';
     }
     
     function addSelectedVendor() {
@@ -329,7 +369,7 @@
     
     // Close modal when clicking outside
     document.getElementById('vendor-modal').addEventListener('click', function(e) {
-        if(e.target === this) this.classList.remove('open');
+        if(e.target === this) closeVendorModal();
     });
 
     // Helper: ubah "1.500,75" -> 1500.75 (number biasa)
@@ -391,5 +431,35 @@
             input.value = parsePriceValue(input.value);
         });
     });
+    function toggleDiff(checkbox, idx) {
+        const alertBox = document.getElementById('diff-alert-' + idx);
+        alertBox.style.display = checkbox.checked ? 'block' : 'none';
+        
+        // Jika ada satu saja item yang beda, kotak "Notes" global di bawah akan menjadi REQUIRED
+        const anyChecked = document.querySelectorAll('.diff-toggle:checked').length > 0;
+        const globalNote = document.querySelector('textarea[name="note"]');
+        
+        if (globalNote) {
+            globalNote.required = anyChecked;
+            if (anyChecked) {
+                globalNote.placeholder = "WAJIB DIISI: Jelaskan perbedaan spesifikasi pada item yang Anda ubah...";
+                globalNote.style.border = "1px solid #ef4444";
+            } else {
+                globalNote.placeholder = "Enter notes or conclusion for this quotation...";
+                globalNote.style.border = "1px solid #d1d5db";
+            }
+        }
+    }
+
+    // Ter-trigger otomatis jika Vendor mengganti unit di dropdown
+    function checkUnitChange(selectObj, idx, originalUnit) {
+        const toggle = document.querySelector(`.diff-toggle[onchange*="${idx}"]`);
+        if (toggle) {
+            if (selectObj.value.toLowerCase() !== originalUnit.toLowerCase()) {
+                toggle.checked = true;
+            }
+            toggleDiff(toggle, idx);
+        }
+    }
 </script>
 @endsection

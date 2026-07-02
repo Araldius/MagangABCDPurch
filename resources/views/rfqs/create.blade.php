@@ -111,7 +111,9 @@
         </div>
 
         <div class="flex-between" style="justify-content:flex-end;gap:12px;">
-            <a href="{{ route('dashboard') }}" class="btn btn-outline">Batal</a>
+            <a href="{{ route('dashboard') }}" class="btn-back">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Batal
+            </a>
             <button type="submit" class="btn btn-primary" {{ $requests->isEmpty() ? 'disabled' : '' }}>
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
                 Buat RFQ & Pilih Vendor

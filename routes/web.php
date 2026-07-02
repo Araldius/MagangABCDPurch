@@ -7,6 +7,7 @@ use App\Http\Controllers\RfqController;
 use App\Http\Controllers\VendorController;
 use App\Http\Controllers\QuotationController;
 use App\Http\Controllers\HistoryController;
+use App\Http\Controllers\ItemController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn() => redirect()->route('login'));
@@ -39,6 +40,7 @@ Route::middleware('auth')->group(function () {
     Route::post('request/approve',          [PurchaseRequestController::class, 'approve'])->name('requests.approve');
     Route::post('request/reject',           [PurchaseRequestController::class, 'reject'])->name('requests.reject');
     Route::post('request/cancel',           [PurchaseRequestController::class, 'cancel'])->name('requests.cancel');
+    Route::post('request/reopen', [PurchaseRequestController::class, 'reopen'])->name('requests.reopen');
 
     /* Procurement History */
     Route::prefix('procurement-history')->name('history.')->group(function () {
@@ -47,6 +49,17 @@ Route::middleware('auth')->group(function () {
         Route::get('vendors', [HistoryController::class, 'vendors'])->name('vendors');
         Route::get('master-vendors', [HistoryController::class, 'masterVendors'])->name('master.vendors');
         Route::get('vendors/{id}', [HistoryController::class, 'vendorDetail'])->name('vendor.detail');
+    });
+
+    /* Master Items */
+    Route::prefix('master-items')->name('items.')->group(function () {
+        Route::get('/', [ItemController::class, 'index'])->name('index');
+        Route::post('/store', [ItemController::class, 'store'])->name('store');
+        Route::post('/update/{id}', [ItemController::class, 'update'])->name('update');
+        Route::post('/archive/{id}', [ItemController::class, 'archive'])->name('archive');
+        Route::get('/export', [ItemController::class, 'export'])->name('export');
+        Route::get('/{id}/export-history', [ItemController::class, 'exportHistory'])->name('exportHistory');
+        Route::get('/{id}', [ItemController::class, 'show'])->name('show');
     });
 
     /* RFQ */

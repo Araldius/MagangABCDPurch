@@ -13,6 +13,8 @@ class QuotationDetail extends Model
         'offered_price_per_item',
         'offered_quantity',
         'offered_unit',
+        'offered_specification',
+        'item_notes',
     ];
 
     public function quotation()

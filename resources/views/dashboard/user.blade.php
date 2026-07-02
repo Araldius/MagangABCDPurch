@@ -436,32 +436,136 @@ function dashHPageSz(s) { hEng.pageSize  = parseInt(s); hEng.page  = 1; applyDas
 function openDetailModal(id, category) {
     const pr = prData[id];
     if (!pr) return;
-    document.getElementById('modal-pr-title').textContent = pr.title || pr.service_name || 'Request Detail';
-    document.getElementById('modal-pr-sub').textContent   = (pr.document_number || (category==='service'?'SR-':'PR-')+String(pr.id).padStart(4,'0')) + ' | ' + (pr.plant||'');
+
+    // === Gather vendor selection data ===
+    const rfq = (pr.rfqs || [])[0];
+    const rfqId = rfq ? rfq.id : null;
+    const vendorSelections = rfq ? (rfq.vendor_selections || []) : [];
+    const hasVS = vendorSelections.length > 0;
+
+    const itemVS = {};
+    vendorSelections.forEach(vs => {
+        const vName = (vs.vendor && (vs.vendor.vendor_name || vs.vendor.name)) || '—';
+        (vs.selection_items || []).forEach(si => {
+            const key = si.purchase_request_item_id || si.service_request_item_id;
+            if (key) {
+                itemVS[key] = {
+                    vendor:     vName,
+                    vendor_id:  vs.vendor_id,
+                    unit_price: parseFloat(si.final_price_per_item) || 0,
+                    qty:        parseInt(si.final_quantity) || 0,
+                    total:      (parseFloat(si.final_price_per_item)||0) * (parseInt(si.final_quantity)||0),
+                    unit:       si.final_unit || null,
+                    spec:       si.final_specification || null,
+                    notes:      si.notes || null,
+                };
+            }
+        });
+    });
+
+    const vendorTotals = {};
+    vendorSelections.forEach(vs => {
+        const vName = (vs.vendor && (vs.vendor.vendor_name || vs.vendor.name)) || '—';
+        const vid = vs.vendor_id;
+        if (!vendorTotals[vid]) vendorTotals[vid] = { name: vName, items: [], total: 0 };
+        (vs.selection_items || []).forEach(si => {
+            const subtotal = (parseFloat(si.final_price_per_item)||0) * (parseInt(si.final_quantity)||0);
+            vendorTotals[vid].total += subtotal;
+            const key = si.purchase_request_item_id || si.service_request_item_id;
+            const pool = (category === 'service' || pr.type === 'service')
+                ? (pr.jobs||[]).flatMap(j => j.items || [])
+                : (pr.items || []);
+            const prItem = pool.find(it => it.id == key);
+            vendorTotals[vid].items.push({
+                item_id:    prItem?.item_id || '—',
+                item_name:  prItem?.item_name || prItem?.name || '—',
+                qty:        si.final_quantity,
+                unit_price: si.final_price_per_item,
+                subtotal,
+            });
+        });
+    });
+
+    // Header
+    document.getElementById('modal-pr-title').textContent = pr.display_title || pr.title || pr.service_name || 'Request Detail';
+    document.getElementById('modal-pr-sub').textContent   =
+        (pr.display_doc || pr.document_number || (category==='service'?'SR-':'PR-')+String(pr.id).padStart(4,'0'))
+        + ' | ' + (pr.department || '') + (pr.plant ? ' | Kebutuhan ' + pr.plant : '');
+
+    // Meta bar
+    document.getElementById('modal-pr-meta').innerHTML =
+        `<div><span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em">Priority</span><div style="font-weight:600;font-size:12.5px;margin-top:2px">${pr.priority || 'Normal'}</div></div>
+         <div><span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em">Plant</span><div style="font-weight:600;font-size:12.5px;margin-top:2px">${pr.plant || '—'}</div></div>
+         <div><span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em">Status</span><div style="font-weight:600;font-size:12.5px;margin-top:2px">${pr.status ? pr.status.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()) : '—'}</div></div>`;
+
+    // Select Vendor btn
+    document.getElementById('modal-select-vendor-btn').href =
+        `/vendor-selection?key=${category}_${id}`;
+
+    // === Build item rows ===
+    const thStyle = 'padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#9ca3af;white-space:nowrap;';
+    const tdStyle = 'padding:8px 10px;border-bottom:1px solid #f9fafb;font-size:12px;';
+
     let itemRows = '';
     if (category === 'service' || pr.type === 'service' || pr.jobs) {
         (pr.jobs||[]).forEach(job => {
             itemRows += `<tr><td colspan="6" style="background:#f3f4f6;padding:6px 12px;font-weight:700;font-size:11.5px;">💼 JOB: ${job.job_description}</td></tr>`;
             (job.items||[]).forEach((it,i) => {
                 itemRows += `<tr>
-                    <td style="padding:9px 12px;border-bottom:1px solid #f9fafb;">${i+1}</td>
-                    <td style="padding:9px 12px;border-bottom:1px solid #f9fafb;color:#9ca3af;">—</td>
-                    <td style="padding:9px 12px;border-bottom:1px solid #f9fafb;font-weight:500;">${it.item_name||it.name||'—'}</td>
-                    <td style="padding:9px 12px;border-bottom:1px solid #f9fafb;">${it.specification||'—'}</td>
-                    <td style="padding:9px 12px;border-bottom:1px solid #f9fafb;">${it.quantity}</td>
-                    <td style="padding:9px 12px;border-bottom:1px solid #f9fafb;">${it.unit}</td>
+                    <td style="${tdStyle}">${i+1}</td>
+                    <td style="${tdStyle}font-family:monospace;color:#3b5bdb;font-weight:600;">${it.item_id||'—'}</td>
+                    <td style="${tdStyle}font-weight:500;">${it.item_name||it.name||'—'}</td>
+                    <td style="${tdStyle}color:#6b7280;font-size:11.5px;">
+                        ${it.item_notes||it.description||'—'}
+                        ${vs && vs.notes && vs.notes !== 'Selected' ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px">VENDOR NOTE</div>` : ''}
+                    </td>
+                    <td style="${tdStyle}color:#6b7280;font-size:11.5px;">
+                        ${vs && vs.spec ? vs.spec : (it.specification || '—')}
+                        ${vs && vs.spec && vs.spec.toLowerCase() !== (it.specification||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Spec: ${it.specification || '-'}">DIFFERS</div>` : ''}
+                    </td>
+                    <td style="${tdStyle}text-align:right;font-weight:600;">${it.quantity}</td>
+                    <td style="${tdStyle}color:#6b7280;">
+                        ${vs && vs.unit ? vs.unit : (it.unit || '—')}
+                        ${vs && vs.unit && vs.unit.toLowerCase() !== (it.unit||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Unit: ${it.unit || '-'}">DIFFERS</div>` : ''}
+                    </td>
+                    ${hasVS ? `
+                    <td style="${tdStyle}font-family:monospace;font-weight:600;color:#111827;">${vs ? fmtRp(vs.unit_price) : '—'}</td>
+                    <td style="${tdStyle}font-family:monospace;font-weight:700;color:#111827;">${vs ? fmtRp(vs.total) : '—'}</td>
+                    <td style="${tdStyle}">
+                        ${vs ? `<span style="padding:2px 8px;background:#e0f2fe;border-radius:4px;font-size:11px;font-weight:600;color:#0369a1;white-space:nowrap;">${vs.vendor}</span>` : '—'}
+                    </td>` : ''}
                 </tr>`;
             });
         });
     } else {
-        itemRows = (pr.items||[]).map((it,i) => `<tr>
-            <td style="padding:9px 12px;border-bottom:1px solid #f9fafb;">${i+1}</td>
-            <td style="padding:9px 12px;border-bottom:1px solid #f9fafb;font-family:monospace;color:#3b5bdb;font-weight:600">${it.item_id||it.item_code||'—'}</td>
-            <td style="padding:9px 12px;border-bottom:1px solid #f9fafb;font-weight:500;">${it.item_name||it.name||'—'}</td>
-            <td style="padding:9px 12px;border-bottom:1px solid #f9fafb;">${it.specification||'—'}</td>
-            <td style="padding:9px 12px;border-bottom:1px solid #f9fafb;">${it.quantity}</td>
-            <td style="padding:9px 12px;border-bottom:1px solid #f9fafb;">${it.unit}</td>
-        </tr>`).join('');
+        (pr.items||[]).forEach((it, i) => {
+            const vs = itemVS[it.id];
+            if (vs) grandTotal += vs.total;
+            itemRows += `<tr>
+                <td style="${tdStyle}">${i+1}</td>
+                <td style="${tdStyle}font-family:monospace;color:#3b5bdb;font-weight:600;">${it.item_id||it.item_code||'—'}</td>
+                <td style="${tdStyle}font-weight:500;">${it.item_name||it.name||'—'}</td>
+                <td style="${tdStyle}color:#6b7280;font-size:11.5px;">
+                    ${it.item_notes||it.description||'—'}
+                    ${vs && vs.notes && vs.notes !== 'Selected' ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px">VENDOR NOTE</div>` : ''}
+                </td>
+                <td style="${tdStyle}color:#6b7280;font-size:11.5px;">
+                    ${vs && vs.spec ? vs.spec : (it.specification || '—')}
+                    ${vs && vs.spec && vs.spec.toLowerCase() !== (it.specification||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Spec: ${it.specification || '-'}">DIFFERS</div>` : ''}
+                </td>
+                <td style="${tdStyle}text-align:right;font-weight:600;">${it.quantity}</td>
+                <td style="${tdStyle}color:#6b7280;">
+                    ${vs && vs.unit ? vs.unit : (it.unit || '—')}
+                    ${vs && vs.unit && vs.unit.toLowerCase() !== (it.unit||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Unit: ${it.unit || '-'}">DIFFERS</div>` : ''}
+                </td>
+                ${hasVS ? `
+                <td style="${tdStyle}font-family:monospace;font-weight:600;color:#111827;">${vs ? fmtRp(vs.unit_price) : '—'}</td>
+                <td style="${tdStyle}font-family:monospace;font-weight:700;color:#111827;">${vs ? fmtRp(vs.total) : '—'}</td>
+                <td style="${tdStyle}">
+                    ${vs ? `<span style="padding:2px 8px;background:#e0f2fe;border-radius:4px;font-size:11px;font-weight:600;color:#0369a1;white-space:nowrap;">${vs.vendor}</span>` : '—'}
+                </td>` : ''}
+            </tr>`;
+        });
     }
     const subDate = new Date(pr.submission_date||pr.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
     const rawReqDate = new Date(pr.requested_date||pr.need_date||pr.created_at);

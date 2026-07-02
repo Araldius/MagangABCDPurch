@@ -261,7 +261,7 @@
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { display: true, position: 'top' }, // Legends enabled
+                    legend: { display: !isSingleDataset || type === 'doughnut', position: 'top' }, // Legends hidden for single variables
                     tooltip: { callbacks: { label: (ctx) => ' ' + ((id !== 'chartStatus' && id !== 'chartOrderRecords') ? formatRp(ctx.raw) : ctx.raw) } }
                 },
                 onClick: (evt, activeEls) => {

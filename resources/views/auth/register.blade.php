@@ -213,7 +213,7 @@ input:focus, select:focus { border-color: var(--border-focus); box-shadow: 0 0 0
       </div>
       <div class="left-feature">
         <div class="left-feature-dot"></div>
-        <div class="left-feature-text">Monitor AR data in real-time</div>
+        <div class="left-feature-text">Monitor procurement data in real-time</div>
       </div>
     </div>
   </div>

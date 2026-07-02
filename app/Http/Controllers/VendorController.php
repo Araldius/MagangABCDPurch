@@ -24,7 +24,7 @@ class VendorController extends Controller
         $user = auth()->user();
         $validStatuses = ['vendor_search', 'vendor_selection'];
 
-        $prs = PurchaseRequest::with(['items', 'rfqs.quotations.details'])
+        $prs = PurchaseRequest::with(['items', 'rfqs.quotations.details', 'rfqs.vendorSelections.selectionItems'])
             ->whereIn('status', $validStatuses)
             ->when($user->role !== 'purchasing', fn($q) => $q->where('user_id', $user->id))
             ->latest()
@@ -38,7 +38,7 @@ class VendorController extends Controller
                 return $pr;
             });
 
-        $srs = ServiceRequest::with(['jobs.items', 'rfqs.quotations.details'])
+        $srs = ServiceRequest::with(['jobs.items', 'rfqs.quotations.details', 'rfqs.vendorSelections.selectionItems'])
             ->whereIn('status', $validStatuses)
             ->when($user->role !== 'purchasing', fn($q) => $q->where('user_id', $user->id))
             ->latest()
@@ -105,6 +105,8 @@ class VendorController extends Controller
             'selections.*.unit_price'  => ['required', 'numeric', 'min:0'],
             'selections.*.quantity'    => ['required', 'numeric', 'min:0'],
             'selections.*.notes'       => ['nullable', 'string'],
+            'selections.*.unit'        => ['nullable', 'string'],
+            'selections.*.specification'=> ['nullable', 'string'],
         ]);
 
         $isService = ($request->item_type === 'service');
@@ -171,6 +173,8 @@ class VendorController extends Controller
                         'final_price_per_item'      => $row['unit_price'],
                         'final_quantity'            => $row['quantity'],
                         'notes'                     => $row['notes'] ?? 'Selected',
+                        'final_unit'                => $row['unit'] ?? null,
+                        'final_specification'       => $row['specification'] ?? null,
                         'purchase_request_item_id'  => $isService ? null : $row['item_id'],
                         'service_request_item_id'   => $isService ? $row['item_id'] : null,
                     ]);
@@ -190,6 +194,19 @@ class VendorController extends Controller
             }
 
             $pr->update(['status' => 'completed']);
+            $userId = $pr->user_id ?? null;
+            if ($userId) {
+                $userCreator = \App\Models\User::find($userId);
+                if ($userCreator) {
+                    $userCreator->notify(new \App\Notifications\VendorSelectedNotification($pr, $isService ? 'service' : 'goods'));
+                }
+            }
+            
+            // Notify all purchasing users as well
+            $purchasingUsers = \App\Models\User::where('role', 'purchasing')->get();
+            if ($purchasingUsers->count() > 0) {
+                \Illuminate\Support\Facades\Notification::send($purchasingUsers, new \App\Notifications\VendorSelectedNotification($pr, $isService ? 'service' : 'goods'));
+            }
 
             return response()->json([
                 'success'   => true,

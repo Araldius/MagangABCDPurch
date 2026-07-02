@@ -36,7 +36,7 @@ class NotificationController extends Controller
             return response()->json(['error' => 'Unauthenticated'], 401);
         }
 
-        if ($request->has('id')) {
+        if ($request->filled('id')) {
             $notification = $user->notifications()->find($request->id);
             if ($notification) {
                 $notification->markAsRead();

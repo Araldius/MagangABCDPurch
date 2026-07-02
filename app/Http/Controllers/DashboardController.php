@@ -192,6 +192,7 @@ private function userDashboard()
 
         foreach ($allRequests as $req) {
             $isCompleted = ($req->status === 'completed' || $req->status === 'approved');
+            $isPending = in_array($req->status, ['pending', 'submitted', 'vendor_search', 'vendor_selection']);
             $dept = $req->department ?? 'Unknown';
             $p = $req->plant ?? 'Unknown';
             $monthLabel = \Carbon\Carbon::parse($req->created_at)->format('M');
@@ -206,7 +207,7 @@ private function userDashboard()
                 $statusTrend[$monthLabel]['Completed']++;
             } elseif ($isOverdue) {
                 $statusTrend[$monthLabel]['Overdue']++;
-            } else {
+            } elseif ($isPending) {
                 $statusTrend[$monthLabel]['Pending']++;
             }
 

@@ -75,6 +75,28 @@
         .toast-container{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:12px;z-index:9999;}
         .toast{background:#fff;border-left:4px solid #3b5bdb;border-radius:8px;box-shadow:0 10px 25px rgba(0,0,0,.15);padding:14px 18px;width:340px;transform:translateX(120%);transition:transform .3s cubic-bezier(0.34, 1.56, 0.64, 1);opacity:0;}
         .toast.show{transform:translateX(0);opacity:1;}
+
+        /* UTILITIES */
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #4b5563;
+            background: #fff;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        .btn-back:hover {
+            background: #f9fafb;
+            color: #111827;
+            border-color: #9ca3af;
+        }
     </style>
 </head>
 <body>
@@ -110,9 +132,16 @@
                 <a href="{{ route('history.orders') }}" class="sidebar-link {{ request()->routeIs('history.orders') ? 'active' : '' }}" style="padding:6px 10px;font-size:11.5px">Order Records</a>
                 <a href="{{ route('history.items') }}" class="sidebar-link {{ request()->routeIs('history.items') ? 'active' : '' }}" style="padding:6px 10px;font-size:11.5px">Item Catalog</a>
                 <a href="{{ route('history.vendors') }}" class="sidebar-link {{ request()->routeIs('history.vendors') ? 'active' : '' }}" style="padding:6px 10px;font-size:11.5px">Vendor Directory</a>
-                <a href="{{ route('history.master.vendors') }}" class="sidebar-link {{ request()->routeIs('history.master.vendors') ? 'active' : '' }}" style="padding:6px 10px;font-size:11.5px">Master Vendor</a>
             </div>
         </div>
+        <a href="{{ route('history.master.vendors') }}" class="sidebar-link {{ request()->routeIs('history.master.vendors') || request()->routeIs('history.vendor.detail') ? 'active' : '' }}">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4M8 6h.01M16 6h.01M12 6h.01M8 10h.01M16 10h.01M12 10h.01M8 14h.01M16 14h.01M12 14h.01M8 18h.01M16 18h.01M12 18h.01"/></svg>
+            Master Vendor
+        </a>
+        <a href="{{ route('items.index') }}" class="sidebar-link {{ request()->routeIs('items.*') ? 'active' : '' }}">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Master Item
+        </a>
         <a href="{{ route('vendors.list') }}" class="sidebar-link {{ request()->routeIs('vendors.*') ? 'active' : '' }}">
             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
             Vendor Selection
@@ -168,15 +197,6 @@
     </header>
  
     <main class="page-content">
-        @if(session('success'))
-        <div class="alert alert-success">✓ {{ session('success') }}</div>
-        @endif
-        @if($errors->any())
-        <div class="alert alert-danger">
-            <strong>Please fix:</strong>
-            <ul>@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
-        </div>
-        @endif
         @yield('content')
     </main>
  
@@ -186,10 +206,11 @@
     </footer>
 </div>
 
-<!-- Toast Container -->
-<div id="toast-container" class="toast-container"></div>
+
 
 @auth
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     let lastNotifIds = new Set();
     
@@ -198,33 +219,62 @@
         dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
     }
 
-    function showToast(message, link) {
-        const container = document.getElementById('toast-container');
-        const toast = document.createElement('div');
-        toast.className = 'toast';
-        toast.innerHTML = `
-            <div style="display:flex;align-items:center;gap:10px;">
-                <div style="width:36px;height:36px;background:#e0e7ff;color:#4338ca;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </div>
-                <div>
-                    <div style="font-weight:600;color:#111827;font-size:13px;margin-bottom:2px;">New Quotation</div>
-                    <div style="color:#6b7280;font-size:12px;line-height:1.4;">${message}</div>
-                </div>
-            </div>
-        `;
-        if(link) {
-            toast.style.cursor = 'pointer';
-            toast.onclick = () => window.location.href = link;
-        }
-        container.appendChild(toast);
-        
-        // Trigger reflow for animation
-        setTimeout(() => toast.classList.add('show'), 10);
-        setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => toast.remove(), 300);
-        }, 5000);
+    function showToast(title, message, link = null, icon = 'success') {
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'bottom-end',
+            showConfirmButton: false,
+            timer: 4000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer)
+                toast.addEventListener('mouseleave', Swal.resumeTimer)
+                if (link) {
+                    toast.style.cursor = 'pointer';
+                    toast.onclick = () => window.location.href = link;
+                }
+            }
+        });
+
+        Toast.fire({
+            icon: icon,
+            title: `<span style="font-size:14px;font-weight:600;">${title}</span>`,
+            html: `<span style="font-size:12px;">${message}</span>`
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        @if(session('success'))
+            showToast('Berhasil', "{!! addslashes(session('success')) !!}", null, 'success');
+        @endif
+        @if(session('error'))
+            showToast('Gagal', "{!! addslashes(session('error')) !!}", null, 'error');
+        @endif
+        @if($errors->any())
+            showToast('Validation Error', 'Terdapat error pada input Anda. Silakan periksa kembali.', null, 'warning');
+        @endif
+    });
+
+    function showConfirmModal(title, message, confirmText, confirmColor, onConfirm) {
+        Swal.fire({
+            title: `<span style="font-size:18px;font-weight:700;">${title}</span>`,
+            html: `<span style="font-size:14px;">${message}</span>`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: confirmColor || '#3b82f6',
+            cancelButtonColor: '#9ca3af',
+            confirmButtonText: confirmText || 'Lanjutkan',
+            cancelButtonText: 'Batal',
+            customClass: {
+                popup: 'swal-custom-popup',
+                confirmButton: 'swal-custom-btn',
+                cancelButton: 'swal-custom-btn'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                if (onConfirm) onConfirm();
+            }
+        });
     }
 
     function fetchNotifications() {
@@ -249,12 +299,17 @@
             if(data.notifications && data.notifications.length > 0) {
                 list.innerHTML = '';
                 data.notifications.forEach(n => {
-                    const d = n.data;
-                    const link = \`/vendor-selection?key=\${d.category}_\${d.pr_id || d.rfq_id}\`;
+                    const d = typeof n.data === 'string' ? JSON.parse(n.data) : n.data;
+                    let link = `/vendor-selection?key=${d.category}_${d.pr_id || d.rfq_id}`;
+                    
+                    if (n.type && n.type.includes('VendorSelectedNotification')) {
+                        const baseUrl = "{{ Auth::user()->role === 'purchasing' ? route('pr.list') : route('dashboard') }}";
+                        link = `${baseUrl}?open_pr=${d.pr_id}&category=${d.category}`;
+                    }
                     
                     // Check if it's new and unread, then show toast
                     if (n.read_at === null && !lastNotifIds.has(n.id) && lastNotifIds.size > 0) {
-                        showToast(\`<b>\${d.vendor_name}</b> \${d.message} <b>\${d.document_number}</b>\`, link);
+                        showToast('New Quotation', `<b>${d.vendor_name}</b> ${d.message} <b>${d.document_number}</b>`, link);
                     }
                     lastNotifIds.add(n.id);
 
@@ -263,14 +318,14 @@
                     item.onclick = () => {
                         markNotifAsRead(n.id, link);
                     };
-                    item.innerHTML = \`
+                    item.innerHTML = `
                         <div style="font-size:12px;color:#374151;line-height:1.4;">
-                            <span style="font-weight:600;color:#111827;">\${d.vendor_name}</span> \${d.message} <span style="font-family:monospace;font-weight:600;color:#3b5bdb;">\${d.document_number}</span>
+                            <span style="font-weight:600;color:#111827;">${d.vendor_name}</span> ${d.message} <span style="font-family:monospace;font-weight:600;color:#3b5bdb;">${d.document_number}</span>
                         </div>
                         <div style="font-size:10px;color:#9ca3af;margin-top:4px;">
-                            \${new Date(n.created_at).toLocaleString('id-ID', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}
+                            ${new Date(n.created_at).toLocaleString('id-ID', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}
                         </div>
-                    \`;
+                    `;
                     list.appendChild(item);
                 });
             } else {
@@ -305,6 +360,19 @@
         const dd = document.getElementById('notif-dropdown');
         if (dd && dd.style.display === 'block' && bell && !bell.contains(e.target) && !dd.contains(e.target)) {
             dd.style.display = 'none';
+        }
+    });
+
+    // Auto-open modal if URL contains open_pr
+    document.addEventListener('DOMContentLoaded', function() {
+        const params = new URLSearchParams(window.location.search);
+        const openPrId = params.get('open_pr');
+        const openCategory = params.get('category');
+        if(openPrId && openCategory) {
+            setTimeout(() => {
+                if(typeof openPRDetail === 'function') openPRDetail(openPrId, openCategory);
+                if(typeof openDetailModal === 'function') openDetailModal(openPrId, openCategory);
+            }, 500);
         }
     });
 

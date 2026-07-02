@@ -67,7 +67,9 @@ h1 { font-size:20px;font-weight:700;color:#111827;margin:0 0 3px }
             <span id="ws-status-badge" style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;background:#fff7ed;font-size:12px;font-weight:600;color:#c2410c">
                 <span style="width:6px;height:6px;border-radius:50%;background:#f97316"></span>Awaiting Selection
             </span>
-            <button class="btn-outline" onclick="backToStep1()">← Back</button>
+            <button class="btn-back" onclick="backToStep1()">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Back
+            </button>
         </div>
     </div>
  
@@ -121,8 +123,8 @@ h1 { font-size:20px;font-weight:700;color:#111827;margin:0 0 3px }
             <div id="res-pr-label" style="font-size:14px;font-weight:700;color:#111827;margin-top:3px"></div>
             <div style="font-size:12px;color:#6b7280;margin-top:2px">Review final split PO Anda sebelum diproses oleh Purchasing</div>
         </div>
-        <button onclick="document.getElementById('selection-workspace').style.display='block'; document.getElementById('result-workspace').style.display='none';" class="btn-outline">
-            ← Edit Selection
+        <button onclick="document.getElementById('selection-workspace').style.display='block'; document.getElementById('result-workspace').style.display='none';" class="btn-back">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Edit Selection
         </button>
     </div>
  
@@ -157,8 +159,8 @@ h1 { font-size:20px;font-weight:700;color:#111827;margin:0 0 3px }
 </div>
 
 {{-- MODALS --}}
-<div id="warning-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)"><div style="background:#fff;border-radius:12px;width:100%;max-width:440px;box-shadow:0 10px 40px rgba(0,0,0,.2);overflow:hidden"><div style="background:#fef2f2;padding:20px;border-bottom:1px solid #fee2e2;display:flex;align-items:center;gap:14px"><div style="width:44px;height:44px;background:#fee2e2;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#ef4444;flex-shrink:0"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg></div><div><div style="font-size:16px;font-weight:700;color:#991b1b;line-height:1.2">Peringatan Kuantitas</div><div style="font-size:12.5px;color:#b91c1c;margin-top:2px">Target Qty belum sepenuhnya terpenuhi</div></div></div><div style="padding:22px;font-size:13.5px;color:#374151;line-height:1.6">Masih ada item yang kuantitasnya <strong>BELUM TERPENUHI</strong>.<br>Apakah Anda yakin ingin mengabaikannya dan melanjutkan?</div><div style="padding:16px 22px;border-top:1px solid #f3f4f6;background:#f9fafb;display:flex;justify-content:flex-end;gap:10px"><button onclick="closeWarningModal()" class="btn-outline">Batalkan</button><button onclick="forceShowSelectionResult()" style="padding:9px 18px;background:#ef4444;color:#fff;border-radius:8px;font-size:13px;font-weight:600;border:none;cursor:pointer;">Ya, Lanjutkan</button></div></div></div>
-<div id="submit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:20px"><div style="background:#fff;border-radius:12px;width:100%;max-width:440px;"><div style="padding:18px 20px;border-bottom:1px solid #f3f4f6;display:flex;align-items:flex-start;justify-content:space-between"><div><div style="font-size:14px;font-weight:700;color:#111827">Submission Notes</div></div><button onclick="closeSubmitModal()" style="background:none;border:none;cursor:pointer;color:#9ca3af;padding:4px">✕</button></div><div style="padding:18px 20px"><textarea id="submit-notes" rows="4" placeholder="Catatan untuk tim Purchasing..." style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;outline:none"></textarea></div><div style="padding:14px 20px;border-top:1px solid #f3f4f6;display:flex;justify-content:flex-end;gap:10px"><button onclick="closeSubmitModal()" class="btn-outline">Cancel</button><button onclick="submitToServer()" style="padding:7px 18px;background:#16a34a;color:#fff;border-radius:7px;font-size:12.5px;font-weight:600;border:none;cursor:pointer;">Final Submit</button></div></div></div>
+<div id="warning-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)"><div style="background:#fff;border-radius:12px;width:100%;max-width:440px;box-shadow:0 10px 40px rgba(0,0,0,.2);overflow:hidden"><div style="background:#fef2f2;padding:20px;border-bottom:1px solid #fee2e2;display:flex;align-items:center;gap:14px"><div style="width:44px;height:44px;background:#fee2e2;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#ef4444;flex-shrink:0"><svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg></div><div><div style="font-size:16px;font-weight:700;color:#991b1b;line-height:1.2">Peringatan Kuantitas</div><div style="font-size:12.5px;color:#b91c1c;margin-top:2px">Target Qty belum sepenuhnya terpenuhi</div></div></div><div style="padding:22px;font-size:13.5px;color:#374151;line-height:1.6">Masih ada item yang kuantitasnya <strong>BELUM TERPENUHI</strong>.<br>Apakah Anda yakin ingin mengabaikannya dan melanjutkan?</div><div style="padding:16px 22px;border-top:1px solid #f3f4f6;background:#f9fafb;display:flex;justify-content:flex-end;gap:10px"><button onclick="closeWarningModal()" class="btn-back"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Batalkan</button><button onclick="forceShowSelectionResult()" style="padding:9px 18px;background:#ef4444;color:#fff;border-radius:8px;font-size:13px;font-weight:600;border:none;cursor:pointer;">Ya, Lanjutkan</button></div></div></div>
+<div id="submit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:20px"><div style="background:#fff;border-radius:12px;width:100%;max-width:440px;"><div style="padding:18px 20px;border-bottom:1px solid #f3f4f6;display:flex;align-items:flex-start;justify-content:space-between"><div><div style="font-size:14px;font-weight:700;color:#111827">Submission Notes</div></div><button onclick="closeSubmitModal()" style="background:none;border:none;cursor:pointer;color:#9ca3af;padding:4px">✕</button></div><div style="padding:18px 20px"><textarea id="submit-notes" rows="4" placeholder="Catatan untuk tim Purchasing..." style="width:100%;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;font-family:inherit;resize:vertical;outline:none"></textarea></div><div style="padding:14px 20px;border-top:1px solid #f3f4f6;display:flex;justify-content:flex-end;gap:10px"><button onclick="closeSubmitModal()" class="btn-back"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Cancel</button><button onclick="submitToServer()" style="padding:7px 18px;background:#16a34a;color:#fff;border-radius:7px;font-size:12.5px;font-weight:600;border:none;cursor:pointer;">Final Submit</button></div></div></div>
 <div id="success-popup" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;align-items:center;justify-content:center;padding:20px"><div style="background:#fff;border-radius:12px;padding:32px;width:100%;max-width:400px;text-align:center;"><div style="font-size:22px;font-weight:700;color:#16a34a;margin-bottom:12px">Success!</div><div style="font-size:13px;color:#374151;margin-bottom:4px">PR/SR: <span id="popup-pr" style="font-weight:700"></span></div><button onclick="closeSuccess()" style="margin-top:20px;padding:8px 24px;border:1px solid #d1d5db;border-radius:8px;background:#fff;font-size:13px;font-weight:600;cursor:pointer">Close</button></div></div>
 
 <script>
@@ -199,7 +201,9 @@ function buildVendorOffers(pr, vendors) {
                         offers[vId].items[itemId] = {
                             qty_offered: det.offered_quantity || det.quantity || 0,
                             unit_price: det.offered_price_per_item || det.price || 0,
-                            notes: det.notes || det.item_notes || ''
+                            unit_offered: det.offered_unit || '',
+                            notes: det.notes || det.item_notes || '',
+                            specification_offered: det.offered_specification || ''
                         };
                     }
                 });
@@ -251,6 +255,34 @@ function loadPR(uniqueKey) {
     if (!currentPR) return;
     selections = {};
     
+    // PRELOAD existing selections if any (for re-open flow)
+    if (currentPR.rfqs && currentPR.rfqs.length > 0) {
+        currentPR.rfqs.forEach(rfq => {
+            if (rfq.vendor_selections) {
+                rfq.vendor_selections.forEach(sel => {
+                    if (sel.selection_items) {
+                        sel.selection_items.forEach(si => {
+                            const pItem = (currentPR.type === 'service' ? (currentPR.jobs ? currentPR.jobs.flatMap(j=>j.items||[]) : []) : (currentPR.items || [])).find(i => i.id == (si.purchase_request_item_id || si.service_request_item_id));
+                            if (pItem) {
+                                selections[`${sel.vendor_id}_${pItem.id}`] = {
+                                    vendor_id: sel.vendor_id,
+                                    item_id: pItem.id,
+                                    item_name: pItem.item_name || pItem.name,
+                                    unit_price: parseFloat(si.final_price_per_item || si.unit_price || 0),
+                                    quantity: parseFloat(si.final_quantity || si.quantity || 0),
+                                    unit: si.offered_unit || pItem.unit,
+                                    subtotal: parseFloat(si.quantity) * parseFloat(si.unit_price),
+                                    notes: si.notes || '',
+                                    specification: si.offered_specification || ''
+                                };
+                            }
+                        });
+                    }
+                });
+            }
+        });
+    }
+
     let flatItems = [];
     if (currentPR.type === 'service') {
         flatItems = currentPR.jobs ? currentPR.jobs.flatMap(j => j.items || []) : [];
@@ -393,6 +425,16 @@ function renderVendorCards(){
         const vName = v.vendor_name || v.name || 'Vendor';
         const off = vendorOffers[v.id];
 
+        let wasPreviouslySelected = false;
+        if (currentPR.rfqs) {
+            currentPR.rfqs.forEach(rfq => {
+                if (rfq.vendor_selections && rfq.vendor_selections.some(sel => sel.vendor_id == v.id)) {
+                    wasPreviouslySelected = true;
+                }
+            });
+        }
+        const prevBadge = wasPreviouslySelected ? `<span style="background:#fef08a;color:#854d0e;padding:2px 6px;border-radius:4px;font-size:9.5px;font-weight:700;margin-left:8px;display:inline-block;">SELECTED PREVIOUSLY</span>` : '';
+
         let contentHtml = '';
         let isVendorChecked = false;
 
@@ -423,7 +465,9 @@ function renderVendorCards(){
 
         return `<div style="background:#f9fafb;border:1px solid ${isVendorChecked?'#3b5bdb':'#e5e7eb'};border-radius:12px;overflow:hidden;transition:all .15s">
             <div style="padding:12px 14px;border-bottom:1px solid #e5e7eb;background:${isVendorChecked?'#eff6ff':'#fff'};display:flex;justify-content:space-between;align-items:center;">
-                <div style="font-size:13.5px;font-weight:700;color:${isVendorChecked?'#1d4ed8':'#111827'}">${vName}</div>
+                <div style="font-size:13.5px;font-weight:700;color:${isVendorChecked?'#1d4ed8':'#111827'};display:flex;align-items:center;">
+                    ${vName} ${prevBadge}
+                </div>
             </div>
             <div style="padding:10px;max-height:650px;overflow-y:auto">${contentHtml}</div>
             <div style="padding:10px 14px;border-top:1px solid #e5e7eb;background:#fff;font-size:12.5px;font-weight:700;color:#111827">Total Quote <span id="vendor-total-${v.id}" style="float:right">${fmt(0)}</span></div>
@@ -468,23 +512,41 @@ function renderItemCard(v, item, off) {
     const offerNotes = o.notes || '';
     const combinedNotes = [itemNotes, offerNotes].filter(n => n && n.trim()).join(' - ') || 'No notes';
 
-    return `<div style="background:#fff;border:1px solid ${isSelected?'#3b5bdb':'#e5e7eb'};border-radius:8px;padding:14px;margin-bottom:12px;${!isService ? `cursor:${disableSel?'not-allowed':'pointer'}` : ''};opacity:${disableSel?'0.5':'1'};transition:all .15s"
+    const specDiffers = o.specification_offered && (!item.specification || o.specification_offered.toLowerCase() !== item.specification.toLowerCase());
+    const unitDiffers = o.unit_offered && item.unit && o.unit_offered.toLowerCase() !== item.unit.toLowerCase();
+
+    return `<div style="background:${specDiffers ? '#fef3c7' : '#fff'};border:1px solid ${isSelected?'#3b5bdb':(specDiffers ? '#fcd34d' : '#e5e7eb')};border-radius:8px;padding:14px;margin-bottom:12px;${!isService ? `cursor:${disableSel?'not-allowed':'pointer'}` : ''};opacity:${disableSel?'0.5':'1'};transition:all .15s"
         ${!isService && !disableSel ? `onclick="toggleSelect(${v.id}, '${item.id}')"` : ''}>
         
         <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
-            <div style="font-size:13px;font-weight:700;color:#111827;">${item.item_name}</div>
+            <div style="font-size:13px;font-weight:700;color:#111827;display:flex;align-items:center;">
+                ${item.item_name}
+                ${specDiffers ? `<span style="background:#f59e0b;color:#fff;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;margin-left:8px;letter-spacing:0.5px;">SPEC DIFFERS</span>` : ''}
+            </div>
             ${!isService ? `<input type="checkbox" ${isSelected?'checked':''} ${disableSel?'disabled':''} onclick="event.stopPropagation(); toggleSelect(${v.id}, '${item.id}')" style="width:16px;height:16px;accent-color:#3b5bdb;cursor:pointer;">` : ''}
         </div>
 
         <div style="display:grid;grid-template-columns:65px 1fr;gap:8px 10px;align-items:center;font-size:11px;">
             <div style="color:#9ca3af">Qty Offer</div>
-            <div style="font-weight:700;color:#111827;display:flex;align-items:center;gap:6px">
-                ${o.qty_offered} / ${targetQty}
+            <div style="font-weight:700;color:#111827;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                ${o.qty_offered} ${o.unit_offered || ''} / ${targetQty} ${item.unit || ''}
                 ${qtyBadge}
             </div>
 
+            ${isSelected && !isService ? `
+            <div style="color:#3b5bdb;font-weight:700">Buy Qty</div>
+            <div>
+                <input type="number" min="1" max="${o.qty_offered}" value="${selections[`${v.id}_${item.id}`].quantity}"
+                    onclick="event.stopPropagation()"
+                    onchange="updateQty(${v.id}, '${item.id}', this.value)"
+                    style="width:80px;height:26px;border:1px solid #3b5bdb;border-radius:4px;padding:0 8px;font-size:12px;font-weight:600;outline:none;color:#3b5bdb;background:${specDiffers ? '#fef3c7' : '#fff'}">
+            </div>
+            ` : ''}
+
             <div style="color:#9ca3af">Unit</div>
-            <div style="color:#111827">${item.unit}</div>
+            <div style="color:#111827;line-height:1.2">
+                ${o.unit_offered ? o.unit_offered : item.unit}
+            </div>
 
             <div style="color:#9ca3af">Unit Price</div>
             <div style="font-weight:600;color:#111827;display:flex;align-items:center;gap:6px">
@@ -492,11 +554,19 @@ function renderItemCard(v, item, off) {
                 ${(isBestItemPrice && !isService) ? `<span style="background:#e0f2fe;color:#0284c7;padding:2px 6px;border-radius:4px;font-size:9.5px;font-weight:700;">BEST PRICE</span>` : ''}
             </div>
 
+            <div style="color:#9ca3af">Spec</div>
+            <div style="color:#111827;line-height:1.2">
+                ${o.specification_offered ? o.specification_offered : (item.specification || '-')}
+            </div>
+
             <div style="color:#9ca3af">Notes:</div>
-            <div style="color:#6b7280;font-style:italic">${combinedNotes}</div>
+            <div style="color:#6b7280;font-style:italic">
+                ${combinedNotes}
+                ${o.notes ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-left:4px">VENDOR NOTE</div>` : ''}
+            </div>
 
             <div style="color:#9ca3af">Subtotal</div>
-            <div style="font-weight:700;color:#111827">${fmt(o.qty_offered * o.unit_price)}</div>
+            <div style="font-weight:700;color:#111827">${isSelected && !isService ? fmt(selections[`${v.id}_${item.id}`].quantity * o.unit_price) : fmt(o.qty_offered * o.unit_price)}</div>
         </div>
     </div>`;
 }
@@ -526,7 +596,7 @@ function toggleVendorJob(vId, jIdx, isChecked) {
                     let remainingNeed = parseFloat(item.quantity) - qtyAlreadySelected;
                     let defaultBuyQty = Math.min(Math.max(1, remainingNeed), offer.qty_offered);
 
-                    selections[selKey] = { vendor_id: vId, item_id: item.id, item_name: item.item_name, unit_price: offer.unit_price, quantity: defaultBuyQty, unit: item.unit };
+                    selections[selKey] = { vendor_id: vId, item_id: item.id, item_name: item.item_name, unit_price: offer.unit_price, quantity: defaultBuyQty, unit: offer.unit_offered || item.unit, specification: offer.specification_offered || '', notes: offer.notes || '' };
                     selections[selKey].subtotal = defaultBuyQty * offer.unit_price;
                 }
             }
@@ -555,7 +625,7 @@ function toggleSelect(vId, itemId, forceRenderOnlyAtEnd = false) {
             let remainingNeed = parseFloat(item.quantity) - qtyAlreadySelected;
             let defaultBuyQty = Math.min(Math.max(1, remainingNeed), offer.qty_offered);
 
-            selections[selKey] = { vendor_id: vId, item_id: itemId, item_name: item.item_name, unit_price: offer.unit_price, quantity: defaultBuyQty, unit: item.unit };
+            selections[selKey] = { vendor_id: vId, item_id: itemId, item_name: item.item_name, unit_price: offer.unit_price, quantity: defaultBuyQty, unit: offer.unit_offered || item.unit, specification: offer.specification_offered || '', notes: offer.notes || '' };
             selections[selKey].subtotal = defaultBuyQty * offer.unit_price;
         }
     }
@@ -727,7 +797,52 @@ function renderResultWorkspace() {
     `).join('');
 }
 
-function openSubmitModal(){document.getElementById('submit-modal').style.display='flex';}
+function openSubmitModal() {
+    let hasDiffers = false;
+    for (let key in selections) {
+        const s = selections[key];
+        const vId = s.vendor_id;
+        const itemId = s.item_id;
+        
+        let originalItem = null;
+        if (currentPR.type === 'service') {
+            currentPR.jobs.forEach(j => {
+                const found = j.items.find(i => i.id == itemId);
+                if(found) originalItem = found;
+            });
+        } else {
+            originalItem = currentPR.items.find(i => i.id == itemId);
+        }
+
+        if (originalItem) {
+            const specDiff = s.specification && (!originalItem.specification || s.specification.toLowerCase() !== originalItem.specification.toLowerCase());
+            const unitDiff = s.unit && originalItem.unit && s.unit.toLowerCase() !== originalItem.unit.toLowerCase();
+            
+            if (specDiff || unitDiff) {
+                hasDiffers = true;
+                break;
+            }
+        }
+    }
+
+    if (hasDiffers) {
+        Swal.fire({
+            title: 'Terdapat Perbedaan?',
+            html: 'Beberapa item yang Anda pilih memiliki <strong style="color:#b45309">spesifikasi</strong> atau <strong style="color:#b45309">unit</strong> yang berbeda dari permintaan asli.<br><br>Apakah Anda yakin ingin melanjutkan pemilihan vendor ini?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Lanjutkan',
+            cancelButtonText: 'Batal',
+            confirmButtonColor: '#3b5bdb',
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById('submit-modal').style.display = 'flex';
+            }
+        });
+    } else {
+        document.getElementById('submit-modal').style.display = 'flex';
+    }
+}
 function closeSubmitModal(){document.getElementById('submit-modal').style.display='none';}
 function closeSuccess(){document.getElementById('success-popup').style.display='none'; backToStep1();}
 
@@ -737,7 +852,7 @@ function submitToServer(){
         purchase_request_id: currentPR.id,
         item_type: currentPR.type,
         selection_notes: notes,
-        selections: Object.values(selections).map(s => ({ vendor_id: s.vendor_id, item_id: s.item_id, unit_price: s.unit_price, quantity: s.quantity, notes: s.notes })),
+        selections: Object.values(selections).map(s => ({ vendor_id: s.vendor_id, item_id: s.item_id, unit_price: s.unit_price, quantity: s.quantity, notes: s.notes, unit: s.unit, specification: s.specification })),
         _token: document.querySelector('meta[name=csrf-token]')?.content||'',
     };
     

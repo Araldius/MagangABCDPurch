@@ -64,11 +64,12 @@ class PurchaseRequestController extends Controller
 
     public function create()
     {
-        // Goods catalog — distinct items from all past PRs
-        $existingItems = PurchaseRequestItem::select('item_id', 'item_name', 'unit', 'specification', 'item_notes')
-            ->distinct()->get()->map(function ($item) {
+        // Goods catalog — from Master Items table
+        $existingItems = \App\Models\Item::where('is_archived', false)
+            ->orderBy('item_name')
+            ->get()->map(function ($item) {
                 return [
-                    'id'    => $item->item_id,
+                    'id'    => $item->item_code ?? 'ITM-' . $item->id,
                     'name'  => $item->item_name,
                     'unit'  => $item->unit,
                     'spec'  => $item->specification ?? '',
@@ -336,5 +337,52 @@ class PurchaseRequestController extends Controller
         ]);
 
         return back()->with('success', "Request $docNum berhasil dibatalkan.");
+    }
+        public function reopen(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|integer',
+            'type' => 'required|string|in:goods,service',
+        ]);
+
+        $isService = $request->type === 'service';
+
+        if ($isService) {
+            $req = ServiceRequest::findOrFail($request->id);
+            $docNum = $req->document_number ?? ('SR-' . str_pad($req->id, 4, '0', STR_PAD_LEFT));
+        } else {
+            $req = PurchaseRequest::findOrFail($request->id);
+            $docNum = $req->document_number;
+        }
+
+        if ($req->status !== 'completed') {
+            return back()->with('error', 'Hanya request dengan status Completed yang dapat dikembalikan.');
+        }
+
+        // Kembalikan ke tahap vendor_selection
+        $req->status = 'vendor_selection';
+        $req->save();
+
+        // RE-OPEN RFQ: Agar link token vendor kembali hidup dan bisa diakses
+        foreach ($req->rfqs as $rfq) {
+            if ($rfq->status === 'closed') {
+                $rfq->status = 'open';
+                // Opsional: perpanjang token vendor jika sudah expired
+                if ($rfq->token_expires_at && $rfq->token_expires_at < now()) {
+                    $rfq->token_expires_at = now()->addDays(7);
+                }
+                $rfq->save();
+            }
+        }
+
+        History::create([
+            'user_id'            => Auth::id(),
+            'action'             => 'Request Re-opened',
+            'transaction_status' => 'vendor_selection',
+            'notes'              => "Dokumen $docNum dikembalikan ke Vendor Selection oleh Admin untuk diperpanjang waktunya.",
+            'action_date'        => now(),
+        ]);
+
+        return back()->with('success', "Request $docNum berhasil dikembalikan ke tahap Vendor Selection.");
     }
 }

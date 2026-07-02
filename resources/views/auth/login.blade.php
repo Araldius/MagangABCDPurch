@@ -159,7 +159,7 @@ input:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(14,1
   <div class="left-content">
     <div class="left-accent-line"></div>
     <div class="left-heading">Hello, <span>Welcome</span><br>Back!</div>
-    <div class="left-sub">Sign in to your account to access the AR data management system and continue your activities.</div>
+    <div class="left-sub">Sign in to your account to access the e-procurement system and manage your purchasing activities.</div>
   </div>
 
   <div class="left-footer">© 2026 PT. Dunia Kimia Jaya</div>

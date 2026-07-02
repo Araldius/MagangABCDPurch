@@ -25,9 +25,7 @@ class VendorPortalController extends Controller
         $closedDate = $neededDate ? $neededDate->copy()->subDay()->endOfDay() : null;
 
         $closedReason = null;
-        if ($rfq->token_expires_at < now()) {
-            $closedReason = 'expired';
-        } elseif ($pr && !in_array($pr->status, ['vendor_search', 'vendor_selection', 'submitted'])) {
+        if ($pr && !in_array($pr->status, ['vendor_search', 'vendor_selection', 'submitted'])) {
             $closedReason = 'completed';
         }
 
@@ -40,7 +38,16 @@ class VendorPortalController extends Controller
 
         $vendors = Vendor::select('id', 'vendor_name', 'email', 'location')->get();
 
-        return view('vendors.quote', compact('rfq', 'items', 'neededDate', 'closedDate', 'vendors', 'closedReason'));
+        $quotation = Quotation::with('details')->where('rfq_id', $rfq->id)->where('vendor_id', $rfq->vendor_id)->first();
+        $existingItems = [];
+        if ($quotation) {
+            foreach ($quotation->details as $det) {
+                $k = $det->purchase_request_item_id ?: $det->service_request_item_id;
+                $existingItems[$k] = $det;
+            }
+        }
+
+        return view('vendors.quote', compact('rfq', 'items', 'neededDate', 'closedDate', 'vendors', 'closedReason', 'existingItems'));
     }
 
     public function submit(Request $request, $token)
@@ -53,9 +60,7 @@ class VendorPortalController extends Controller
         $closedDate = $neededDate ? $neededDate->copy()->subDay()->endOfDay() : null;
 
         $closedReason = null;
-        if ($rfq->token_expires_at < now()) {
-            $closedReason = 'expired';
-        } elseif ($pr && !in_array($pr->status, ['vendor_search', 'vendor_selection', 'submitted'])) {
+        if ($pr && !in_array($pr->status, ['vendor_search', 'vendor_selection', 'submitted'])) {
             $closedReason = 'completed';
         }
 
@@ -87,6 +92,8 @@ class VendorPortalController extends Controller
             'items.*.price' => 'required|numeric|min:0',
             'items.*.quantity' => 'required|numeric|min:0',
             'items.*.unit' => 'nullable|string',
+            'items.*.specification' => 'nullable|string',
+            'items.*.notes' => 'nullable|string',
             'note' => 'nullable|string',
         ]);
 
@@ -100,6 +107,10 @@ class VendorPortalController extends Controller
         $quotation = Quotation::where('rfq_id', $rfq->id)
             ->where('vendor_id', $vendor->id)
             ->first();
+
+        if ($quotation && !$request->has('confirm_overwrite')) {
+            return back()->withInput()->with('overwrite_warning', 'You have previously submitted a quotation for this request. Do you want to overwrite your previous submission?');
+        }
 
         if ($quotation) {
             // Update
@@ -129,6 +140,8 @@ class VendorPortalController extends Controller
                 'offered_price_per_item' => $it['price'],
                 'offered_quantity' => $it['quantity'],
                 'offered_unit' => $it['unit'] ?? null,
+                'offered_specification' => $it['specification'] ?? null,
+                'item_notes' => $it['notes'] ?? null,
             ]);
         }
 

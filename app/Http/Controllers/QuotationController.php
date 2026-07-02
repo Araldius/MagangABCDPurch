@@ -37,6 +37,8 @@ class QuotationController extends Controller
             'items.*.price' => ['required', 'numeric', 'min:0'],
             'items.*.quantity' => ['required', 'numeric', 'min:0'],
             'items.*.unit' => ['nullable', 'string'],
+            'items.*.specification' => ['nullable', 'string'],
+            'items.*.notes' => ['nullable', 'string'],
             'note' => ['nullable', 'string'],
         ]);
 
@@ -81,6 +83,8 @@ class QuotationController extends Controller
                 'offered_price_per_item' => $it['price'],
                 'offered_quantity' => $it['quantity'],
                 'offered_unit' => $it['unit'] ?? null,
+                'offered_specification' => $it['specification'] ?? null,
+                'item_notes' => $it['notes'] ?? null,
             ]);
         }
 
@@ -100,6 +104,26 @@ class QuotationController extends Controller
             'notes' => 'Quotation added manually by Admin',
             'action_date' => now(),
         ]);
+
+                // Mulai: Kirim Notifikasi
+        $vendorModel = \App\Models\Vendor::find($vendorId);
+        if ($vendorModel) {
+            
+            // 1. Kirim ke User Pembuat PR/SR (Peminta Barang)
+            if ($pr && $pr->user_id) {
+                $userCreator = \App\Models\User::find($pr->user_id);
+                if ($userCreator) {
+                    $userCreator->notify(new \App\Notifications\VendorQuotationSubmitted($rfq, $vendorModel));
+                }
+            }
+            
+            // 2. Kirim juga ke Seluruh Tim Purchasing (termasuk Anda)
+            $purchasingUsers = \App\Models\User::where('role', 'purchasing')->get();
+            if ($purchasingUsers->count() > 0) {
+                \Illuminate\Support\Facades\Notification::send($purchasingUsers, new \App\Notifications\VendorQuotationSubmitted($rfq, $vendorModel));
+            }
+        }
+        // Selesai: Kirim Notifikasi
 
         return redirect()->route('dashboard')->with('success', 'Manual quotation saved successfully.');
     }
@@ -250,15 +274,9 @@ class QuotationController extends Controller
 
     public function generateVendorLink(Request $request, Rfq $rfq)
     {
-        // 1 tautan spesifik untuk 1 RFQ (berlaku untuk beberapa vendor). Kedaluwarsa 7 hari.
+        // 1 tautan spesifik untuk 1 RFQ (berlaku untuk beberapa vendor). Berlaku selama PR masih open.
         if (!$rfq->vendor_token) {
             $rfq->vendor_token = \Illuminate\Support\Str::random(32);
-            $rfq->token_expires_at = now()->addDays(7);
-            $rfq->save();
-        } else if ($rfq->token_expires_at < now()) {
-            // Jika token sudah kedaluwarsa tapi kita ingin buat yang baru
-            $rfq->vendor_token = \Illuminate\Support\Str::random(32);
-            $rfq->token_expires_at = now()->addDays(7);
             $rfq->save();
         }
 

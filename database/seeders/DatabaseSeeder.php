@@ -38,7 +38,7 @@ class DatabaseSeeder extends Seeder
 
         // ── Wipe all tables ───────────────────────────────────────────────────
         $tables = [
-            'history','selection_items','vendor_selections',
+            'items','history','selection_items','vendor_selections',
             'quotation_summaries','quotation_details','quotations',
             'quotation_periods','vendor_quotations','rfqs',
             'service_request_items','service_request_jobs','service_requests',
@@ -122,6 +122,21 @@ class DatabaseSeeder extends Seeder
             ['name' => 'Kain Pel Lantai', 'spec' => 'Microfiber', 'unit' => 'Pcs', 'price' => 65000],
             ['name' => 'Sabun Cuci Tangan', 'spec' => 'Lifebuoy 5 Liter', 'unit' => 'Jerigen', 'price' => 180000],
         ];
+
+        // ════════════════════════════════════════════════════════════════════
+        // 2.5. MASTER ITEMS
+        // ════════════════════════════════════════════════════════════════════
+        foreach ($goodsItems as $idx => $itemDef) {
+            $fixedId = 'ITM-' . str_pad($idx + 1, 4, '0', STR_PAD_LEFT);
+            \App\Models\Item::create([
+                'item_code' => $fixedId,
+                'item_name' => $itemDef['name'],
+                'unit' => $itemDef['unit'],
+                'specification' => $itemDef['spec'],
+                'item_notes' => 'Seeded by DatabaseSeeder',
+                'is_archived' => false,
+            ]);
+        }
 
         $serviceJobs = [
             'Kalibrasi Timbangan Digital', 'Service AC Split 1PK', 'Pembersihan Tandon Air', 
