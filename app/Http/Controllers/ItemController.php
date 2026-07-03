@@ -133,12 +133,11 @@ class ItemController extends Controller
         $xlsFileName = 'master_items_' . date('Ymd_His') . '.xlsx';
         
         $data = [
-            ['ID', 'Item Code', 'Item Name', 'Unit', 'Specification', 'Notes', 'Status']
+            ['Item Code', 'Item Name', 'Unit', 'Specification', 'Notes', 'Status']
         ];
         
         foreach ($items as $item) {
             $data[] = [
-                $item->id,
                 $item->item_code,
                 $item->item_name,
                 $item->unit,

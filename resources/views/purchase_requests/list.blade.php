@@ -57,6 +57,13 @@
             <option value="rejected">Rejected</option>
             <option value="cancelled">Cancelled</option>
         </select>
+        
+        <div style="display:flex; align-items:center; gap:8px; margin-left:5px; border-left:1px solid #e5e7eb; padding-left:15px;">
+            <span style="font-size:11.5px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;">DATE RANGE</span>
+            <input type="date" id="start-date-filter" style="height:32px;padding:0 10px;border:1px solid #e5e7eb;border-radius:7px;font-size:12.5px;background:#fff;cursor:pointer;outline:none;" onchange="applyFilters()">
+            <span style="font-size:12.5px;color:#9ca3af;">to</span>
+            <input type="date" id="end-date-filter" style="height:32px;padding:0 10px;border:1px solid #e5e7eb;border-radius:7px;font-size:12.5px;background:#fff;cursor:pointer;outline:none;" onchange="applyFilters()">
+        </div>
     </div>
 
     <div style="overflow-x:auto">
@@ -109,6 +116,7 @@
                     data-dept="{{ $pr->department ?? 'General' }}"
                     data-type="{{ $prCategory }}"
                     data-plant="{{ $plantVal }}"
+                    data-date="{{ \Carbon\Carbon::parse($pr->created_at)->format('Y-m-d') }}"
                     style="border-bottom:1px solid #f3f4f6"
                     onmouseover="this.style.background='#fafafa'"
                     onmouseout="this.style.background='transparent'">
@@ -317,6 +325,8 @@ function applyFilters() {
     const status =  document.getElementById('status-filter')?.value || '';
     const plant  =  document.getElementById('plant-filter')?.value  || '';
     const dept   = isPurchasing ? (document.getElementById('dept-filter')?.value || '') : '';
+    const start  = document.getElementById('start-date-filter')?.value || '';
+    const end    = document.getElementById('end-date-filter')?.value || '';
 
     const tbody   = document.getElementById('pr-tbody');
     const allRows = Array.from(tbody.querySelectorAll('tr[data-status]'));
@@ -328,6 +338,13 @@ function applyFilters() {
         if (dept   && r.dataset.dept   !== dept)   return false;
         if (plant  && r.dataset.plant  !== plant)  return false;
         if (q      && !r.textContent.toLowerCase().includes(q)) return false;
+        
+        if (start || end) {
+            const rDate = r.dataset.date;
+            if (start && rDate < start) return false;
+            if (end && rDate > end) return false;
+        }
+        
         return true;
     });
 
@@ -470,6 +487,11 @@ function openPRDetail(id, category) {
     if (rejectForm) rejectForm.style.display = 'none';
     if (cancelForm) cancelForm.style.display = 'none';
 
+    if (pr.status === 'vendor_selection' || pr.status === 'vendor_search') {
+        document.getElementById('detail-select-vendor-btn').style.display = 'inline-flex';
+        document.getElementById('detail-select-vendor-btn').href = `/vendor-selection?key=${category}_${id}`;
+    }
+
     if (isPurchasing) {
         if (pr.status === 'submitted') {
             if (approveForm) {
@@ -483,8 +505,6 @@ function openPRDetail(id, category) {
                 document.getElementById('reject-type').value = category;
             }
         } else if (pr.status === 'vendor_selection' || pr.status === 'vendor_search') {
-            document.getElementById('detail-select-vendor-btn').style.display = 'inline-flex';
-            document.getElementById('detail-select-vendor-btn').href = `/vendor-selection?key=${category}_${id}`;
             if (rfqId) {
                 document.getElementById('detail-add-quotation-btn').style.display = 'inline-flex';
                 document.getElementById('detail-add-quotation-btn').href = `/rfq/${rfqId}/quotations/create`;

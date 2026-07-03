@@ -19,21 +19,6 @@
         <h1 style="font-size:20px;font-weight:700;color:#111827;margin:0 0 3px">Welcome back, {{ $firstName }}</h1>
         <p style="font-size:12.5px;color:#6b7280;margin:0">Here's a summary of your procurement requests.</p>
     </div>
-    <form action="{{ route('dashboard') }}" method="GET" style="display:flex; gap:10px; align-items:center;">
-        <select name="month" style="padding:6px 12px; border:1px solid #d1d5db; border-radius:6px; font-size:13px; color:#374151;">
-            <option value="all" {{ $selectedMonth == 'all' ? 'selected' : '' }}>All Months</option>
-            @foreach(range(1, 12) as $m)
-                <option value="{{ $m }}" {{ $selectedMonth == $m ? 'selected' : '' }}>{{ date('F', mktime(0, 0, 0, $m, 1)) }}</option>
-            @endforeach
-        </select>
-        <select name="year" style="padding:6px 12px; border:1px solid #d1d5db; border-radius:6px; font-size:13px; color:#374151;">
-            <option value="all" {{ $selectedYear == 'all' ? 'selected' : '' }}>All Years</option>
-            @foreach(range(now()->year - 2, now()->year + 1) as $y)
-                <option value="{{ $y }}" {{ $selectedYear == $y ? 'selected' : '' }}>{{ $y }}</option>
-            @endforeach
-        </select>
-        <button type="submit" style="padding:6px 14px; background:#2563eb; color:#fff; border:none; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer;">Filter</button>
-    </form>
 </div>
 
 {{-- STAT CARDS --}}
@@ -41,7 +26,13 @@
     <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:18px 20px">
         <div style="font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.07em">Active PR</div>
         <div style="font-size:28px;font-weight:800;color:#2563eb;margin:8px 0 5px;line-height:1">{{ $activePrs }}</div>
-        <div style="font-size:11.5px;color:#9ca3af">Period: {{ $selectedMonth == 'all' && $selectedYear == 'all' ? 'All Time' : ($selectedMonth != 'all' ? date('M', mktime(0,0,0,$selectedMonth,1)) : 'All') . ' ' . ($selectedYear != 'all' ? $selectedYear : 'All') }}</div>
+        <div style="font-size:11.5px;color:#9ca3af">Period: 
+            @if($startDate && $endDate) {{ \Carbon\Carbon::parse($startDate)->format('d M Y') }} - {{ \Carbon\Carbon::parse($endDate)->format('d M Y') }}
+            @elseif($startDate) From {{ \Carbon\Carbon::parse($startDate)->format('d M Y') }}
+            @elseif($endDate) Until {{ \Carbon\Carbon::parse($endDate)->format('d M Y') }}
+            @else All Time
+            @endif
+        </div>
     </div>
     <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:18px 20px">
         <div style="font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.07em">Awaiting Approval</div>
@@ -83,6 +74,12 @@
             <option value="rejected">Rejected</option>
             <option value="cancelled">Cancelled</option>
         </select>
+        <form id="dash-global-filter-form" action="{{ route('dashboard') }}" method="GET" style="display:flex; align-items:center; gap:8px; margin-left:5px; border-left:1px solid #e5e7eb; padding-left:15px; margin-bottom:0;">
+            <span style="font-size:11.5px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;">DATE RANGE</span>
+            <input type="date" name="start_date" id="dash-pr-start-date" value="{{ $startDate }}" style="height:32px;padding:0 10px;border:1px solid #e5e7eb;border-radius:7px;font-size:12.5px;background:#fff;cursor:pointer;outline:none;" onchange="document.getElementById('dash-global-filter-form').submit()">
+            <span style="font-size:12.5px;color:#9ca3af;">to</span>
+            <input type="date" name="end_date" id="dash-pr-end-date" value="{{ $endDate }}" style="height:32px;padding:0 10px;border:1px solid #e5e7eb;border-radius:7px;font-size:12.5px;background:#fff;cursor:pointer;outline:none;" onchange="document.getElementById('dash-global-filter-form').submit()">
+        </form>
     </div>
     <div style="overflow-x:auto">
         <table style="width:100%;border-collapse:collapse;font-size:12.5px">
@@ -129,7 +126,7 @@
 
                     $submittedDate = \Carbon\Carbon::parse($pr->submission_date ?? $pr->created_at)->format('d M Y');
                 @endphp
-                <tr data-status="{{ $pr->status }}" data-type="{{ $prCategory }}" style="border-bottom:1px solid #f3f4f6" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='transparent'">
+                <tr data-status="{{ $pr->status }}" data-type="{{ $prCategory }}" data-date="{{ \Carbon\Carbon::parse($pr->created_at)->format('Y-m-d') }}" style="border-bottom:1px solid #f3f4f6" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='transparent'">
                     <td style="padding:13px 20px"><span style="font-family:monospace;font-size:12px;font-weight:600;">{{ $displayDoc }}</span></td>
                     <td style="padding:13px 14px;color:#6b7280;white-space:nowrap">{{ $reqDate->format('d M Y') }}</td>
                     <td style="padding:13px 14px;">
@@ -138,9 +135,9 @@
                     </td>
                     <td style="padding:13px 14px;">
                         @if($prCategory === 'service')
-                        <span style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;background:#e0e7ff;color:#3730a3;">🔧 Service</span>
+                        <span style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;background:#e0e7ff;color:#3730a3;"> Service</span>
                         @else
-                        <span style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;background:#f1f5f9;color:#475569;">📦 Goods</span>
+                        <span style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;background:#f1f5f9;color:#475569;"> Goods</span>
                         @endif
                     </td>
                     <td style="padding:13px 14px;color:#374151;">{{ $qtyLabel }}</td>
@@ -214,7 +211,7 @@
                     $decidedAt = $h->decided_at;
                     $leadDays = ($prCreatedAt && $decidedAt) ? (int) abs(\Carbon\Carbon::parse($prCreatedAt)->diffInDays($decidedAt)) : null;
                 @endphp
-                <tr data-dept="{{ $dept }}" data-status="completed" style="border-bottom:1px solid #f3f4f6" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='transparent'">
+                <tr data-dept="{{ $dept }}" data-status="completed" data-date="{{ \Carbon\Carbon::parse($prCreatedAt ?? $h->created_at)->format('Y-m-d') }}" style="border-bottom:1px solid #f3f4f6" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='transparent'">
                     <td style="padding:13px 20px"><span style="font-family:monospace;font-size:12px;font-weight:600;">{{ $docNo }}</span></td>
                     <td style="padding:13px 14px"><div style="font-weight:500;">{{ $vName }}</div></td>
                     <td style="padding:13px 14px"><span style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;background:{{ $dBg }};color:{{ $dText }}">{{ $dept }}</span></td>
