@@ -13,16 +13,33 @@
     ];
 @endphp
 @section('content')
-<div style="margin-bottom:20px">
-    <h1 style="font-size:20px;font-weight:700;color:#111827;margin:0 0 3px">Welcome back, {{ $firstName }}</h1>
-    <p style="font-size:12.5px;color:#6b7280;margin:0">Here's a summary of your procurement requests.</p>
+<div style="margin-bottom:20px; display:flex; justify-content:space-between; align-items:flex-end;">
+    <div>
+        <h1 style="font-size:20px;font-weight:700;color:#111827;margin:0 0 3px">Welcome back, {{ $firstName }}</h1>
+        <p style="font-size:12.5px;color:#6b7280;margin:0">Here's a summary of your procurement requests.</p>
+    </div>
+    <form action="{{ route('dashboard') }}" method="GET" style="display:flex; gap:10px; align-items:center;">
+        <select name="month" style="padding:6px 12px; border:1px solid #d1d5db; border-radius:6px; font-size:13px; color:#374151;">
+            <option value="all" {{ $selectedMonth == 'all' ? 'selected' : '' }}>All Months</option>
+            @foreach(range(1, 12) as $m)
+                <option value="{{ $m }}" {{ $selectedMonth == $m ? 'selected' : '' }}>{{ date('F', mktime(0, 0, 0, $m, 1)) }}</option>
+            @endforeach
+        </select>
+        <select name="year" style="padding:6px 12px; border:1px solid #d1d5db; border-radius:6px; font-size:13px; color:#374151;">
+            <option value="all" {{ $selectedYear == 'all' ? 'selected' : '' }}>All Years</option>
+            @foreach(range(now()->year - 2, now()->year + 1) as $y)
+                <option value="{{ $y }}" {{ $selectedYear == $y ? 'selected' : '' }}>{{ $y }}</option>
+            @endforeach
+        </select>
+        <button type="submit" style="padding:6px 14px; background:#2563eb; color:#fff; border:none; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer;">Filter</button>
+    </form>
 </div>
 {{-- STAT CARDS --}}
 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">
     <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:18px 20px">
         <div style="font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.07em">Active Request</div>
         <div style="font-size:28px;font-weight:800;color:#2563eb;margin:8px 0 5px;line-height:1">{{ $activePrs }}</div>
-        <div style="font-size:11.5px;color:#9ca3af">Period: {{ now()->format('M Y') }}</div>
+        <div style="font-size:11.5px;color:#9ca3af">Period: {{ $selectedMonth == 'all' && $selectedYear == 'all' ? 'All Time' : ($selectedMonth != 'all' ? date('M', mktime(0,0,0,$selectedMonth,1)) : 'All') . ' ' . ($selectedYear != 'all' ? $selectedYear : 'All') }}</div>
     </div>
     <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:18px 20px">
         <div style="font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.07em">Awaiting Approval</div>
@@ -35,7 +52,7 @@
         <div style="font-size:11.5px;color:#9ca3af">Purchasing verification</div>
     </div>
     <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:18px 20px">
-        <div style="font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.07em">Completed This Month</div>
+        <div style="font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.07em">Completed</div>
         <div style="font-size:28px;font-weight:800;color:#16a34a;margin:8px 0 5px;line-height:1">{{ $completedMonth }}</div>
         <div style="font-size:11.5px;color:#9ca3af">PR & SR fulfilled</div>
     </div>
@@ -217,12 +234,17 @@
                     $totalVal = $h->selectionItems ? $h->selectionItems->sum(fn($si)=>($si->final_price_per_item??0)*($si->final_quantity??0)) : 0;
                     $deptColors=['Maintenance'=>['#e0f2fe','#0369a1'],'Produksi'=>['#dcfce7','#15803d'],'Operations'=>['#dcfce7','#15803d'],'Engineering'=>['#ede9fe','#7c3aed'],'IT'=>['#ede9fe','#7c3aed'],'Finance'=>['#fef9c3','#92400e']];
                     [$dBg,$dText]=$deptColors[$dept]??['#f1f5f9','#475569'];
+                    
+                    $prCreatedAt = optional(optional($h->rfq)->purchaseRequest)->created_at;
+                    $decidedAt = $h->decided_at;
+                    $leadDays = ($prCreatedAt && $decidedAt) ? (int) abs(\Carbon\Carbon::parse($prCreatedAt)->diffInDays($decidedAt)) : null;
                 @endphp
                 <tr data-dept="{{ $dept }}" data-status="completed" style="border-bottom:1px solid #f3f4f6" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='transparent'">
                     <td style="padding:13px 20px"><span style="font-family:monospace;font-size:12px;font-weight:600;">{{ $docNo }}</span></td>
                     <td style="padding:13px 14px"><div style="font-weight:500;">{{ $vName }}</div></td>
                     <td style="padding:13px 14px"><span style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;background:{{ $dBg }};color:{{ $dText }}">{{ $dept }}</span></td>
                     <td style="padding:13px 14px;font-family:monospace;font-weight:600;">Rp {{ number_format($totalVal,0,',','.') }}</td>
+                    <td style="padding:13px 14px;color:#6b7280;">{{ $leadDays !== null ? $leadDays . ' days' : '—' }}</td>
                     <td style="padding:13px 14px"><span style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;background:#eff6ff;font-size:11.5px;font-weight:600;color:#1d4ed8"><span style="width:5px;height:5px;border-radius:50%;background:#3b82f6;"></span>Completed</span></td>
                 </tr>
                 @empty

@@ -133,7 +133,7 @@ class DatabaseSeeder extends Seeder
                 'item_name' => $itemDef['name'],
                 'unit' => $itemDef['unit'],
                 'specification' => $itemDef['spec'],
-                'item_notes' => 'Seeded by DatabaseSeeder',
+                'item_notes' => null,
                 'is_archived' => false,
             ]);
         }
@@ -384,7 +384,7 @@ class DatabaseSeeder extends Seeder
                         'service_request_item_id' => $sr ? $qd->service_request_item_id : null,
                         'final_price_per_item' => $qd->offered_price_per_item,
                         'final_quantity' => $qd->offered_quantity,
-                        'notes' => 'Auto selected via complete process',
+                        'notes' => null,
                     ]);
                 }
 

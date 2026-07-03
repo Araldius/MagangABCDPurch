@@ -8,12 +8,12 @@ use Illuminate\Http\Request;
 use Carbon\Carbon;
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(\Illuminate\Http\Request $request)
     {
         $user = Auth::user();
         return $user->role === 'purchasing'
             ? $this->purchasingDashboard()
-            : $this->userDashboard();
+            : $this->userDashboard($request);
     }
     public function getChartData(Request $request)
     {
@@ -54,35 +54,14 @@ class DashboardController extends Controller
             $prItems     = optional(optional($selection->rfq)->purchaseRequest)->items ?? collect();
             $prItemsById = $prItems->keyBy('id');
 
-            return $selection->selectionItems->map(function ($si) use ($prItemsById) {
-                $pri   = $prItemsById->get($si->purchase_request_item_id);
-                $qty   = $si->final_quantity ?? 0;
-                $price = $si->final_price_per_item ?? 0;
-                return [
-                    'item_id'     => optional($pri)->item_id ?? optional($pri)->item_code ?? '-',
-                    'item_name'   => optional($pri)->item_name ?? '-',
-                    'qty'         => $qty,
-                    'unit'        => optional($pri)->unit ?? '-',
-                    'unit_price'  => $price,
-                    'total_price' => $qty * $price,
-                ];
-            });
-        })->values();
-
-        return [
-            'vendor_name' => $vendorName,
-            'frequency' => $frequency,
-            'total_value' => $totalValue,
-            'items' => $items
-        ];
-    })->sortByDesc('frequency')->values();
-    return response()->json($data);
-}
-
-private function userDashboard()
+    private function userDashboard($request)
     {
         $userId = Auth::id();
-        $prs = PurchaseRequest::with([
+        
+        $selectedMonth = $request->get('month', 'all');
+        $selectedYear = $request->get('year', 'all');
+
+        $prQuery = PurchaseRequest::with([
             'items', 'user',
             'rfqs.vendorSelections.vendor',
             'rfqs.vendorSelections.selectionItems',
@@ -91,8 +70,16 @@ private function userDashboard()
             ->where(function ($q) use ($userId) {
                 $q->where('user_id', $userId)
                   ->orWhereHas('user', fn($u) => $u->where('role', 'purchasing'));
-            })
-            ->latest()
+            });
+            
+        if ($selectedMonth != 'all') {
+            $prQuery->whereMonth('created_at', $selectedMonth);
+        }
+        if ($selectedYear != 'all') {
+            $prQuery->whereYear('created_at', $selectedYear);
+        }
+
+        $prs = $prQuery->latest()
             ->get()
             ->map(function ($req) {
                 $req->type          = 'goods';
@@ -102,12 +89,20 @@ private function userDashboard()
                 return $req;
             });
 
-        $srs = ServiceRequest::with(['jobs.items', 'user'])
+        $srQuery = ServiceRequest::with(['jobs.items', 'user'])
             ->where(function ($q) use ($userId) {
                 $q->where('user_id', $userId)
                   ->orWhereHas('user', fn($u) => $u->where('role', 'purchasing'));
-            })
-            ->latest()
+            });
+            
+        if ($selectedMonth != 'all') {
+            $srQuery->whereMonth('created_at', $selectedMonth);
+        }
+        if ($selectedYear != 'all') {
+            $srQuery->whereYear('created_at', $selectedYear);
+        }
+
+        $srs = $srQuery->latest()
             ->get()
             ->map(function ($req) {
                 $req->type          = 'service';
@@ -123,10 +118,15 @@ private function userDashboard()
         $activePrs        = $requests->whereNotIn('status', ['completed', 'rejected', 'cancelled'])->count();
         $awaitingApproval = $requests->where('status', 'submitted')->count();
         $inProcess        = $requests->whereIn('status', ['vendor_search', 'vendor_selection'])->count();
-        $completedMonth   = $requests->where('status', 'completed')
-            ->filter(fn($r) => $r->updated_at->month === now()->month
-                            && $r->updated_at->year  === now()->year)
-            ->count();
+        $completedCount = $requests->where('status', 'completed');
+        if ($selectedMonth != 'all') {
+            $completedCount = $completedCount->filter(fn($r) => $r->updated_at->month == $selectedMonth);
+        }
+        if ($selectedYear != 'all') {
+            $completedCount = $completedCount->filter(fn($r) => $r->updated_at->year == $selectedYear);
+        }
+        $completedMonth = $completedCount->count();
+
         $recentHistory = VendorSelection::with(['vendor', 'rfq.purchaseRequest', 'selectionItems'])
             ->whereHas('rfq.purchaseRequest', function ($q) use ($userId) {
                 $q->where('user_id', $userId)->where('status', 'completed');
@@ -136,7 +136,7 @@ private function userDashboard()
             ->get();
         return view('dashboard.user', compact(
             'requests', 'activePrs', 'awaitingApproval', 'inProcess',
-            'completedMonth', 'recentHistory'
+            'completedMonth', 'recentHistory', 'selectedMonth', 'selectedYear'
         ));
     }
 
