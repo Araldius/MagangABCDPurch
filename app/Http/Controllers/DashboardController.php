@@ -80,8 +80,8 @@ class DashboardController extends Controller
     {
         $userId = Auth::id();
         
-        $selectedMonth = $request->get('month', 'all');
-        $selectedYear = $request->get('year', 'all');
+        $startDate = $request->query('start_date');
+        $endDate = $request->query('end_date');
 
         $prQuery = PurchaseRequest::with([
             'items', 'user',
@@ -94,11 +94,12 @@ class DashboardController extends Controller
                   ->orWhereHas('user', fn($u) => $u->where('role', 'purchasing'));
             });
             
-        if ($selectedMonth != 'all') {
-            $prQuery->whereMonth('created_at', $selectedMonth);
-        }
-        if ($selectedYear != 'all') {
-            $prQuery->whereYear('created_at', $selectedYear);
+        if ($startDate && $endDate) {
+            $prQuery->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
+        } elseif ($startDate) {
+            $prQuery->where('created_at', '>=', $startDate . ' 00:00:00');
+        } elseif ($endDate) {
+            $prQuery->where('created_at', '<=', $endDate . ' 23:59:59');
         }
 
         $prs = $prQuery->latest()
@@ -117,11 +118,12 @@ class DashboardController extends Controller
                   ->orWhereHas('user', fn($u) => $u->where('role', 'purchasing'));
             });
             
-        if ($selectedMonth != 'all') {
-            $srQuery->whereMonth('created_at', $selectedMonth);
-        }
-        if ($selectedYear != 'all') {
-            $srQuery->whereYear('created_at', $selectedYear);
+        if ($startDate && $endDate) {
+            $srQuery->whereBetween('created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
+        } elseif ($startDate) {
+            $srQuery->where('created_at', '>=', $startDate . ' 00:00:00');
+        } elseif ($endDate) {
+            $srQuery->where('created_at', '<=', $endDate . ' 23:59:59');
         }
 
         $srs = $srQuery->latest()
@@ -141,11 +143,12 @@ class DashboardController extends Controller
         $awaitingApproval = $requests->where('status', 'submitted')->count();
         $inProcess        = $requests->whereIn('status', ['vendor_search', 'vendor_selection'])->count();
         $completedCount = $requests->where('status', 'completed');
-        if ($selectedMonth != 'all') {
-            $completedCount = $completedCount->filter(fn($r) => $r->updated_at->month == $selectedMonth);
-        }
-        if ($selectedYear != 'all') {
-            $completedCount = $completedCount->filter(fn($r) => $r->updated_at->year == $selectedYear);
+        if ($startDate && $endDate) {
+            $completedCount = $completedCount->filter(fn($r) => $r->updated_at >= $startDate . ' 00:00:00' && $r->updated_at <= $endDate . ' 23:59:59');
+        } elseif ($startDate) {
+            $completedCount = $completedCount->filter(fn($r) => $r->updated_at >= $startDate . ' 00:00:00');
+        } elseif ($endDate) {
+            $completedCount = $completedCount->filter(fn($r) => $r->updated_at <= $endDate . ' 23:59:59');
         }
         $completedMonth = $completedCount->count();
 
@@ -158,7 +161,7 @@ class DashboardController extends Controller
             ->get();
         return view('dashboard.user', compact(
             'requests', 'activePrs', 'awaitingApproval', 'inProcess',
-            'completedMonth', 'recentHistory', 'selectedMonth', 'selectedYear'
+            'completedMonth', 'recentHistory', 'startDate', 'endDate'
         ));
     }
 
