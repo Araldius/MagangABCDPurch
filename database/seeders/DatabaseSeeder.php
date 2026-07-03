@@ -133,7 +133,7 @@ class DatabaseSeeder extends Seeder
                 'item_name' => $itemDef['name'],
                 'unit' => $itemDef['unit'],
                 'specification' => $itemDef['spec'],
-                'item_notes' => 'Seeded by DatabaseSeeder',
+                'item_notes' => null,
                 'is_archived' => false,
             ]);
         }

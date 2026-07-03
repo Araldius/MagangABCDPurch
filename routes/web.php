@@ -42,7 +42,7 @@ Route::middleware('auth')->group(function () {
     Route::post('request/reopen', [PurchaseRequestController::class, 'reopen'])->name('requests.reopen');
 
     /* Procurement History */
-    Route::prefix('procurement-history')->name('history.')->group(function () {
+    Route::middleware('purchasing')->prefix('procurement-history')->name('history.')->group(function () {
         Route::get('orders',  [HistoryController::class, 'orders'])->name('orders');
         Route::get('items',   [HistoryController::class, 'items'])->name('items');
         Route::get('vendors', [HistoryController::class, 'vendors'])->name('vendors');
@@ -51,7 +51,7 @@ Route::middleware('auth')->group(function () {
     });
 
     /* Master Items */
-    Route::prefix('master-items')->name('items.')->group(function () {
+    Route::middleware('purchasing')->prefix('master-items')->name('items.')->group(function () {
         Route::get('/', [ItemController::class, 'index'])->name('index');
         Route::post('/store', [ItemController::class, 'store'])->name('store');
         Route::post('/update/{id}', [ItemController::class, 'update'])->name('update');

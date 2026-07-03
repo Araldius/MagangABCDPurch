@@ -217,6 +217,10 @@ textarea.form-control { height:auto; padding:8px 10px; resize:vertical; }
             const exportUrl = new URL('{{ route("items.export") }}');
             if (status !== 'active') exportUrl.searchParams.set('status', status);
             if (q) exportUrl.searchParams.set('search', q);
+            if (itemSortState.col !== null) {
+                exportUrl.searchParams.set('sort_col', itemSortState.col);
+                exportUrl.searchParams.set('sort_dir', itemSortState.dir);
+            }
             exportBtn.href = exportUrl.toString();
         }
         

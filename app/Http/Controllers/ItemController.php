@@ -109,7 +109,27 @@ class ItemController extends Controller
         } elseif ($status === 'archived') {
             $query->where('is_archived', true);
         }
-        $items = Item::orderBy('item_name')->get();
+        
+        $sortColIndex = $request->get('sort_col');
+        $sortDir = $request->get('sort_dir', 'asc');
+        
+        if ($sortColIndex !== null) {
+            $cols = [
+                0 => 'item_code',
+                1 => 'item_name',
+                2 => 'unit',
+                3 => 'is_archived',
+            ];
+            if (isset($cols[$sortColIndex])) {
+                $query->orderBy($cols[$sortColIndex], $sortDir);
+            } else {
+                $query->orderBy('item_name', 'asc');
+            }
+        } else {
+            $query->orderBy('item_name', 'asc');
+        }
+        
+        $items = $query->get();
         $xlsFileName = 'master_items_' . date('Ymd_His') . '.xlsx';
         
         $data = [
