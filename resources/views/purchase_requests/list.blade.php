@@ -2,7 +2,7 @@
 @php
     $pageTitle='PR & SR List';
     $statusCfg=[
-        'submitted'        => ['Awaiting Approval', '#fef3c7', '#d97706', '#f59e0b'],
+        'submitted'        => [$isPurchasing ? 'Awaiting Approval' : 'Purchasing Approval', '#fef3c7', '#d97706', '#f59e0b'],
         'vendor_search'    => ['Vendor Search',     '#e0e7ff', '#4338ca', '#6366f1'],
         'vendor_selection' => ['Vendor Selection',  '#dbeafe', '#1d4ed8', '#3b82f6'],
         'completed'        => ['Completed',         '#dcfce7', '#15803d', '#22c55e'],
@@ -50,7 +50,7 @@
         </select>
         <select id="status-filter" onchange="applyFilters()" style="height:32px;padding:0 28px 0 10px;border:1px solid #e5e7eb;border-radius:7px;font-size:12.5px;background:#fff;cursor:pointer">
             <option value="">All Status</option>
-            <option value="submitted">Awaiting Approval</option>
+            <option value="submitted">{{ $isPurchasing ? 'Awaiting Approval' : 'Purchasing Approval' }}</option>
             <option value="vendor_search">Vendor Search</option>
             <option value="vendor_selection">Vendor Selection</option>
             <option value="completed">Completed</option>

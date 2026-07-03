@@ -54,6 +54,28 @@ class DashboardController extends Controller
             $prItems     = optional(optional($selection->rfq)->purchaseRequest)->items ?? collect();
             $prItemsById = $prItems->keyBy('id');
 
+            return $selection->selectionItems->map(function ($si) use ($prItemsById) {
+                $prItem = $prItemsById->get($si->purchase_request_item_id);
+                return [
+                    'item_name' => $prItem->item_name ?? ($prItem->name ?? ('Item #' . $si->purchase_request_item_id)),
+                    'quantity'  => $si->final_quantity,
+                    'price'     => $si->final_price_per_item,
+                    'total'     => ($si->final_price_per_item ?? 0) * ($si->final_quantity ?? 0),
+                ];
+            });
+        });
+
+            return [
+                'vendor'      => $vendorName,
+                'frequency'   => $frequency,
+                'total_value' => $totalValue,
+                'items'       => $items->values(),
+            ];
+        })->values();
+
+        return response()->json(['data' => $data]);
+    }
+
     private function userDashboard($request)
     {
         $userId = Auth::id();

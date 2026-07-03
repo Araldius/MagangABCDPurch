@@ -52,7 +52,7 @@ Route::middleware('auth')->group(function () {
     });
 
     /* Master Items */
-    Route::middleware('purchasing')->prefix('master-items')->name('items.')->group(function () {
+    Route::prefix('master-items')->name('items.')->group(function () {
         Route::get('/', [ItemController::class, 'index'])->name('index');
         Route::post('/store', [ItemController::class, 'store'])->name('store');
         Route::post('/update/{id}', [ItemController::class, 'update'])->name('update');
