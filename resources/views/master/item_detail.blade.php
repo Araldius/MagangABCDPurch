@@ -51,12 +51,7 @@
                         @if($h['spec'] !== '-')
                             <div style="font-size:11px;color:#374151;margin-bottom:2px"><strong>Spec:</strong> {{ $h['spec'] }}</div>
                         @endif
-                        @if($h['notes'] !== '-')
-                            <div style="font-size:11px;color:#6b7280;font-style:italic;"><strong>Notes:</strong> {{ $h['notes'] }}</div>
-                        @endif
-                        @if($h['spec'] === '-' && $h['notes'] === '-')
-                            <span style="color:#9ca3af;font-size:11px">-</span>
-                        @endif
+                        <div style="font-size:11px;color:#6b7280;font-style:italic;"><strong>Notes:</strong> {{ $h['notes'] !== '-' ? $h['notes'] : '-' }}</div>
                     </td>
                     <td style="padding:10px 14px;text-align:right;">{{ $h['qty'] }} {{ $h['unit'] }}</td>
                     <td style="padding:10px 14px;text-align:right;font-weight:600;">Rp {{ number_format($h['price'], 0, ',', '.') }}</td>
