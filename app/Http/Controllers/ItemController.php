@@ -79,6 +79,19 @@ class ItemController extends Controller
         return back()->with('success', 'Item berhasil diubah.');
     }
 
+    public function destroy($id)
+    {
+        $item = Item::findOrFail($id);
+        
+        $isUsedInPR = \App\Models\PurchaseRequestItem::where('item_id', $item->item_code)->exists();
+        if ($isUsedInPR) {
+            return back()->with('error', 'Item tidak bisa dihapus karena sedang digunakan dalam Purchase Request.');
+        }
+
+        $item->delete();
+        return back()->with('success', 'Item berhasil dihapus.');
+    }
+
     public function archive($id)
     {
         $item = Item::findOrFail($id);

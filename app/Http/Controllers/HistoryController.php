@@ -67,6 +67,7 @@ class HistoryController extends Controller
                     'doc_number'     => $docNo,
                     'vendor_names'   => collect(),
                     'department'     => $pr->department ?? optional($pr->user)->department ?? '—',
+                    'plant'          => $pr->plant ?? '—',
                     'items'          => collect(),
                     'total_value'    => 0,
                     'lead_days'      => null,

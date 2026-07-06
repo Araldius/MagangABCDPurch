@@ -16,7 +16,8 @@ class PurchaseRequestItem extends Model
         'quantity',
         'unit',
         'specification',
-        'item_notes'
+        'item_notes',
+        'admin_notes'
     ];
 
     public function purchaseRequest()

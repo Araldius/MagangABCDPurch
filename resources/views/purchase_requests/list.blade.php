@@ -2,7 +2,7 @@
 @php
     $pageTitle='PR & SR List';
     $statusCfg=[
-        'submitted'        => [$isPurchasing ? 'Awaiting Approval' : 'Purchasing Approval', '#fef3c7', '#d97706', '#f59e0b'],
+        'submitted'        => [Auth::user()->role === 'purchasing' ? 'Awaiting Approval' : 'Purchasing Approval', '#fef3c7', '#d97706', '#f59e0b'],
         'vendor_search'    => ['Vendor Search',     '#e0e7ff', '#4338ca', '#6366f1'],
         'vendor_selection' => ['Vendor Selection',  '#dbeafe', '#1d4ed8', '#3b82f6'],
         'completed'        => ['Completed',         '#dcfce7', '#15803d', '#22c55e'],
@@ -50,7 +50,7 @@
         </select>
         <select id="status-filter" onchange="applyFilters()" style="height:32px;padding:0 28px 0 10px;border:1px solid #e5e7eb;border-radius:7px;font-size:12.5px;background:#fff;cursor:pointer">
             <option value="">All Status</option>
-            <option value="submitted">{{ $isPurchasing ? 'Awaiting Approval' : 'Purchasing Approval' }}</option>
+            <option value="submitted">{{ Auth::user()->role === 'purchasing' ? 'Awaiting Approval' : 'Purchasing Approval' }}</option>
             <option value="vendor_search">Vendor Search</option>
             <option value="vendor_selection">Vendor Selection</option>
             <option value="completed">Completed</option>
@@ -277,6 +277,8 @@
 @endphp
 
 // key = "type_id" to prevent PR id=1 and SR id=1 collision
+const isAdmin = @json(auth()->check() && auth()->user()->role === 'admin');
+
 const allPRs = @json(
     $allRequests->mapWithKeys(function($r) {
         return [($r->type ?? 'goods') . '_' . $r->id => $r];
@@ -566,7 +568,7 @@ function openPRDetail(id, category) {
                 ? `<span style="font-family:monospace;font-size:10px;background:#e0e7ff;color:#3730a3;padding:1px 6px;border-radius:4px;margin-right:7px;font-weight:700">${job.job_code}</span>`
                 : '';
             rows += `<tr>
-                <td colspan="${hasVS ? 10 : 7}" style="background:#f0f4f8;padding:8px 12px;font-weight:700;font-size:11.5px;color:#374151;border-bottom:1px solid #e5e7eb">
+                <td colspan="${hasVS ? (isAdmin ? 11 : 10) : (isAdmin ? 8 : 7)}" style="background:#f0f4f8;padding:8px 12px;font-weight:700;font-size:11.5px;color:#374151;border-bottom:1px solid #e5e7eb">
                     💼 ${jCodeBadge}${job.job_description || '-'}
                 </td>
             </tr>`;
@@ -596,6 +598,11 @@ function openPRDetail(id, category) {
                     <td style="${tdS}">
                         ${vs ? `<span style="padding:2px 8px;background:#e0f2fe;border-radius:4px;font-size:11px;font-weight:600;color:#0369a1;white-space:nowrap;">${vs.vendor}</span>` : '-'}
                     </td>` : ''}
+                    ${isAdmin ? `
+                    <td style="${tdS}">
+                        <input type="text" class="form-control" style="font-size:11px;padding:4px;border:1px solid #e5e7eb;border-radius:4px;width:100%" placeholder="Add note..." value="${it.admin_notes || ''}" onchange="saveAdminNote(${it.id}, 'service', this.value)">
+                    </td>
+                    ` : ''}
                 </tr>`;
             });
         });
@@ -607,7 +614,7 @@ function openPRDetail(id, category) {
 
         const totalRow = hasVS && grandTotal > 0 ? `
             <tr style="background:#f9fafb;">
-                <td colspan="7" style="padding:9px 10px;text-align:right;font-size:12px;font-weight:700;color:#374151;">Total Request Value</td>
+                <td colspan="${isAdmin ? 8 : 7}" style="padding:9px 10px;text-align:right;font-size:12px;font-weight:700;color:#374151;">Total Request Value</td>
                 <td colspan="3" style="padding:9px 10px;text-align:right;font-family:monospace;font-size:13px;font-weight:800;color:#111827;">${fmtRp(grandTotal)}</td>
             </tr>` : '';
 
@@ -623,8 +630,9 @@ function openPRDetail(id, category) {
                         <th style="${thS};text-align:right;width:60px">QTY</th>
                         <th style="${thS};width:55px">UNIT</th>
                         ${extraTh}
+                        ${isAdmin ? `<th style="${thS};width:150px">ADMIN NOTES</th>` : ''}
                     </tr></thead>
-                    <tbody>${rows || `<tr><td colspan="${hasVS ? 10 : 7}" style="text-align:center;padding:16px;color:#9ca3af">No items</td></tr>`}</tbody>
+                    <tbody>${rows || `<tr><td colspan="${hasVS ? (isAdmin ? 11 : 10) : (isAdmin ? 8 : 7)}" style="text-align:center;padding:16px;color:#9ca3af">No items</td></tr>`}</tbody>
                     ${totalRow ? `<tfoot>${totalRow}</tfoot>` : ''}
                 </table>
             </div>
@@ -657,13 +665,18 @@ function openPRDetail(id, category) {
                 <td style="${tdS};font-family:monospace;font-weight:600">${vs ? fmtRp(vs.unit_price) : '—'}</td>
                 <td style="${tdS};font-family:monospace;font-weight:700;color:#111827">${vs ? fmtRp(vs.total) : '—'}</td>
                 <td style="${tdS}">${vs ? `<span style="padding:2px 8px;background:#e0f2fe;border-radius:4px;font-size:11px;font-weight:600;color:#0369a1;white-space:nowrap">${vs.vendor}</span>` : '—'}</td>` : ''}
+                ${isAdmin ? `
+                <td style="${tdS}">
+                    <input type="text" class="form-control" style="font-size:11px;padding:4px;border:1px solid #e5e7eb;border-radius:4px;width:100%" placeholder="Add note..." value="${it.admin_notes || ''}" onchange="saveAdminNote(${it.id}, 'goods', this.value)">
+                </td>
+                ` : ''}
             </tr>`;
         });
 
         const gTh    = hasPriceCol ? `<th style="${thS};text-align:right">UNIT PRICE (RP)</th><th style="${thS};text-align:right">TOTAL (RP)</th><th style="${thS}">VENDOR</th>` : '';
         const gTotal = hasPriceCol && grandTotal > 0
             ? `<tr style="background:#f9fafb">
-                <td colspan="7" style="padding:9px 10px;text-align:right;font-size:12px;font-weight:700;color:#374151">Total Request Value</td>
+                <td colspan="${isAdmin ? 8 : 7}" style="padding:9px 10px;text-align:right;font-size:12px;font-weight:700;color:#374151">Total Request Value</td>
                 <td colspan="3" style="padding:9px 10px;text-align:right;font-family:monospace;font-size:13px;font-weight:800;color:#111827">${fmtRp(grandTotal)}</td>
                </tr>` : '';
 
@@ -679,8 +692,9 @@ function openPRDetail(id, category) {
                         <th style="${thS};text-align:right">QTY</th>
                         <th style="${thS}">UNIT</th>
                         ${gTh}
+                        ${isAdmin ? `<th style="${thS};width:150px">ADMIN NOTES</th>` : ''}
                     </tr></thead>
-                    <tbody>${rows || '<tr><td colspan="7" style="text-align:center;padding:16px;color:#9ca3af">No items</td></tr>'}</tbody>
+                    <tbody>${rows || '<tr><td colspan="${isAdmin ? 8 : 7}" style="text-align:center;padding:16px;color:#9ca3af">No items</td></tr>'}</tbody>
                     ${gTotal ? `<tfoot>${gTotal}</tfoot>` : ''}
                 </table>
             </div>

@@ -68,8 +68,17 @@
                                     class="btn-archive-item"
                                     data-id="{{ $item->id }}"
                                     data-archived="{{ $item->is_archived ? 'true' : 'false' }}"
-                                    style="background:#fff;border:1px solid #e5e7eb;color:{{ $item->is_archived ? '#16a34a' : '#ef4444' }};border-radius:6px;cursor:pointer;font-weight:600;font-size:11.5px;padding:4px 10px;">
+                                    style="background:#fff;border:1px solid #e5e7eb;color:{{ $item->is_archived ? '#16a34a' : '#f59e0b' }};border-radius:6px;cursor:pointer;font-weight:600;font-size:11.5px;padding:4px 10px;">
                                 {{ $item->is_archived ? 'Restore' : 'Archive' }}
+                            </button>
+                        </form>
+                        <form id="delete-form-{{ $item->id }}" action="{{ route('items.destroy', $item->id) }}" method="POST" style="display:inline-block;margin:0;">
+                            @csrf
+                            <button type="button" 
+                                    class="btn-delete-item"
+                                    data-id="{{ $item->id }}"
+                                    style="background:#fff;border:1px solid #e5e7eb;color:#ef4444;border-radius:6px;cursor:pointer;font-weight:600;font-size:11.5px;padding:4px 10px;margin-left:4px;">
+                                Delete
                             </button>
                         </form>
                     </td>
@@ -176,18 +185,28 @@ textarea.form-control { height:auto; padding:8px 10px; resize:vertical; }
 
     document.addEventListener('DOMContentLoaded', function() {
         document.addEventListener('click', function(e) {
-            const btn = e.target.closest('.btn-archive-item');
-            if (btn) {
+            const archiveBtn = e.target.closest('.btn-archive-item');
+            const deleteBtn = e.target.closest('.btn-delete-item');
+            if (archiveBtn) {
                 e.preventDefault();
-                const id = btn.getAttribute('data-id');
-                const isArchived = btn.getAttribute('data-archived') === 'true';
+                const id = archiveBtn.getAttribute('data-id');
+                const isArchived = archiveBtn.getAttribute('data-archived') === 'true';
                 
                 const text = isArchived ? 'mengaktifkan kembali' : 'mengarsipkan';
                 const btnText = isArchived ? 'Restore' : 'Archive';
-                const color = isArchived ? '#16a34a' : '#ef4444';
+                const color = isArchived ? '#16a34a' : '#f59e0b';
                 
                 showConfirmModal('Konfirmasi', 'Apakah Anda yakin ingin <b>' + text + '</b> item ini?', btnText, color, function() {
                     const form = document.getElementById('archive-form-' + id);
+                    if (form) form.submit();
+                });
+            }
+            if (deleteBtn) {
+                e.preventDefault();
+                const id = deleteBtn.getAttribute('data-id');
+                
+                showConfirmModal('Konfirmasi', 'Apakah Anda yakin ingin menghapus item ini secara permanen?', 'Delete', '#ef4444', function() {
+                    const form = document.getElementById('delete-form-' + id);
                     if (form) form.submit();
                 });
             }

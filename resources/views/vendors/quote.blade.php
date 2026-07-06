@@ -223,6 +223,11 @@
                                                     <strong>{{ $item->name ?? $item->item_name }}</strong>
                                                     <input type="hidden" name="items[{{ $idx }}][item_id]" value="{{ $item->id }}">
                                                     <div style="color:var(--text-muted); font-size:12px; margin-top:4px;">{{ $item->specification ?? '-' }}</div>
+                                                    @if($item->admin_notes)
+                                                        <div style="background:#fef3c7;border:1px solid #f59e0b;color:#b45309;padding:6px 10px;border-radius:4px;font-size:11.5px;margin-top:8px;">
+                                                            <strong>Admin Note:</strong> {{ $item->admin_notes }}
+                                                        </div>
+                                                    @endif
                                                     <div style="margin-top:8px;">
                                                         <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
                                                             <input type="checkbox" class="diff-toggle" onchange="document.getElementById('spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'" {{ $defSpec ? 'checked' : '' }}>
@@ -275,6 +280,11 @@
                                                 <strong>{{ $item->name ?? $item->item_name }}</strong>
                                                 <input type="hidden" name="items[{{ $idx }}][item_id]" value="{{ $item->id }}">
                                                 <div style="color:var(--text-muted); font-size:12px; margin-top:4px;">{{ $item->specification ?? '-' }}</div>
+                                                @if($item->admin_notes)
+                                                    <div style="background:#fef3c7;border:1px solid #f59e0b;color:#b45309;padding:6px 10px;border-radius:4px;font-size:11.5px;margin-top:8px;">
+                                                        <strong>Admin Note:</strong> {{ $item->admin_notes }}
+                                                    </div>
+                                                @endif
                                                     <div style="margin-top:8px;">
                                                         <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
                                                             <input type="checkbox" class="diff-toggle" onchange="document.getElementById('spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'" {{ $defSpec ? 'checked' : '' }}>

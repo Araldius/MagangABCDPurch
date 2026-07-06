@@ -69,13 +69,13 @@
 </style>
 
 <div style="margin-bottom:20px">
-    <h1 style="font-size:20px;font-weight:700;color:#111827;margin:0 0 3px">Add Manual Quotation for {{ $docNumber }}</h1>
+    <h1 style="font-size:20px;font-weight:700;color:#111827;margin:0 0 3px">Edit Quotation for {{ $docNumber }}</h1>
     <p style="font-size:12.5px;color:#6b7280;margin:0">
         Enter the vendor details and quoted prices for {{ $requestTitle }}
     </p>
 </div>
 
-<form action="{{ route('quotations.store', $rfq->id) }}" method="post" id="quote-form">
+<form action="{{ route('quotations.update', $quotation->id) }}" method="post" id="quote-form">
 @csrf
 
 <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden">
@@ -84,7 +84,7 @@
     </div>
     
     <div style="padding:20px;border-bottom:1px solid #e5e7eb">
-        <input type="hidden" name="vendor_id" id="hidden_vendor_id" value="">
+        
         
         <div class="form-group flex-1" style="margin-bottom:16px;">
             <label class="form-label flex-between" style="width:100%">
@@ -133,11 +133,6 @@
                                     <strong>{{ $item->name ?? $item->item_name }}</strong>
                                     <input type="hidden" name="items[{{ $idx }}][item_id]" value="{{ $item->id }}">
                                     <div style="color:var(--text-muted); font-size:12px; margin-top:4px;">{{ $item->specification ?? '-' }}</div>
-                                    @if($item->admin_notes)
-                                        <div style="background:#fef3c7;border:1px solid #f59e0b;color:#b45309;padding:6px 10px;border-radius:4px;font-size:11.5px;margin-top:8px;">
-                                            <strong>Admin Note:</strong> {{ $item->admin_notes }}
-                                        </div>
-                                    @endif
                                     <div style="margin-top:8px;">
                                         <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
                                             <input type="checkbox" class="diff-toggle" onchange="document.getElementById('spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'">
@@ -182,11 +177,6 @@
                                 <strong>{{ $item->name ?? $item->item_name }}</strong>
                                 <input type="hidden" name="items[{{ $idx }}][item_id]" value="{{ $item->id }}">
                                 <div style="color:var(--text-muted); font-size:12px; margin-top:4px;">{{ $item->specification ?? '-' }}</div>
-                                @if($item->admin_notes)
-                                    <div style="background:#fef3c7;border:1px solid #f59e0b;color:#b45309;padding:6px 10px;border-radius:4px;font-size:11.5px;margin-top:8px;">
-                                        <strong>Admin Note:</strong> {{ $item->admin_notes }}
-                                    </div>
-                                @endif
                                 <div style="margin-top:8px;">
                                     <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
                                         <input type="checkbox" class="diff-toggle" onchange="document.getElementById('spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'">

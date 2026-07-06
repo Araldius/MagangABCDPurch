@@ -18,6 +18,7 @@ class ServiceRequestItem extends Model
         'quantity',
         'unit',
         'specification',
+        'admin_notes',
     ];
 
     protected static function boot()
