@@ -30,7 +30,7 @@
         .sidebar-logout:hover{background:rgba(239,68,68,.08)}
  
         /* MAIN */
-        .main-wrap{margin-left:200px;flex:1;display:flex;flex-direction:column;min-height:100vh}
+        .main-wrap{margin-left:200px;flex:1;display:flex;flex-direction:column;min-height:100vh;min-width:0}
  
         /* TOPBAR */
         .topbar{background:#fff;border-bottom:1px solid #e5e7eb;padding:0 28px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
@@ -45,7 +45,7 @@
         .topbar-role{color:#9ca3af;font-size:11px}
  
         /* PAGE */
-        .page-content{padding:24px 28px;flex:1}
+        .page-content{padding:24px 28px;flex:1;min-width:0;overflow-x:hidden}
         .page-footer{padding:14px 28px;font-size:11.5px;color:#9ca3af;border-top:1px solid #e5e7eb;background:#fff;display:flex;justify-content:space-between}
         .page-footer a{color:#9ca3af;text-decoration:none}
  

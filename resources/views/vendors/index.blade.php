@@ -76,8 +76,11 @@ h1 { font-size:20px;font-weight:700;color:#111827;margin:0 0 3px }
         </div>
     </div>
  
-    {{-- Requirements table --}}
-    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:14px;overflow:hidden;">
+    {{-- Requirements table + Vendor cards, side by side --}}
+<div style="display:flex;align-items:stretch;gap:16px;margin-bottom:14px;width:100%;min-width:0;overflow:hidden;">
+
+    {{-- LEFT: Requirements table (tetap di tempat, tidak ikut geser) --}}
+    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;width:650px;flex-shrink:0;display:flex;flex-direction:column;height:640px;">
         <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #f3f4f6">
             <div>
                 <div style="font-size:13.5px;font-weight:700;color:#111827">Item / Service Requirements</div>
@@ -85,7 +88,7 @@ h1 { font-size:20px;font-weight:700;color:#111827;margin:0 0 3px }
             </div>
             <div style="font-size:12px;color:#6b7280">Items Fulfilled: <span id="sel-count" style="font-weight:700;color:#111827">0</span> of <span id="sel-total" style="font-weight:700;color:#111827">0</span></div>
         </div>
-        <div style="overflow-x:auto">
+        <div style="overflow-y:auto;overflow-x:auto;flex:1">
             <table class="req-table">
                 <thead>
                     <tr>
@@ -100,9 +103,11 @@ h1 { font-size:20px;font-weight:700;color:#111827;margin:0 0 3px }
             </table>
         </div>
     </div>
- 
-    {{-- Vendor cards grid (carousel) --}}
-    <div id="vendor-cards-grid" style="display:flex;overflow-x:auto;gap:16px;margin-bottom:14px;padding-bottom:12px;scroll-snap-type:x mandatory;"></div>
+
+    {{-- RIGHT: Vendor cards grid (carousel, tetap bisa digeser kiri-kanan) --}}
+    <div id="vendor-cards-grid" style="display:flex;overflow-x:auto;gap:16px;padding-bottom:12px;scroll-snap-type:x mandatory;flex:1;min-width:0;height:640px;"></div>
+
+</div>
  
     {{-- Footer bar --}}
     <div style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between">
