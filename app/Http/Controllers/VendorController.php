@@ -217,6 +217,77 @@ class VendorController extends Controller
         });
     }
 
+    public function updateMaster(Request $request, $id)
+    {
+        $request->validate([
+            'vendor_name' => 'required|string|max:255',
+            'email' => 'nullable|email|max:255',
+        ]);
+
+        $vendor = Vendor::findOrFail($id);
+        $vendor->update([
+            'vendor_name' => $request->vendor_name,
+            'email' => $request->email,
+        ]);
+
+        return back()->with('success', 'Vendor information updated successfully.');
+    }
+
+    public function exportQuotations(Request $request)
+    {
+        $id = $request->query('id');
+        $type = $request->query('type', 'goods');
+
+        $doc = $type === 'service' ? ServiceRequest::findOrFail($id) : PurchaseRequest::findOrFail($id);
+        $rfqs = Rfq::where($type === 'service' ? 'service_request_id' : 'purchase_request_id', $id)->get();
+
+        $headers = [
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=quotations_{$doc->document_number}.csv",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $columns = ['Vendor Name', 'Item ID', 'Item Name', 'Unit Price (Rp)', 'Target Qty', 'Offered Qty', 'Unit', 'Specification', 'Subtotal (Rp)', 'Notes'];
+
+        $callback = function() use($rfqs, $columns, $type, $doc) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns);
+
+            foreach ($rfqs as $rfq) {
+                foreach ($rfq->quotations as $quotation) {
+                    $vendor = $quotation->vendor;
+                    foreach ($quotation->details as $detail) {
+                        if ($type === 'service') {
+                            $item = $detail->serviceRequestItem;
+                        } else {
+                            $item = $detail->purchaseRequestItem;
+                        }
+                        
+                        if (!$item) continue;
+
+                        fputcsv($file, [
+                            $vendor->vendor_name ?? $vendor->name ?? '-',
+                            $item->item_id ?? '-',
+                            $item->item_name ?? '-',
+                            $detail->unit_price,
+                            $item->quantity ?? '-',
+                            $detail->quantity,
+                            $detail->unit ?? $item->unit ?? '-',
+                            $detail->specification ?? $item->specification ?? '-',
+                            $detail->unit_price * $detail->quantity,
+                            $detail->item_notes ?? $item->item_notes ?? '-'
+                        ]);
+                    }
+                }
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
     // ─────────────────────────────────────────────
     // GET /api/vendors
     // ─────────────────────────────────────────────

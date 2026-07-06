@@ -67,6 +67,9 @@ h1 { font-size:20px;font-weight:700;color:#111827;margin:0 0 3px }
             <span id="ws-status-badge" style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;background:#fff7ed;font-size:12px;font-weight:600;color:#c2410c">
                 <span style="width:6px;height:6px;border-radius:50%;background:#f97316"></span>Awaiting Selection
             </span>
+            <button class="btn-outline" onclick="exportQuotations()" style="display:inline-flex;align-items:center;gap:6px;padding:7px 12px;color:#059669;border-color:#059669;background:#ecfdf5;">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16" stroke-linecap="round" stroke-linejoin="round"/></svg> Export Excel
+            </button>
             <button class="btn-back" onclick="backToStep1()">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Back
             </button>
@@ -98,8 +101,8 @@ h1 { font-size:20px;font-weight:700;color:#111827;margin:0 0 3px }
         </div>
     </div>
  
-    {{-- Vendor cards grid --}}
-    <div id="vendor-cards-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px"></div>
+    {{-- Vendor cards grid (carousel) --}}
+    <div id="vendor-cards-grid" style="display:flex;overflow-x:auto;gap:16px;margin-bottom:14px;padding-bottom:12px;scroll-snap-type:x mandatory;"></div>
  
     {{-- Footer bar --}}
     <div style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between">
@@ -195,6 +198,7 @@ function buildVendorOffers(pr, vendors) {
             if (!Array.isArray(details)) details = [details];
             
             if (offers[vId]) {
+                offers[vId].quotation_id = quot.id;
                 details.forEach(det => {
                     const itemId = det.purchase_request_item_id || det.service_request_item_id;
                     if (itemId) {
@@ -306,6 +310,11 @@ function loadPR(uniqueKey) {
     renderRequirementsTable();
     renderVendorCards();
     updateCounts();
+}
+
+function exportQuotations() {
+    if (!currentPR) return;
+    window.location.href = `{{ url('vendor-selection/export') }}?id=${currentPR.id}&type=${currentPR.type}`;
 }
 
 function backToStep1(){
@@ -463,11 +472,12 @@ function renderVendorCards(){
             contentHtml = currentPR.items.map(item => renderItemCard(v, item, off)).join('');
         }
 
-        return `<div style="background:#f9fafb;border:1px solid ${isVendorChecked?'#3b5bdb':'#e5e7eb'};border-radius:12px;overflow:hidden;transition:all .15s">
+        return `<div style="background:#f9fafb;border:1px solid ${isVendorChecked?'#3b5bdb':'#e5e7eb'};border-radius:12px;overflow:hidden;transition:all .15s;min-width:360px;flex-shrink:0;scroll-snap-align:start;">
             <div style="padding:12px 14px;border-bottom:1px solid #e5e7eb;background:${isVendorChecked?'#eff6ff':'#fff'};display:flex;justify-content:space-between;align-items:center;">
                 <div style="font-size:13.5px;font-weight:700;color:${isVendorChecked?'#1d4ed8':'#111827'};display:flex;align-items:center;">
                     ${vName} ${prevBadge}
                 </div>
+                ${off.quotation_id ? `<a href="/quotation/${off.quotation_id}/edit" target="_blank" style="font-size:11px;font-weight:600;color:#3b5bdb;text-decoration:none;display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:4px;background:#e0e7ff;"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke-linecap="round" stroke-linejoin="round"/></svg> Edit</a>` : ''}
             </div>
             <div style="padding:10px;max-height:650px;overflow-y:auto">${contentHtml}</div>
             <div style="padding:10px 14px;border-top:1px solid #e5e7eb;background:#fff;font-size:12.5px;font-weight:700;color:#111827">Total Quote <span id="vendor-total-${v.id}" style="float:right">${fmt(0)}</span></div>

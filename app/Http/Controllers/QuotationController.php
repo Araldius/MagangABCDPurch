@@ -128,6 +128,65 @@ class QuotationController extends Controller
         return redirect()->route('dashboard')->with('success', 'Manual quotation saved successfully.');
     }
 
+    public function edit($id)
+    {
+        $quotation = Quotation::with([
+            'rfq.purchaseRequest.items',
+            'rfq.serviceRequest.jobs.items',
+            'details'
+        ])->findOrFail($id);
+        
+        $rfq = $quotation->rfq;
+        return view('quotations.edit', compact('quotation', 'rfq'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $quotation = Quotation::findOrFail($id);
+        $rfq = $quotation->rfq;
+
+        $data = $request->validate([
+            'items' => ['required', 'array'],
+            'items.*.detail_id' => ['required', 'exists:quotation_details,id'],
+            'items.*.price' => ['required', 'numeric', 'min:0'],
+            'items.*.quantity' => ['required', 'numeric', 'min:0'],
+            'items.*.unit' => ['nullable', 'string'],
+            'items.*.specification' => ['nullable', 'string'],
+            'items.*.notes' => ['nullable', 'string'],
+            'note' => ['nullable', 'string'],
+        ]);
+
+        $total = 0;
+        foreach ($data['items'] as $it) {
+            $detail = QuotationDetail::findOrFail($it['detail_id']);
+            $detail->update([
+                'offered_price_per_item' => $it['price'],
+                'offered_quantity' => $it['quantity'],
+                'offered_unit' => $it['unit'] ?? null,
+                'offered_specification' => $it['specification'] ?? null,
+                'item_notes' => $it['notes'] ?? null,
+            ]);
+            $total += ($it['price'] * $it['quantity']);
+        }
+
+        $quotation->update([
+            'total_price' => $total,
+            'note' => $data['note'] ?? null,
+        ]);
+
+        History::create([
+            'user_id' => auth()->id(),
+            'vendor_id' => $quotation->vendor_id,
+            'rfq_id' => $rfq->id,
+            'action' => 'Quotation Updated',
+            'transaction_status' => 'completed',
+            'notes' => 'Quotation updated manually by Admin',
+            'action_date' => now(),
+        ]);
+
+        return redirect()->route('dashboard')->with('success', 'Quotation updated successfully.');
+    }
+
     public function status(Rfq $rfq)
     {
         $rfq->load(['purchaseRequest', 'vendor', 'vendorQuotations.vendor', 'quotationPeriods', 'quotation.details']);

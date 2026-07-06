@@ -72,7 +72,7 @@ else $rangeText = 'All Time';
                     <th onclick="histSort(0)" style="padding:12px 20px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;cursor:pointer;white-space:nowrap">DOC NO. <span id="hs0">↕</span></th>
                     <th onclick="histSort(1)" style="padding:12px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;cursor:pointer">VENDOR <span id="hs1">↕</span></th>
                     <th onclick="histSort(2)" style="padding:12px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;cursor:pointer">DEPARTMENT <span id="hs2">↕</span></th>
-                    <th onclick="histSort(3)" style="padding:12px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;cursor:pointer">TOTAL VALUE <span id="hs3">↕</span></th>
+                    <th onclick="histSort(4)" style="padding:12px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;cursor:pointer">TOTAL VALUE <span id="hs4">↕</span></th>
                     <th style="padding:12px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">LEAD TIME</th>
                     <th style="padding:12px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">COMPLETED DATE</th>
                     <th style="padding:12px 14px;text-align:right;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">ACTION</th>
@@ -94,7 +94,7 @@ else $rangeText = 'All Time';
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="7" style="padding:20px;text-align:center;color:#6b7280;font-size:13px">No completed records found.</td></tr>
+                <tr><td colspan="8" style="padding:20px;text-align:center;color:#6b7280;font-size:13px">No completed records found.</td></tr>
                 @endforelse
             </tbody>
         </table>

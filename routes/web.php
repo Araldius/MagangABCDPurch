@@ -40,6 +40,7 @@ Route::middleware('auth')->group(function () {
     Route::post('request/reject',           [PurchaseRequestController::class, 'reject'])->name('requests.reject');
     Route::post('request/cancel',           [PurchaseRequestController::class, 'cancel'])->name('requests.cancel');
     Route::post('request/reopen', [PurchaseRequestController::class, 'reopen'])->name('requests.reopen');
+    Route::post('request/item-note', [PurchaseRequestController::class, 'saveAdminNote'])->name('requests.item_note');
 
     /* Procurement History */
     Route::middleware('purchasing')->prefix('procurement-history')->name('history.')->group(function () {
@@ -47,14 +48,16 @@ Route::middleware('auth')->group(function () {
         Route::get('items',   [HistoryController::class, 'items'])->name('items');
         Route::get('vendors', [HistoryController::class, 'vendors'])->name('vendors');
         Route::get('master-vendors', [HistoryController::class, 'masterVendors'])->name('master.vendors');
+        Route::post('master-vendors/{id}/update', [VendorController::class, 'updateMaster'])->name('master.vendors.update');
         Route::get('vendors/{id}', [HistoryController::class, 'vendorDetail'])->name('vendor.detail');
     });
 
     /* Master Items */
-    Route::middleware('purchasing')->prefix('master-items')->name('items.')->group(function () {
+    Route::prefix('master-items')->name('items.')->group(function () {
         Route::get('/', [ItemController::class, 'index'])->name('index');
         Route::post('/store', [ItemController::class, 'store'])->name('store');
         Route::post('/update/{id}', [ItemController::class, 'update'])->name('update');
+        Route::post('/delete/{id}', [ItemController::class, 'destroy'])->name('destroy');
         Route::post('/archive/{id}', [ItemController::class, 'archive'])->name('archive');
         Route::get('/export', [ItemController::class, 'export'])->name('export');
         Route::get('/{id}/export-history', [ItemController::class, 'exportHistory'])->name('exportHistory');
@@ -68,6 +71,7 @@ Route::middleware('auth')->group(function () {
     /* Vendor Selection (new flow — main page) */
     Route::get( 'vendor-selection',       [VendorController::class, 'index'])->name('vendors.list');
     Route::post('vendor-selection/store', [VendorController::class, 'storeSelection'])->name('vendors.store.selection');
+    Route::get( 'vendor-selection/export', [VendorController::class, 'exportQuotations'])->name('vendors.export');
 
     /* Vendor Selection (old RFQ-based flow — backward compat, GET only) */
     Route::get('vendor/select/{rfq}', [VendorController::class, 'select'])->name('vendors.select');
@@ -76,6 +80,8 @@ Route::middleware('auth')->group(function () {
     /* Quotation */
     Route::get( 'rfq/{rfq}/quotations/create', [QuotationController::class, 'create'])->name('quotations.create');
     Route::post('rfq/{rfq}/quotations',        [QuotationController::class, 'store'])->name('quotations.store');
+    Route::get( 'quotation/{id}/edit',    [QuotationController::class, 'edit'])->name('quotations.edit');
+    Route::post('quotation/{id}/update',  [QuotationController::class, 'update'])->name('quotations.update');
     Route::get( 'quotation/status/{rfq}', [QuotationController::class, 'status'])->name('quotations.status');
     Route::post('quotation/status/{rfq}', [QuotationController::class, 'updateStatus'])->name('quotations.updateStatus');
     Route::get( 'quotation/final/{rfq}',  [QuotationController::class, 'final'])->name('quotations.final');

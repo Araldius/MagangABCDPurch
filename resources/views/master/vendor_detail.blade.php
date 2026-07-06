@@ -3,12 +3,44 @@
 @section('content')
 @php $pageTitle = 'Master Vendor Detail'; @endphp
 
-<div style="margin-bottom:24px;">
-    <a href="javascript:history.back()" class="btn-back" style="margin-bottom:12px; width:fit-content;">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Back
-    </a>
-    <h1 style="font-size:24px;font-weight:700;color:#111827;margin:0;">{{ $vendor->vendor_name ?? $vendor->name }}</h1>
-    <p style="color:#6b7280;margin:4px 0 0;font-size:14px;">Location: {{ $vendor->location ?? '-' }} &nbsp;|&nbsp; Total Supplied Value: Rp {{ number_format($totalValue, 0, ',', '.') }}</p>
+<div style="margin-bottom:24px; display:flex; justify-content:space-between; align-items:flex-start;">
+    <div>
+        <a href="javascript:history.back()" class="btn-back" style="margin-bottom:12px; width:fit-content; text-decoration:none; color:#4b5563; font-size:13px; font-weight:600; display:flex; align-items:center; gap:6px;">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Back
+        </a>
+        <h1 style="font-size:24px;font-weight:700;color:#111827;margin:0;">{{ $vendor->vendor_name ?? $vendor->name }}</h1>
+        <p style="color:#6b7280;margin:4px 0 0;font-size:14px;">Email: {{ $vendor->email ?? '-' }} &nbsp;|&nbsp; Location: {{ $vendor->location ?? '-' }} &nbsp;|&nbsp; Total Supplied Value: Rp {{ number_format($totalValue, 0, ',', '.') }}</p>
+    </div>
+    <button onclick="document.getElementById('edit-vendor-modal').style.display='flex'" style="padding:8px 16px; background:#111827; color:#fff; border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">
+        Edit Vendor
+    </button>
+</div>
+
+<!-- Edit Vendor Modal -->
+<div id="edit-vendor-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:20px">
+    <div style="background:#fff;border-radius:12px;width:100%;max-width:500px;box-shadow:0 8px 40px rgba(0,0,0,.15);overflow:hidden">
+        <div style="padding:16px 20px;border-bottom:1px solid #f3f4f6;display:flex;justify-content:space-between;align-items:center;background:#f9fafb">
+            <h2 style="font-size:15px;font-weight:700;color:#111827;margin:0">Edit Vendor Information</h2>
+            <button onclick="document.getElementById('edit-vendor-modal').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:20px;color:#9ca3af;line-height:1">&times;</button>
+        </div>
+        <form method="POST" action="{{ route('history.master.vendors.update', $vendor->id) }}">
+            @csrf
+            <div style="padding:20px">
+                <div style="margin-bottom:16px">
+                    <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px">Company Name</label>
+                    <input type="text" name="vendor_name" value="{{ $vendor->vendor_name ?? $vendor->name }}" required style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:6px;font-size:13.5px;color:#111827;box-sizing:border-box">
+                </div>
+                <div style="margin-bottom:16px">
+                    <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px">Email Address</label>
+                    <input type="email" name="email" value="{{ $vendor->email }}" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:6px;font-size:13.5px;color:#111827;box-sizing:border-box">
+                </div>
+            </div>
+            <div style="padding:16px 20px;border-top:1px solid #f3f4f6;display:flex;justify-content:flex-end;gap:10px;background:#f9fafb">
+                <button type="button" onclick="document.getElementById('edit-vendor-modal').style.display='none'" style="padding:8px 16px;background:#fff;border:1px solid #d1d5db;border-radius:6px;font-size:13px;font-weight:600;color:#374151;cursor:pointer">Cancel</button>
+                <button type="submit" style="padding:8px 16px;background:#111827;border:none;border-radius:6px;font-size:13px;font-weight:600;color:#fff;cursor:pointer">Save Changes</button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;">
