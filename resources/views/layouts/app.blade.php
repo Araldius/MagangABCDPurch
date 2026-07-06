@@ -30,7 +30,7 @@
         .sidebar-logout:hover{background:rgba(239,68,68,.08)}
  
         /* MAIN */
-        .main-wrap{margin-left:200px;flex:1;display:flex;flex-direction:column;min-height:100vh}
+        .main-wrap{margin-left:200px;flex:1;display:flex;flex-direction:column;min-height:100vh;min-width:0}
  
         /* TOPBAR */
         .topbar{background:#fff;border-bottom:1px solid #e5e7eb;padding:0 28px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
@@ -45,7 +45,7 @@
         .topbar-role{color:#9ca3af;font-size:11px}
  
         /* PAGE */
-        .page-content{padding:24px 28px;flex:1}
+        .page-content{padding:24px 28px;flex:1;min-width:0;overflow-x:hidden}
         .page-footer{padding:14px 28px;font-size:11.5px;color:#9ca3af;border-top:1px solid #e5e7eb;background:#fff;display:flex;justify-content:space-between}
         .page-footer a{color:#9ca3af;text-decoration:none}
  
@@ -139,11 +139,11 @@
             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"/><path d="M9 22v-4h6v4M8 6h.01M16 6h.01M12 6h.01M8 10h.01M16 10h.01M12 10h.01M8 14h.01M16 14h.01M12 14h.01M8 18h.01M16 18h.01M12 18h.01"/></svg>
             Master Vendor
         </a>
+        @endif
         <a href="{{ route('items.index') }}" class="sidebar-link {{ request()->routeIs('items.*') ? 'active' : '' }}">
             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round" stroke-linejoin="round"/></svg>
             Master Item
         </a>
-        @endif
         <a href="{{ route('vendors.list') }}" class="sidebar-link {{ request()->routeIs('vendors.*') ? 'active' : '' }}">
             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke-linecap="round" stroke-linejoin="round"/></svg>
             Vendor Selection
@@ -215,6 +215,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     let lastNotifIds = new Set();
+    let isFirstFetch = true;
     
     function toggleNotifDropdown() {
         const dd = document.getElementById('notif-dropdown');
@@ -233,7 +234,7 @@
                 toast.addEventListener('mouseleave', Swal.resumeTimer)
                 if (link) {
                     toast.style.cursor = 'pointer';
-                    toast.onclick = () => window.location.href = link;
+                    toast.addEventListener('click', () => window.location.href = link)
                 }
             }
         });
@@ -265,7 +266,7 @@
             showCancelButton: true,
             confirmButtonColor: confirmColor || '#3b82f6',
             cancelButtonColor: '#9ca3af',
-            confirmButtonText: confirmText || 'Lanjutkan',
+            confirmButtonText: confirmText || 'Ya',
             cancelButtonText: 'Batal',
             customClass: {
                 popup: 'swal-custom-popup',
@@ -310,8 +311,8 @@
                     }
                     
                     // Check if it's new and unread, then show toast
-                    if (n.read_at === null && !lastNotifIds.has(n.id) && lastNotifIds.size > 0) {
-                        showToast('New Quotation', `<b>${d.vendor_name}</b> ${d.message} <b>${d.document_number}</b>`, link);
+                    if (n.read_at === null && !lastNotifIds.has(n.id) && !isFirstFetch) {
+                        showToast('New Notification', `<b>${d.vendor_name || ''}</b> ${d.message} <b>${d.document_number || ''}</b>`, link);
                     }
                     lastNotifIds.add(n.id);
 
@@ -333,6 +334,8 @@
             } else {
                 list.innerHTML = '<div style="padding:16px;text-align:center;color:#9ca3af;font-size:12px;">No notifications yet.</div>';
             }
+            
+            isFirstFetch = false;
         })
         .catch(err => console.error(err));
     }

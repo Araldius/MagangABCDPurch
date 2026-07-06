@@ -105,7 +105,7 @@
             <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label">Plant <span class="req">*</span></label>
                 <select class="form-control" name="plant" required>
-                    <option value="">— Select Plant —</option>
+                    <option value="">Select Plant</option>
                     <option value="Cikarang">Cikarang</option>
                     <option value="Cibitung">Cibitung</option>
                     <option value="Gresik">Gresik</option>

@@ -5,6 +5,7 @@
         'submitted'        => [Auth::user()->role === 'purchasing' ? 'Awaiting Approval' : 'Purchasing Approval', '#fef3c7', '#d97706', '#f59e0b'],
         'vendor_search'    => ['Vendor Search',     '#e0e7ff', '#4338ca', '#6366f1'],
         'vendor_selection' => ['Vendor Selection',  '#dbeafe', '#1d4ed8', '#3b82f6'],
+        'quotation_reopen' => ['Quotation Reopen',  '#fce7f3', '#9d174d', '#ec4899'],
         'completed'        => ['Completed',         '#dcfce7', '#15803d', '#22c55e'],
         'rejected'         => ['Rejected',          '#fee2e2', '#b91c1c', '#ef4444'],
         'cancelled'        => ['Cancelled',         '#f3f4f6', '#4b5563', '#9ca3af'],
@@ -53,6 +54,7 @@
             <option value="submitted">{{ Auth::user()->role === 'purchasing' ? 'Awaiting Approval' : 'Purchasing Approval' }}</option>
             <option value="vendor_search">Vendor Search</option>
             <option value="vendor_selection">Vendor Selection</option>
+            <option value="quotation_reopen">Quotation Reopen</option>
             <option value="completed">Completed</option>
             <option value="rejected">Rejected</option>
             <option value="cancelled">Cancelled</option>
@@ -169,7 +171,7 @@
 
 {{-- ── DETAIL MODAL ── --}}
 <div id="pr-detail-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:20px">
-    <div style="background:#fff;border-radius:14px;width:100%;max-width:860px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.12)">
+    <div style="background:#fff;border-radius:14px;width:100%;max-width:1080px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.12)">
         {{-- Header --}}
         <div style="padding:18px 22px;border-bottom:1px solid #f3f4f6;display:flex;justify-content:space-between;align-items:flex-start">
             <div>
@@ -183,8 +185,21 @@
         {{-- Body --}}
         <div id="detail-body" style="padding:18px 22px;overflow-y:auto;flex:1"></div>
         {{-- Footer --}}
-        <div style="padding:14px 22px;border-top:1px solid #f3f4f6;display:flex;justify-content:space-between;align-items:center">
-            <button onclick="closePRDetail()" style="padding:7px 18px;border:1px solid #d1d5db;border-radius:7px;background:#fff;font-size:13px;cursor:pointer;color:#374151">Close</button>
+        <div style="padding:14px 22px;border-top:1px solid #f3f4f6;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <button onclick="closePRDetail()" style="padding:7px 18px;border:1px solid #d1d5db;border-radius:7px;background:#fff;font-size:13px;cursor:pointer;color:#374151">Close</button>
+                {{-- Attachment Upload (for User on any status, shown conditionally) --}}
+                <form id="detail-attachment-form" method="POST" action="{{ route('pr.upload_attachment') }}" enctype="multipart/form-data" style="display:none;margin:0;">
+                    @csrf
+                    <input type="hidden" name="id" id="attach-pr-id">
+                    <input type="hidden" name="type" id="attach-pr-type">
+                    <label style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:7px;cursor:pointer;font-size:12.5px;font-weight:600;color:#15803d;">
+                        📎 <span id="attach-label">Lampirkan File</span>
+                        <input type="file" name="attachment" id="attach-file-input" accept=".pdf,.xlsx,.xls,.jpg,.jpeg,.png" style="display:none;" onchange="document.getElementById('attach-label').textContent = this.files[0]?.name || 'Lampirkan File'; document.getElementById('attach-submit-btn').style.display='inline-flex';">
+                    </label>
+                    <button type="submit" id="attach-submit-btn" style="display:none;padding:7px 14px;background:#15803d;color:#fff;border:none;border-radius:7px;font-size:12.5px;font-weight:600;cursor:pointer;">Upload</button>
+                </form>
+            </div>
             <div style="display:flex; gap:8px" id="detail-actions">
                 <form id="detail-approve-form" method="POST" action="{{ route('requests.approve') }}" style="display:none; margin:0">
                     @csrf
@@ -218,6 +233,11 @@
                         ↺ Re-open (Extend Time)
                     </button>
                 </form>
+                {{-- Edit Items for quotation_reopen status (User only) --}}
+                <button id="detail-edit-items-btn" type="button" onclick="openEditItemsModal()"
+                    style="display:none;padding:7px 18px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;align-items:center;gap:6px">
+                    ✏️ Edit Items
+                </button>
                 <a id="detail-add-quotation-btn" href="#"
                     style="display:none;padding:7px 18px;background:#f8fafc;color:#475569;border:1px solid #cbd5e1;border-radius:7px;font-size:13px;font-weight:600;text-decoration:none;align-items:center;gap:6px">
                     + Add Quotation
@@ -327,8 +347,8 @@ function applyFilters() {
     const status =  document.getElementById('status-filter')?.value || '';
     const plant  =  document.getElementById('plant-filter')?.value  || '';
     const dept   = isPurchasing ? (document.getElementById('dept-filter')?.value || '') : '';
-    const start  = document.getElementById('start-date-filter')?.value || '';
-    const end    = document.getElementById('end-date-filter')?.value || '';
+    const startDateVal = document.getElementById('start-date-filter')?.value || '';
+    const endDateVal   = document.getElementById('end-date-filter')?.value || '';
 
     const tbody   = document.getElementById('pr-tbody');
     const allRows = Array.from(tbody.querySelectorAll('tr[data-status]'));
@@ -341,10 +361,10 @@ function applyFilters() {
         if (plant  && r.dataset.plant  !== plant)  return false;
         if (q      && !r.textContent.toLowerCase().includes(q)) return false;
         
-        if (start || end) {
+        if (startDateVal || endDateVal) {
             const rDate = r.dataset.date;
-            if (start && rDate < start) return false;
-            if (end && rDate > end) return false;
+            if (startDateVal && rDate < startDateVal) return false;
+            if (endDateVal   && rDate > endDateVal)   return false;
         }
         
         return true;
@@ -446,6 +466,9 @@ function openPRDetail(id, category) {
         });
     });
 
+    // ── Store reference for Edit Items modal ──
+    _editPR = pr;
+
     // ── Header ──
     document.getElementById('detail-title').textContent =
         pr.display_title || pr.title || pr.service_name || 'Request Detail';
@@ -492,6 +515,27 @@ function openPRDetail(id, category) {
     if (pr.status === 'vendor_selection' || pr.status === 'vendor_search') {
         document.getElementById('detail-select-vendor-btn').style.display = 'inline-flex';
         document.getElementById('detail-select-vendor-btn').href = `/vendor-selection?key=${category}_${id}`;
+    }
+
+    // ── Attachment form + Edit Items button visibility ──
+    const attachForm = document.getElementById('detail-attachment-form');
+    const editItemsBtn = document.getElementById('detail-edit-items-btn');
+    if (attachForm) {
+        attachForm.style.display = 'none';
+        document.getElementById('attach-pr-id').value = pr.id;
+        document.getElementById('attach-pr-type').value = category;
+    }
+    if (editItemsBtn) editItemsBtn.style.display = 'none';
+
+    // Non-purchasing (User) can always attach files
+    if (!isPurchasing && attachForm) {
+        attachForm.style.display = 'inline-flex';
+        attachForm.style.alignItems = 'center';
+        attachForm.style.gap = '8px';
+    }
+    // User can edit items only when status = quotation_reopen
+    if (!isPurchasing && editItemsBtn && pr.status === 'quotation_reopen') {
+        editItemsBtn.style.display = 'inline-flex';
     }
 
     if (isPurchasing) {
@@ -670,10 +714,15 @@ function openPRDetail(id, category) {
                     <input type="text" class="form-control" style="font-size:11px;padding:4px;border:1px solid #e5e7eb;border-radius:4px;width:100%" placeholder="Add note..." value="${it.admin_notes || ''}" onchange="saveAdminNote(${it.id}, 'goods', this.value)">
                 </td>
                 ` : ''}
+                ${isPurchasing ? `
+                <td style="${tdS}">
+                    <textarea rows="2" style="font-size:11px;padding:4px;border:1px solid #e5e7eb;border-radius:4px;width:100%;resize:vertical;min-width:140px" placeholder="Catatan purchasing..." onchange="savePurchasingNote(${pr.id}, '${category}', this.value)">${it.purchasing_notes || ''}</textarea>
+                </td>` : ''}
             </tr>`;
         });
 
         const gTh    = hasPriceCol ? `<th style="${thS};text-align:right">UNIT PRICE (RP)</th><th style="${thS};text-align:right">TOTAL (RP)</th><th style="${thS}">VENDOR</th>` : '';
+        const purchNotesTh = isPurchasing ? `<th style="${thS};min-width:160px">PURCHASING NOTES</th>` : '';
         const gTotal = hasPriceCol && grandTotal > 0
             ? `<tr style="background:#f9fafb">
                 <td colspan="${isAdmin ? 8 : 7}" style="padding:9px 10px;text-align:right;font-size:12px;font-weight:700;color:#374151">Total Request Value</td>
@@ -693,6 +742,7 @@ function openPRDetail(id, category) {
                         <th style="${thS}">UNIT</th>
                         ${gTh}
                         ${isAdmin ? `<th style="${thS};width:150px">ADMIN NOTES</th>` : ''}
+                        ${purchNotesTh}
                     </tr></thead>
                     <tbody>${rows || '<tr><td colspan="${isAdmin ? 8 : 7}" style="text-align:center;padding:16px;color:#9ca3af">No items</td></tr>'}</tbody>
                     ${gTotal ? `<tfoot>${gTotal}</tfoot>` : ''}
@@ -758,30 +808,63 @@ function openPRDetail(id, category) {
         <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:10px">Progress Status</div>
         ${buildProgressBar(pr.status)}
 
-        <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:10px">Request Information</div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;background:#f9fafb;border-radius:8px;padding:12px 14px">
-            <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Submission Date</div>
-                 <div style="font-weight:500;font-size:12.5px">${subDate}</div></div>
-            <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">
-                     ${isService ? 'Service Name' : 'Department'}
-                 </div>
-                 <div style="font-weight:500;font-size:12.5px">${isService ? (pr.service_name || pr.display_title || '—') : (pr.department || '—')}</div></div>
-            <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Need Date</div>
-                 <div style="font-weight:500;font-size:12.5px">${reqDate} ${isOverdue ? '<span style="background:#fee2e2;color:#991b1b;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-left:4px">OVERDUE</span>' : ''}</div></div>
-            <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Plant</div>
-                 <div style="font-weight:500;font-size:12.5px">${pr.plant || '—'}</div></div>
-            ${!isService ? `<div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Priority</div>
-                 <div style="font-weight:500;font-size:12.5px">${pr.priority ? pr.priority.charAt(0).toUpperCase()+pr.priority.slice(1) : 'Normal'}</div></div>` : ''}
-        </div>
+        <div style="display:flex;gap:20px;margin-top:16px;align-items:flex-start;">
+            <!-- Left Column (Request Info + Items Table) -->
+            <div style="flex:2;min-width:0;display:flex;flex-direction:column;gap:16px;">
+                <div>
+                    <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:8px">Request Information</div>
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;background:#f9fafb;border-radius:8px;padding:12px 14px">
+                        <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Submission Date</div>
+                             <div style="font-weight:500;font-size:12.5px">${subDate}</div></div>
+                        <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">
+                                 ${isService ? 'Service Name' : 'Department'}
+                             </div>
+                             <div style="font-weight:500;font-size:12.5px">${isService ? (pr.service_name || pr.display_title || '—') : (pr.department || '—')}</div></div>
+                        <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Need Date</div>
+                             <div style="font-weight:500;font-size:12.5px">${reqDate} ${isOverdue ? '<span style="background:#fee2e2;color:#991b1b;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-left:4px">OVERDUE</span>' : ''}</div></div>
+                        <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Plant</div>
+                             <div style="font-weight:500;font-size:12.5px">${pr.plant || '—'}</div></div>
+                        ${!isService ? `<div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Priority</div>
+                             <div style="font-weight:500;font-size:12.5px">${pr.priority ? pr.priority.charAt(0).toUpperCase()+pr.priority.slice(1) : 'Normal'}</div></div>` : ''}
+                    </div>
+                </div>
 
-        <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;padding-bottom:5px;border-bottom:2px solid #e5e7eb">
-            ${isService ? '🛠️ Scope of Work & Items' : '📦 Item List'}
-        </div>
-        ${tableHtml}
-        ${vSumHtml}
+                <div>
+                    <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;padding-bottom:5px;border-bottom:2px solid #e5e7eb">
+                        ${isService ? '🛠️ Scope of Work & Items' : '📦 Item List'}
+                    </div>
+                    ${tableHtml}
+                </div>
+                ${vSumHtml}
+            </div>
 
-        <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-top:18px;margin-bottom:8px;padding-bottom:5px;border-bottom:2px solid #e5e7eb">Activity Log</div>
-        ${activityHtml}`;
+            <!-- Right Column (Purchasing notes, attached document, activity log) -->
+            <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:16px;">
+                ${isPurchasing ? `
+                <div style="padding:14px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;">
+                    <div style="font-size:10.5px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Purchasing Notes</div>
+                    <textarea id="general-purchasing-notes" rows="4" style="width:100%;border:1px solid #cbd5e1;border-radius:6px;padding:8px;font-size:12px;font-family:inherit;outline:none;resize:vertical;" placeholder="Add notes for this PR..." onchange="savePurchasingNote(${pr.id}, '${category}', this.value)">${pr.purchasing_notes || ''}</textarea>
+                </div>` : (pr.purchasing_notes ? `
+                <div style="padding:14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;">
+                    <div style="font-size:10.5px;font-weight:700;color:#1d4ed8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Purchasing Notes</div>
+                    <div style="font-size:12.5px;color:#374151;white-space:pre-wrap;">${pr.purchasing_notes}</div>
+                </div>` : '')}
+
+                ${pr.attachment_path ? `
+                <div style="padding:12px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:16px">📎</span>
+                    <div style="min-width:0;flex:1">
+                        <div style="font-size:10px;font-weight:700;color:#15803d;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">Attached File</div>
+                        <a href="/storage/${pr.attachment_path}" target="_blank" style="font-size:12px;font-weight:600;color:#166534;text-decoration:none;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${pr.attachment_path.split('/').pop()}">${pr.attachment_path.split('/').pop()}</a>
+                    </div>
+                </div>` : ''}
+
+                <div>
+                    <div style="font-size:10.5px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;padding-bottom:5px;border-bottom:2px solid #e5e7eb">Activity Log</div>
+                    ${activityHtml}
+                </div>
+            </div>
+        </div>`;
 
     document.body.style.overflow = 'hidden';
     document.getElementById('pr-detail-modal').style.display = 'flex';
@@ -840,6 +923,84 @@ function triggerReopen(btn) {
     });
 }
 
+// ── Purchasing Notes Save (inline) ──
+let _purchasingNoteTimeout = null;
+function savePurchasingNote(prId, prType, value) {
+    clearTimeout(_purchasingNoteTimeout);
+    _purchasingNoteTimeout = setTimeout(() => {
+        fetch('{{ route("pr.save_purchasing_notes") }}', {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ id: prId, type: prType, notes: value })
+        }).then(r => r.json()).then(data => {
+            if (data.success) {
+                const allPRKey = prType + '_' + prId;
+                if (allPRs[allPRKey]) allPRs[allPRKey].purchasing_notes = value;
+            }
+        });
+    }, 800);
+}
+
+// ── Edit Items Modal ──
+let _editPR = null;
+function openEditItemsModal() {
+    if (!_editPR) return;
+    const pr = _editPR;
+    const items = pr.items || [];
+    let rows = items.map((it, i) => `
+        <tr>
+            <td style="padding:8px 10px;font-size:12px;color:#6b7280">${i+1}</td>
+            <td style="padding:8px 10px;font-size:12px;font-weight:600;color:#111827">${it.item_name}</td>
+            <td style="padding:8px 10px">
+                <input type="number" min="1" value="${it.quantity}" id="edit-qty-${it.id}" style="width:80px;padding:4px 8px;border:1px solid #d1d5db;border-radius:4px;font-size:12px;">
+            </td>
+            <td style="padding:8px 10px">
+                <select id="edit-unit-${it.id}" style="padding:4px 8px;border:1px solid #d1d5db;border-radius:4px;font-size:12px;">
+                    ${['Pcs','Unit','Box','Kg','Liter','Meter','Roll','Set','Lot','Jasa','Pack'].map(u => `<option value="${u}" ${it.unit === u ? 'selected' : ''}>${u}</option>`).join('')}
+                </select>
+            </td>
+        </tr>
+    `).join('');
+
+    document.getElementById('edit-items-modal-body').innerHTML = `
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+            <thead><tr style="background:#f9fafb">
+                <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#9ca3af">NO</th>
+                <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#9ca3af">ITEM NAME</th>
+                <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#9ca3af">QTY</th>
+                <th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#9ca3af">UNIT</th>
+            </tr></thead>
+            <tbody>${rows}</tbody>
+        </table>
+    `;
+    document.getElementById('edit-items-pr-id').value = pr.id;
+    document.getElementById('edit-items-pr-type').value = pr.type || 'goods';
+    document.getElementById('edit-items-modal').style.display = 'flex';
+}
+
 document.addEventListener('DOMContentLoaded', applyFilters);
 </script>
+
+{{-- ── EDIT ITEMS MODAL ── --}}
+<div id="edit-items-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;align-items:center;justify-content:center;padding:20px">
+    <div style="background:#fff;border-radius:12px;width:100%;max-width:560px;box-shadow:0 8px 40px rgba(0,0,0,.15);overflow:hidden;">
+        <div style="padding:16px 20px;border-bottom:1px solid #f3f4f6;display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:14px;font-weight:700;color:#111827">Edit Items (Quotation Reopen)</div>
+            <button onclick="document.getElementById('edit-items-modal').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:20px;color:#9ca3af">&times;</button>
+        </div>
+        <div style="padding:16px 20px;">
+            <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:6px;padding:8px 12px;font-size:12px;color:#92400e;margin-bottom:14px;">⚠️ Perubahan akan memperbarui Qty dan Unit item. Quotation sebelumnya akan tetap, namun vendor akan mendapat notifikasi.</div>
+            <form id="edit-items-form" method="POST" action="{{ route('pr.update_items') }}">
+                @csrf
+                <input type="hidden" name="id" id="edit-items-pr-id">
+                <input type="hidden" name="type" id="edit-items-pr-type">
+                <div id="edit-items-modal-body"></div>
+                <div style="margin-top:14px;display:flex;justify-content:flex-end;gap:8px;">
+                    <button type="button" onclick="document.getElementById('edit-items-modal').style.display='none'" style="padding:7px 18px;border:1px solid #d1d5db;border-radius:7px;background:#fff;font-size:13px;cursor:pointer;color:#374151">Cancel</button>
+                    <button type="submit" style="padding:7px 18px;background:#3b5bdb;color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection

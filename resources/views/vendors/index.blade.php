@@ -10,21 +10,178 @@ h1 { font-size:20px;font-weight:700;color:#111827;margin:0 0 3px }
 .btn-primary { display:inline-flex;align-items:center;gap:6px;padding:9px 18px;background:#3b5bdb;color:#fff;border-radius:8px;font-size:13px;font-weight:600;border:none;cursor:pointer;white-space:nowrap;transition:background .2s }
 .btn-primary:hover { background:#3451c7 }
 .btn-outline { padding:6px 14px;border:1px solid #d1d5db;border-radius:7px;background:#fff;font-size:12.5px;font-weight:600;color:#374151;cursor:pointer }
+.btn-back { display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid #e5e7eb;border-radius:7px;background:#fff;font-size:12.5px;font-weight:600;color:#374151;cursor:pointer }
 
-/* Table Styles */
+/* Page level width protection */
+#step1-card, #selection-workspace, #result-workspace {
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+/* ============================================================
+   SIDE-BY-SIDE LAYOUT: Left (sticky-feel) + Right (scrollable)
+   ============================================================ */
+#vs-split-wrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    background: #fff;
+    margin-bottom: 14px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+/* LEFT PANEL: Item Requirements */
+#vs-left-panel {
+    flex: 0 0 420px;
+    min-width: 420px;
+    background: #fff;
+    border-right: 2px solid #e5e7eb;
+    box-shadow: 4px 0 12px rgba(0,0,0,0.06);
+    border-radius: 12px 0 0 12px;
+    overflow: hidden;
+}
+
+#vs-left-panel .panel-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid #f3f4f6;
+    background: #f9fafb;
+}
+
+/* RIGHT PANEL: Vendor Cards - scrollable */
+#vs-right-panel {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    max-width: calc(100% - 420px);
+    overflow-x: auto;
+    align-items: flex-start;
+}
+
+/* Each Vendor Card */
+.vendor-card {
+    flex: 0 0 380px;
+    min-width: 380px;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    background: #fafafa;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}
+.vendor-card-header {
+    padding: 14px;
+    border-bottom: 1px solid #e5e7eb;
+    background: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 52px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+.vendor-card-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.vendor-card-footer {
+    padding: 12px 14px;
+    border-top: 1px solid #e5e7eb;
+    background: #fff;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #111827;
+}
+
+/* ============================================================
+   ROW ALIGNMENT: Each row in left panel & right cards
+   must have the same height.
+   Item row height = 52px header + 245px per item.
+   ============================================================ */
+/* Left panel header row */
+.req-row-header {
+    height: 52px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    padding: 0 18px;
+    background: #f9fafb;
+    border-bottom: 2px solid #e5e7eb;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+}
+
+/* Right panel: vendor card rows */
+.vc-row-header {
+    padding: 8px 14px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+.vc-row-service {
+    padding: 10px 12px;
+    background: #e2e8f0;
+    border-radius: 6px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+.vc-row-job {
+    padding: 6px 12px;
+    background: #f1f5f9;
+    border-radius: 4px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #475569;
+    flex-shrink: 0;
+}
+.vc-row-item {
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #fff;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    box-sizing: border-box;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+.vc-row-item:hover {
+    border-color: #cbd5e1;
+}
+
+/* Table fallback (result view) */
 .req-table { width:100%;border-collapse:collapse;font-size:12.5px }
 .req-table th { padding:8px 16px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;background:#f9fafb }
 .req-table td { padding:11px 16px;border-bottom:1px solid #f3f4f6 }
-
-/* Service Hierarchy Styles in Tables */
 .tr-service td { background:#f3f4f6; font-weight:700; color:#111827; border-bottom:2px solid #e5e7eb; padding:8px 16px; font-size:13px; }
 .tr-job td { background:#f9fafb; font-weight:600; color:#374151; padding:8px 16px 8px 30px; font-size:12px; border-bottom:1px dashed #e5e7eb; }
 .tr-item td { padding:10px 16px 10px 45px; }
-
-/* Service Hierarchy Styles in Vendor Cards */
-.vc-svc-header { background:#e5e7eb; padding:8px 10px; font-size:12.5px; font-weight:700; color:#111827; display:flex; align-items:center; gap:8px; border-radius:6px; margin-bottom:8px; }
-.vc-job-header { background:#f3f4f6; padding:6px 10px; font-size:11.5px; font-weight:600; color:#374151; display:flex; align-items:center; gap:8px; border-radius:6px; margin:4px 0 4px 10px; }
-.vc-item-box { margin-left: 20px; }
 </style>
 
 <div style="margin-bottom:20px">
@@ -76,33 +233,36 @@ h1 { font-size:20px;font-weight:700;color:#111827;margin:0 0 3px }
         </div>
     </div>
  
-    {{-- Requirements table --}}
-    <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:14px;overflow:hidden;">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #f3f4f6">
-            <div>
-                <div style="font-size:13.5px;font-weight:700;color:#111827">Item / Service Requirements</div>
-                <div id="ws-item-count" style="font-size:11.5px;color:#6b7280;margin-top:1px"></div>
+    {{-- Requirements table + Vendor cards, side by side --}}
+    <div style="display:flex;align-items:stretch;gap:16px;margin-bottom:14px;width:100%;min-width:0;overflow:hidden;">
+        {{-- LEFT: Requirements table (tetap di tempat, tidak ikut geser) --}}
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;width:650px;flex-shrink:0;display:flex;flex-direction:column;height:640px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #f3f4f6">
+                <div>
+                    <div style="font-size:13.5px;font-weight:700;color:#111827">Item / Service Requirements</div>
+                    <div id="ws-item-count" style="font-size:11.5px;color:#6b7280;margin-top:1px"></div>
+                </div>
+                <div style="font-size:12px;color:#6b7280">Items Fulfilled: <span id="sel-count" style="font-weight:700;color:#111827">0</span> of <span id="sel-total" style="font-weight:700;color:#111827">0</span></div>
             </div>
-            <div style="font-size:12px;color:#6b7280">Items Fulfilled: <span id="sel-count" style="font-weight:700;color:#111827">0</span> of <span id="sel-total" style="font-weight:700;color:#111827">0</span></div>
+            <div style="overflow-y:auto;overflow-x:auto;flex:1">
+                <table class="req-table">
+                    <thead>
+                        <tr>
+                            <th>NO</th>
+                            <th>ITEM ID</th>
+                            <th>ITEM NAME</th>
+                            <th style="text-align:right">QTY</th>
+                            <th>STATUS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="items-requirement-tbody"></tbody>
+                </table>
+            </div>
         </div>
-        <div style="overflow-x:auto">
-            <table class="req-table">
-                <thead>
-                    <tr>
-                        <th style="width:50px;">NO</th>
-                        <th style="width:120px;">ITEM ID</th>
-                        <th>DESCRIPTION / ITEM NAME</th>
-                        <th style="text-align:right;width:120px;">TARGET QTY</th>
-                        <th style="width:160px;">STATUS PEMENUHAN</th>
-                    </tr>
-                </thead>
-                <tbody id="items-requirement-tbody"></tbody>
-            </table>
-        </div>
+
+        {{-- RIGHT: Vendor cards grid (carousel, tetap bisa digeser kiri-kanan) --}}
+        <div id="vendor-cards-grid" style="display:flex;overflow-x:auto;gap:16px;padding-bottom:12px;scroll-snap-type:x mandatory;flex:1;min-width:0;height:640px;"></div>
     </div>
- 
-    {{-- Vendor cards grid (carousel) --}}
-    <div id="vendor-cards-grid" style="display:flex;overflow-x:auto;gap:16px;margin-bottom:14px;padding-bottom:12px;scroll-snap-type:x mandatory;"></div>
  
     {{-- Footer bar --}}
     <div style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between">
@@ -350,36 +510,48 @@ function getRowBg(label) {
 
 function renderRequirementsTable(){
     const tbody = document.getElementById('items-requirement-tbody');
-    
+    let html = '';
+    let counter = 1;
+
     if (currentPR.type === 'service') {
-        let html = `<tr class="tr-service"><td colspan="5">Service: ${currentPR.display_title}</td></tr>`;
-        let counter = 1;
         currentPR.jobs.forEach(job => {
-            html += `<tr class="tr-job"><td colspan="5">↳ Scope: ${job.job_description}</td></tr>`;
+            html += `<tr>
+                <td colspan="5" style="background:#f8fafc; font-weight:700; color:#374151; padding:10px 14px; border-bottom:1px solid #e5e7eb;">
+                    💼 Service Job: ${job.job_description}
+                </td>
+            </tr>`;
             job.items.forEach(item => {
                 const [label,bg,tc,dot] = getItemStatus(item.id);
-                html += `<tr class="tr-item" style="background:${getRowBg(label)}">
-                    <td style="color:#6b7280">${counter++}</td>
-                    <td style="font-family:monospace;font-size:11.5px;color:#3b5bdb;font-weight:600">${item.item_id||item.id}</td>
-                    <td style="font-weight:500;color:#111827">${item.item_name}</td>
-                    <td style="font-weight:600;text-align:right">${item.quantity} ${item.unit}</td>
-                    <td><span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;background:${bg};font-size:11px;font-weight:600;color:${tc}"><span style="width:5px;height:5px;border-radius:50%;background:${dot}"></span>${label}</span></td>
+                html += `<tr style="background:${getRowBg(label)}">
+                    <td style="padding:10px 14px; color:#9ca3af">${counter++}</td>
+                    <td style="padding:10px 14px; font-weight:600; font-family:monospace; color:#3b5bdb;">${item.item_id || '—'}</td>
+                    <td style="padding:10px 14px; font-weight:600; color:#111827;">${item.item_name}</td>
+                    <td style="padding:10px 14px; text-align:right; font-weight:700; color:#111827">${item.quantity} ${item.unit}</td>
+                    <td style="padding:10px 14px;">
+                        <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;background:${bg};font-size:11px;font-weight:600;color:${tc}">
+                            <span style="width:5px;height:5px;border-radius:50%;background:${dot}"></span>${label}
+                        </span>
+                    </td>
                 </tr>`;
             });
         });
-        tbody.innerHTML = html;
     } else {
-        tbody.innerHTML = currentPR.items.map((item,i)=>{
+        currentPR.items.forEach((item, i) => {
             const [label,bg,tc,dot] = getItemStatus(item.id);
-            return `<tr style="border-bottom:1px solid #f3f4f6;background:${getRowBg(label)}">
-                <td style="color:#6b7280">${i+1}</td>
-                <td style="font-family:monospace;font-size:11.5px;color:#3b5bdb;font-weight:600">${item.item_id||item.id}</td>
-                <td style="font-weight:500;color:#111827">${item.item_name}</td>
-                <td style="font-weight:600;text-align:right">${item.quantity} ${item.unit}</td>
-                <td><span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;background:${bg};font-size:11.5px;font-weight:600;color:${tc}"><span style="width:5px;height:5px;border-radius:50%;background:${dot}"></span>${label}</span></td>
+            html += `<tr style="background:${getRowBg(label)}">
+                <td style="padding:10px 14px; color:#9ca3af">${i+1}</td>
+                <td style="padding:10px 14px; font-weight:600; font-family:monospace; color:#3b5bdb;">${item.item_id || '—'}</td>
+                <td style="padding:10px 14px; font-weight:500; color:#111827;">${item.item_name}</td>
+                <td style="padding:10px 14px; text-align:right; font-weight:700; color:#111827">${item.quantity} ${item.unit}</td>
+                <td style="padding:10px 14px;">
+                    <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;background:${bg};font-size:11px;font-weight:600;color:${tc}">
+                        <span style="width:5px;height:5px;border-radius:50%;background:${dot}"></span>${label}
+                    </span>
+                </td>
             </tr>`;
-        }).join('');
+        });
     }
+    tbody.innerHTML = html;
 }
 
 function toggleVendorService(vId, isChecked) {
@@ -415,7 +587,7 @@ function toggleVendorService(vId, isChecked) {
 function renderVendorCards(){
     const grid = document.getElementById('vendor-cards-grid');
 
-    // FIX: filter out vendors that have zero offered items for this PR
+    // Filter vendors that have offered at least 1 item for this PR
     const activeVendors = serverVendors.filter(v => {
         const off = vendorOffers[v.id];
         if (!off) return false;
@@ -424,9 +596,7 @@ function renderVendorCards(){
     });
 
     if (activeVendors.length === 0) {
-        grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:32px;color:#9ca3af;font-size:13px;">
-            Tidak ada vendor yang menawarkan item untuk request ini.
-        </div>`;
+        grid.innerHTML = `<div style="padding:40px;text-align:center;color:#9ca3af;font-size:13px;min-width:300px;">Tidak ada vendor yang menawarkan item untuk request ini.</div>`;
         return;
     }
 
@@ -442,45 +612,47 @@ function renderVendorCards(){
                 }
             });
         }
-        const prevBadge = wasPreviouslySelected ? `<span style="background:#fef08a;color:#854d0e;padding:2px 6px;border-radius:4px;font-size:9.5px;font-weight:700;margin-left:8px;display:inline-block;">SELECTED PREVIOUSLY</span>` : '';
+        const prevBadge = wasPreviouslySelected ? `<span style="background:#fef08a;color:#854d0e;padding:2px 6px;border-radius:4px;font-size:9.5px;font-weight:700;margin-left:8px;">PREV. SELECTED</span>` : '';
 
-        let contentHtml = '';
-        let isVendorChecked = false;
+        let isVendorChecked = Object.values(selections).some(s => s.vendor_id == v.id);
+        let bodyHtml = '';
 
         if (currentPR.type === 'service') {
-            const vendorSelCount = Object.values(selections).filter(s => s.vendor_id == v.id).length;
-            isVendorChecked = vendorSelCount > 0;
             const isBestService = (bestServiceVendor == v.id);
-
             const allSelected = currentPR.items.every(i => selections[`${v.id}_${i.id}`]);
-            contentHtml += `<label class="vc-svc-header" style="cursor:pointer; display:flex; align-items:center; gap:8px;">
-                <input type="checkbox" ${allSelected ? 'checked' : ''} onchange="toggleVendorService(${v.id}, this.checked)" style="width:16px;height:16px;accent-color:#3b5bdb;">
-                ${currentPR.display_title}
-                ${isBestService ? '<span style="background:#e0f2fe;color:#0284c7;padding:2px 6px;border-radius:4px;font-size:9.5px;font-weight:700;">BEST PRICE</span>' : ''}
-            </label>`;
+            
+            // Service header row
+            bodyHtml += `<div class="vc-row-service" style="margin-bottom:8px">
+                <label style="cursor:pointer;display:flex;align-items:center;gap:8px;flex:1">
+                    <input type="checkbox" ${allSelected ? 'checked' : ''} onchange="toggleVendorService(${v.id}, this.checked)" style="width:16px;height:16px;accent-color:#3b5bdb;">
+                    <span style="font-size:12px">${currentPR.display_title}</span>
+                    ${isBestService ? '<span style="background:#e0f2fe;color:#0284c7;padding:2px 6px;border-radius:4px;font-size:9.5px;font-weight:700;">BEST PRICE</span>' : ''}
+                </label>
+            </div>`;
 
-            if(currentPR.jobs) {
+            if (currentPR.jobs) {
                 currentPR.jobs.forEach((job, jIdx) => {
-                    contentHtml += `<div class="vc-job-header">
-                        ${job.job_description}
-                    </div><div class="vc-item-box">`;
-                    if(job.items) { job.items.forEach(item => { contentHtml += renderItemCard(v, item, off); }); }
-                    contentHtml += `</div>`;
+                    bodyHtml += `<div class="vc-row-job" style="margin-bottom:8px">${job.job_description}</div>`;
+                    if (job.items) {
+                        job.items.forEach(item => { bodyHtml += renderItemCard(v, item, off); });
+                    }
                 });
             }
         } else {
-            contentHtml = currentPR.items.map(item => renderItemCard(v, item, off)).join('');
+            // PR header col label row
+            bodyHtml += currentPR.items.map(item => renderItemCard(v, item, off)).join('');
         }
 
-        return `<div style="background:#f9fafb;border:1px solid ${isVendorChecked?'#3b5bdb':'#e5e7eb'};border-radius:12px;overflow:hidden;transition:all .15s;min-width:360px;flex-shrink:0;scroll-snap-align:start;">
-            <div style="padding:12px 14px;border-bottom:1px solid #e5e7eb;background:${isVendorChecked?'#eff6ff':'#fff'};display:flex;justify-content:space-between;align-items:center;">
-                <div style="font-size:13.5px;font-weight:700;color:${isVendorChecked?'#1d4ed8':'#111827'};display:flex;align-items:center;">
-                    ${vName} ${prevBadge}
+        return `<div class="vendor-card" style="border-left:3px solid ${isVendorChecked ? '#3b5bdb' : 'transparent'};">
+            <div class="vendor-card-header" style="background:${isVendorChecked ? '#eff6ff' : '#fff'}">
+                <div style="font-size:13.5px;font-weight:700;color:${isVendorChecked ? '#1d4ed8' : '#111827'};display:flex;align-items:center;flex-wrap:wrap;gap:4px;">
+                    ${vName}${prevBadge}
                 </div>
-                ${off.quotation_id ? `<a href="/quotation/${off.quotation_id}/edit" target="_blank" style="font-size:11px;font-weight:600;color:#3b5bdb;text-decoration:none;display:inline-flex;align-items:center;gap:4px;padding:4px 8px;border-radius:4px;background:#e0e7ff;"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" stroke-linecap="round" stroke-linejoin="round"/></svg> Edit</a>` : ''}
             </div>
-            <div style="padding:10px;max-height:650px;overflow-y:auto">${contentHtml}</div>
-            <div style="padding:10px 14px;border-top:1px solid #e5e7eb;background:#fff;font-size:12.5px;font-weight:700;color:#111827">Total Quote <span id="vendor-total-${v.id}" style="float:right">${fmt(0)}</span></div>
+            <div class="vendor-card-body">
+                ${bodyHtml}
+            </div>
+            <div class="vendor-card-footer">Total Quote <span id="vendor-total-${v.id}" style="float:right">${fmt(0)}</span></div>
         </div>`;
     }).join('');
     updateVendorTotals();
@@ -488,95 +660,83 @@ function renderVendorCards(){
 
 function renderItemCard(v, item, off) {
     const o = off ? off.items[item.id] : null;
-    if(!o) return `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:24px 10px;margin-bottom:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:220px;">
-        <div style="font-size:12px;font-weight:600;color:#d1d5db;margin-bottom:8px">${item.item_name}</div>
-        <div style="border:1px solid #fca5a5;color:#ef4444;border-radius:4px;padding:4px 8px;font-size:11px;font-weight:700;">❌ NOT OFFERED</div>
+    if (!o) return `<div class="vc-row-item" style="background:#fafafa; border-style: dashed; opacity: 0.6;">
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 0;">
+            <div style="font-size:12px;font-weight:600;color:#9ca3af;margin-bottom:4px">${item.item_name}</div>
+            <div style="color:#ef4444;font-size:10.5px;font-weight:700;">❌ NOT OFFERED</div>
+        </div>
     </div>`;
-    
+
     const isService = currentPR.type === 'service';
     const selKey = `${v.id}_${item.id}`;
     const isSelected = !!selections[selKey];
-    
+
     // FIX: parseFloat prevents string-concat bug
     let totalSel = 0;
-    for(let key in selections) { if (selections[key].item_id == item.id) totalSel += parseFloat(selections[key].quantity) || 0; }
+    for (let key in selections) { if (selections[key].item_id == item.id) totalSel += parseFloat(selections[key].quantity) || 0; }
     const targetQty = parseFloat(item.quantity) || 0;
 
     const isFullMatch = totalSel >= targetQty;
     const disableSel = isFullMatch && !isSelected;
-
     const isBestItemPrice = (bestPriceMap[item.id] == o.unit_price);
-    
+
     let qtyBadge = '';
     if (!isService) {
-        if (o.qty_offered == targetQty) {
-            qtyBadge = `<span style="background:#dcfce7;color:#16a34a;padding:2px 6px;border-radius:4px;font-size:9.5px;font-weight:700;">MATCH</span>`;
-        } else if (o.qty_offered < targetQty) {
-            qtyBadge = `<span style="background:#ffedd5;color:#ea580c;padding:2px 6px;border-radius:4px;font-size:9.5px;font-weight:700;">INSUFFICIENT (Need ${targetQty - o.qty_offered} more)</span>`;
-        } else if (o.qty_offered > targetQty) {
-            qtyBadge = `<span style="background:#e0f2fe;color:#0284c7;padding:2px 6px;border-radius:4px;font-size:9.5px;font-weight:700;">SURPLUS (+${o.qty_offered - targetQty})</span>`;
-        }
+        if (o.qty_offered == targetQty) qtyBadge = `<span style="background:#dcfce7;color:#16a34a;padding:2px 5px;border-radius:4px;font-size:9px;font-weight:700;">MATCH</span>`;
+        else if (o.qty_offered < targetQty) qtyBadge = `<span style="background:#ffedd5;color:#ea580c;padding:2px 5px;border-radius:4px;font-size:9px;font-weight:700;">INSUF.</span>`;
+        else qtyBadge = `<span style="background:#e0f2fe;color:#0284c7;padding:2px 5px;border-radius:4px;font-size:9px;font-weight:700;">SURPLUS</span>`;
     }
 
     const itemNotes = item.item_notes || item.notes || '';
     const offerNotes = o.notes || '';
-    const combinedNotes = [itemNotes, offerNotes].filter(n => n && n.trim()).join(' - ') || 'No notes';
-
+    const combinedNotes = [itemNotes, offerNotes].filter(n => n && n.trim()).join(' - ') || '-';
     const specDiffers = o.specification_offered && (!item.specification || o.specification_offered.toLowerCase() !== item.specification.toLowerCase());
     const unitDiffers = o.unit_offered && item.unit && o.unit_offered.toLowerCase() !== item.unit.toLowerCase();
+    const hasDiffers = specDiffers || unitDiffers;
 
-    return `<div style="background:${specDiffers ? '#fef3c7' : '#fff'};border:1px solid ${isSelected?'#3b5bdb':(specDiffers ? '#fcd34d' : '#e5e7eb')};border-radius:8px;padding:14px;margin-bottom:12px;${!isService ? `cursor:${disableSel?'not-allowed':'pointer'}` : ''};opacity:${disableSel?'0.5':'1'};transition:all .15s"
+    const borderColor = isSelected ? '#3b5bdb' : (hasDiffers ? '#fcd34d' : '#e2e8f0');
+    const bgColor = hasDiffers ? '#fef3c7' : '#fff';
+
+    return `<div class="vc-row-item" style="background:${bgColor};border-left:3px solid ${borderColor};${!isService ? `cursor:${disableSel?'not-allowed':'pointer'};` : ''}opacity:${disableSel?'0.5':'1'};transition:border-color .15s; margin-bottom: 2px;"
         ${!isService && !disableSel ? `onclick="toggleSelect(${v.id}, '${item.id}')"` : ''}>
-        
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
-            <div style="font-size:13px;font-weight:700;color:#111827;display:flex;align-items:center;">
+
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">
+            <div style="font-size:12.5px;font-weight:700;color:#111827;line-height:1.3;flex:1;padding-right:8px;">
                 ${item.item_name}
-                ${specDiffers ? `<span style="background:#f59e0b;color:#fff;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;margin-left:8px;letter-spacing:0.5px;">SPEC DIFFERS</span>` : ''}
+                ${specDiffers ? `<span style="background:#f59e0b;color:#fff;padding:1px 5px;border-radius:3px;font-size:8.5px;font-weight:700;margin-left:4px;">SPEC ≠</span>` : ''}
+                ${unitDiffers ? `<span style="background:#f59e0b;color:#fff;padding:1px 5px;border-radius:3px;font-size:8.5px;font-weight:700;margin-left:4px;">UNIT ≠</span>` : ''}
             </div>
-            ${!isService ? `<input type="checkbox" ${isSelected?'checked':''} ${disableSel?'disabled':''} onclick="event.stopPropagation(); toggleSelect(${v.id}, '${item.id}')" style="width:16px;height:16px;accent-color:#3b5bdb;cursor:pointer;">` : ''}
+            ${!isService ? `<input type="checkbox" ${isSelected?'checked':''} ${disableSel?'disabled':''} onclick="event.stopPropagation(); toggleSelect(${v.id}, '${item.id}')" style="width:15px;height:15px;accent-color:#3b5bdb;cursor:pointer;flex-shrink:0;">` : ''}
         </div>
 
-        <div style="display:grid;grid-template-columns:65px 1fr;gap:8px 10px;align-items:center;font-size:11px;">
-            <div style="color:#9ca3af">Qty Offer</div>
-            <div style="font-weight:700;color:#111827;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-                ${o.qty_offered} ${o.unit_offered || ''} / ${targetQty} ${item.unit || ''}
+        <div style="display:grid;grid-template-columns:60px 1fr;gap:5px 8px;align-items:center;font-size:11px;">
+            <div style="color:#9ca3af">Qty</div>
+            <div style="font-weight:700;color:#111827;display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+                ${o.qty_offered} <span style="${unitDiffers ? 'background:#fef08a;color:#854d0e;padding:1px 4px;border-radius:3px;' : ''}">${o.unit_offered||''}</span> / ${targetQty} ${item.unit||''}
                 ${qtyBadge}
             </div>
 
             ${isSelected && !isService ? `
             <div style="color:#3b5bdb;font-weight:700">Buy Qty</div>
-            <div>
-                <input type="number" min="1" max="${o.qty_offered}" value="${selections[`${v.id}_${item.id}`].quantity}"
-                    onclick="event.stopPropagation()"
-                    onchange="updateQty(${v.id}, '${item.id}', this.value)"
-                    style="width:80px;height:26px;border:1px solid #3b5bdb;border-radius:4px;padding:0 8px;font-size:12px;font-weight:600;outline:none;color:#3b5bdb;background:${specDiffers ? '#fef3c7' : '#fff'}">
-            </div>
-            ` : ''}
+            <div><input type="number" min="1" max="${o.qty_offered}" value="${selections[`${v.id}_${item.id}`].quantity}"
+                onclick="event.stopPropagation()"
+                onchange="updateQty(${v.id}, '${item.id}', this.value)"
+                style="width:75px;height:24px;border:1px solid #3b5bdb;border-radius:4px;padding:0 6px;font-size:12px;font-weight:600;outline:none;color:#3b5bdb;"></div>` : ''}
 
-            <div style="color:#9ca3af">Unit</div>
-            <div style="color:#111827;line-height:1.2">
-                ${o.unit_offered ? o.unit_offered : item.unit}
-            </div>
-
-            <div style="color:#9ca3af">Unit Price</div>
-            <div style="font-weight:600;color:#111827;display:flex;align-items:center;gap:6px">
+            <div style="color:#9ca3af">Price</div>
+            <div style="font-weight:600;color:#111827;display:flex;align-items:center;gap:4px;">
                 ${fmt(o.unit_price)}
-                ${(isBestItemPrice && !isService) ? `<span style="background:#e0f2fe;color:#0284c7;padding:2px 6px;border-radius:4px;font-size:9.5px;font-weight:700;">BEST PRICE</span>` : ''}
+                ${(isBestItemPrice && !isService) ? `<span style="background:#e0f2fe;color:#0284c7;padding:1px 5px;border-radius:3px;font-size:9px;font-weight:700;">BEST</span>` : ''}
             </div>
 
             <div style="color:#9ca3af">Spec</div>
-            <div style="color:#111827;line-height:1.2">
-                ${o.specification_offered ? o.specification_offered : (item.specification || '-')}
-            </div>
+            <div style="color:#111827;font-size:10.5px;">${o.specification_offered || (item.specification || '-')}</div>
 
-            <div style="color:#9ca3af">Notes:</div>
-            <div style="color:#6b7280;font-style:italic">
-                ${combinedNotes}
-                ${o.notes ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-left:4px">VENDOR NOTE</div>` : ''}
-            </div>
+            <div style="color:#9ca3af">Notes</div>
+            <div style="color:#6b7280;font-style:italic;font-size:10.5px;">${combinedNotes}</div>
 
             <div style="color:#9ca3af">Subtotal</div>
-            <div style="font-weight:700;color:#111827">${isSelected && !isService ? fmt(selections[`${v.id}_${item.id}`].quantity * o.unit_price) : fmt(o.qty_offered * o.unit_price)}</div>
+            <div style="font-weight:700;color:#111827;">${isSelected && !isService ? fmt(selections[`${v.id}_${item.id}`].quantity * o.unit_price) : fmt(o.qty_offered * o.unit_price)}</div>
         </div>
     </div>`;
 }

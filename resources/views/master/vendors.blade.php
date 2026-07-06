@@ -63,7 +63,12 @@
                             <span style="color:#10b981;font-size:11px;font-weight:600;margin-left:4px;">({{ $vendor['completed_count'] }} completed)</span>
                         @endif
                     </td>
-                    <td style="padding:13px 20px"><button onclick="window.location.href='{{ route('history.vendor.detail', $vendor['vendor_id']) }}'" style="padding:4px 10px;font-size:11.5px;font-weight:600;color:#374151;background:#fff;border:1px solid #e5e7eb;border-radius:6px;cursor:pointer">Detail</button></td>
+                    <td style="padding:13px 20px">
+                        <div style="display:flex;gap:6px;">
+                            <button onclick="window.location.href='{{ route('history.vendor.detail', $vendor['vendor_id']) }}'" style="padding:4px 10px;font-size:11.5px;font-weight:600;color:#3b82f6;background:#fff;border:1px solid #e5e7eb;border-radius:6px;cursor:pointer">Detail</button>
+                            <button onclick="openEditVendor({{ $vendor['vendor_id'] }}, '{{ addslashes($vendor['vendor_name']) }}', '{{ addslashes($vendor['email'] ?? '') }}')" style="background:#fff;border:1px solid #e5e7eb;color:#374151;border-radius:6px;cursor:pointer;font-weight:600;font-size:11.5px;padding:4px 10px;">Edit</button>
+                        </div>
+                    </td>
                 </tr>
                 @empty
                 <tr id="hist-empty"><td colspan="4" style="text-align:center;padding:36px 20px;color:#9ca3af;font-size:12.5px">No vendor records found.</td></tr>
@@ -142,6 +147,38 @@ function histSort(col) {
 function histGoto(p) { histPage = p; applyHFilters(); }
 function histSetPageSize(s) { histPageSize = parseInt(s); histPage = 1; applyHFilters(); }
 
+function openEditVendor(id, name, email) {
+    document.getElementById('edit-vendor-form').action = `/procurement-history/master-vendors/${id}/update`;
+    document.getElementById('edit-vendor-name').value = name;
+    document.getElementById('edit-vendor-email').value = email;
+    document.getElementById('edit-vendor-modal').style.display = 'flex';
+}
+function closeEditVendor() {
+    document.getElementById('edit-vendor-modal').style.display = 'none';
+}
+
 document.addEventListener('DOMContentLoaded', () => { applyHFilters(); });
 </script>
+
+<div id="edit-vendor-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:12px;width:100%;max-width:400px;padding:24px;box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);">
+        <div style="font-size:16px;font-weight:700;color:#111827;margin-bottom:16px;">Edit Vendor</div>
+        <form id="edit-vendor-form" method="POST" action="">
+            @csrf
+            <div style="margin-bottom:12px">
+                <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px">Vendor Name</label>
+                <input type="text" name="vendor_name" id="edit-vendor-name" required style="width:100%;height:36px;border:1px solid #d1d5db;border-radius:6px;padding:0 10px;font-size:13px;outline:none;">
+            </div>
+            <div style="margin-bottom:20px">
+                <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px">Email <span style="color:#9ca3af;font-weight:400">(Optional)</span></label>
+                <input type="email" name="email" id="edit-vendor-email" style="width:100%;height:36px;border:1px solid #d1d5db;border-radius:6px;padding:0 10px;font-size:13px;outline:none;">
+            </div>
+            <div style="display:flex;justify-content:flex-end;gap:10px;">
+                <button type="button" onclick="closeEditVendor()" style="padding:8px 16px;font-size:13px;font-weight:600;color:#4b5563;background:#f3f4f6;border:none;border-radius:6px;cursor:pointer">Cancel</button>
+                <button type="submit" style="padding:8px 16px;font-size:13px;font-weight:600;color:#fff;background:#3b5bdb;border:none;border-radius:6px;cursor:pointer">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 @endsection

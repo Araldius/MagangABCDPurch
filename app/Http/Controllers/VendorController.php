@@ -241,51 +241,45 @@ class VendorController extends Controller
         $doc = $type === 'service' ? ServiceRequest::findOrFail($id) : PurchaseRequest::findOrFail($id);
         $rfqs = Rfq::where($type === 'service' ? 'service_request_id' : 'purchase_request_id', $id)->get();
 
-        $headers = [
-            "Content-type"        => "text/csv",
-            "Content-Disposition" => "attachment; filename=quotations_{$doc->document_number}.csv",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
-            "Expires"             => "0"
-        ];
-
         $columns = ['Vendor Name', 'Item ID', 'Item Name', 'Unit Price (Rp)', 'Target Qty', 'Offered Qty', 'Unit', 'Specification', 'Subtotal (Rp)', 'Notes'];
+        $data = [$columns];
 
-        $callback = function() use($rfqs, $columns, $type, $doc) {
-            $file = fopen('php://output', 'w');
-            fputcsv($file, $columns);
-
-            foreach ($rfqs as $rfq) {
-                foreach ($rfq->quotations as $quotation) {
-                    $vendor = $quotation->vendor;
-                    foreach ($quotation->details as $detail) {
-                        if ($type === 'service') {
-                            $item = $detail->serviceRequestItem;
-                        } else {
-                            $item = $detail->purchaseRequestItem;
-                        }
-                        
-                        if (!$item) continue;
-
-                        fputcsv($file, [
-                            $vendor->vendor_name ?? $vendor->name ?? '-',
-                            $item->item_id ?? '-',
-                            $item->item_name ?? '-',
-                            $detail->unit_price,
-                            $item->quantity ?? '-',
-                            $detail->quantity,
-                            $detail->unit ?? $item->unit ?? '-',
-                            $detail->specification ?? $item->specification ?? '-',
-                            $detail->unit_price * $detail->quantity,
-                            $detail->item_notes ?? $item->item_notes ?? '-'
-                        ]);
+        foreach ($rfqs as $rfq) {
+            foreach ($rfq->quotations as $quotation) {
+                $vendor = $quotation->vendor;
+                foreach ($quotation->details as $detail) {
+                    if ($type === 'service') {
+                        $item = $detail->serviceRequestItem;
+                    } else {
+                        $item = $detail->purchaseRequestItem;
                     }
+                    
+                    if (!$item) continue;
+
+                    $data[] = [
+                        $vendor->vendor_name ?? $vendor->name ?? '-',
+                        $item->item_id ?? '-',
+                        $item->item_name ?? '-',
+                        $detail->offered_price_per_item ?? $detail->unit_price,
+                        $item->quantity ?? '-',
+                        $detail->offered_quantity ?? $detail->quantity,
+                        $detail->offered_unit ?? $detail->unit ?? $item->unit ?? '-',
+                        $detail->offered_specification ?? $detail->specification ?? $item->specification ?? '-',
+                        ($detail->offered_price_per_item ?? $detail->unit_price) * ($detail->offered_quantity ?? $detail->quantity),
+                        $detail->item_notes ?? $item->item_notes ?? '-'
+                    ];
                 }
             }
-            fclose($file);
-        };
+        }
 
-        return response()->stream($callback, 200, $headers);
+        $xlsFileName = "quotations_{$doc->document_number}_" . date('Ymd_His') . '.xlsx';
+        $xlsx = \Shuchkin\SimpleXLSXGen::fromArray($data);
+
+        return response((string) $xlsx, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="' . $xlsFileName . '"',
+            'Cache-Control' => 'max-age=0',
+        ]);
     }
 
     // ─────────────────────────────────────────────

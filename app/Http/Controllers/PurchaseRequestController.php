@@ -11,6 +11,7 @@ use App\Models\ServiceRequestJob;
 use App\Models\ServiceRequestItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class PurchaseRequestController extends Controller
 {
@@ -384,5 +385,107 @@ class PurchaseRequestController extends Controller
         ]);
 
         return back()->with('success', "Request $docNum berhasil dikembalikan ke tahap Vendor Selection.");
+    }
+
+    /**
+     * Upload attachment file for a PR (User action).
+     */
+    public function uploadAttachment(Request $request)
+    {
+        $request->validate([
+            'id'         => 'required|integer',
+            'type'       => 'required|in:goods,service',
+            'attachment' => 'required|file|mimes:pdf,xlsx,xls,jpg,jpeg,png|max:10240',
+        ]);
+
+        $path = $request->file('attachment')->store('pr-attachments', 'public');
+        if ($request->type === 'goods') {
+            $pr = PurchaseRequest::findOrFail($request->id);
+            $pr->update(['attachment_path' => $path]);
+        } else {
+            $pr = ServiceRequest::findOrFail($request->id);
+            $pr->update(['attachment_path' => $path]);
+        }
+
+        return back()->with('success', 'Attachment berhasil diunggah.');
+    }
+
+    /**
+     * Save purchasing notes for a PR (Purchasing role only, JSON response).
+     */
+    public function savePurchasingNotes(Request $request)
+    {
+        $data = $request->validate([
+            'id'    => 'required|integer',
+            'type'  => 'required|in:goods,service',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        if ($request->type === 'goods') {
+            $pr = PurchaseRequest::findOrFail($data['id']);
+            $pr->update(['purchasing_notes' => $data['notes'] ?? null]);
+        } else {
+            $pr = ServiceRequest::findOrFail($data['id']);
+            $pr->update(['purchasing_notes' => $data['notes'] ?? null]);
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Update PR items qty/unit (User action for quotation_reopen status).
+     */
+    public function updateItems(Request $request)
+    {
+        $request->validate([
+            'id'   => 'required|integer',
+            'type' => 'required|in:goods,service',
+        ]);
+
+        if ($request->type === 'goods') {
+            $pr = PurchaseRequest::with('items')->findOrFail($request->id);
+
+            if (!in_array($pr->status, ['quotation_reopen', 'submitted', 'vendor_search'])) {
+                return back()->withErrors(['error' => 'Editing items is not allowed in current status.']);
+            }
+
+            foreach ($pr->items as $item) {
+                $newQty  = $request->input("items.{$item->id}.quantity", $item->quantity);
+                $newUnit = $request->input("items.{$item->id}.unit", $item->unit);
+                $item->update(['quantity' => $newQty, 'unit' => $newUnit]);
+            }
+
+            History::create([
+                'user_id'            => Auth::id(),
+                'action'             => 'PR Items Updated',
+                'transaction_status' => $pr->status,
+                'notes'              => "Item pada Purchase Request " . $pr->document_number . " telah diperbarui oleh " . Auth::user()->name,
+                'action_date'        => now(),
+            ]);
+        } else {
+            $pr = ServiceRequest::with('jobs.items')->findOrFail($request->id);
+
+            if (!in_array($pr->status, ['quotation_reopen', 'submitted', 'vendor_search'])) {
+                return back()->withErrors(['error' => 'Editing items is not allowed in current status.']);
+            }
+
+            foreach ($pr->jobs as $job) {
+                foreach ($job->items as $item) {
+                    $newQty  = $request->input("items.{$item->id}.quantity", $item->quantity);
+                    $newUnit = $request->input("items.{$item->id}.unit", $item->unit);
+                    $item->update(['quantity' => $newQty, 'unit' => $newUnit]);
+                }
+            }
+
+            History::create([
+                'user_id'            => Auth::id(),
+                'action'             => 'SR Items Updated',
+                'transaction_status' => $pr->status,
+                'notes'              => "Item pada Service Request " . $pr->document_number . " telah diperbarui oleh " . Auth::user()->name,
+                'action_date'        => now(),
+            ]);
+        }
+
+        return back()->with('success', 'Items/Services berhasil diperbarui.');
     }
 }

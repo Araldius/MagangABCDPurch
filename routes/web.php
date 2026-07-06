@@ -15,6 +15,9 @@ Route::get('/', fn() => redirect()->route('login'));
 /* ── Public Vendor Portal ── */
 Route::get('vendors/quote/{token}', [App\Http\Controllers\VendorPortalController::class, 'show'])->name('vendors.quote.show');
 Route::post('vendors/quote/{token}', [App\Http\Controllers\VendorPortalController::class, 'submit'])->name('vendors.quote.submit');
+Route::get('vendor-portal/edit/{token}', [App\Http\Controllers\VendorPortalController::class, 'showEdit'])->name('vendors.quote.edit');
+Route::post('vendor-portal/edit/{token}', [App\Http\Controllers\VendorPortalController::class, 'submitEdit'])->name('vendors.quote.submit_edit');
+Route::get('vendor-portal/autocomplete', [App\Http\Controllers\VendorPortalController::class, 'autocomplete'])->name('vendors.quote.autocomplete');
 
 /* ── Auth (guest only) ── */
 Route::middleware('guest')->group(function () {
@@ -41,6 +44,9 @@ Route::middleware('auth')->group(function () {
     Route::post('request/cancel',           [PurchaseRequestController::class, 'cancel'])->name('requests.cancel');
     Route::post('request/reopen', [PurchaseRequestController::class, 'reopen'])->name('requests.reopen');
     Route::post('request/item-note', [PurchaseRequestController::class, 'saveAdminNote'])->name('requests.item_note');
+    Route::post('request/upload-attachment', [PurchaseRequestController::class, 'uploadAttachment'])->name('pr.upload_attachment');
+    Route::post('request/save-purchasing-notes', [PurchaseRequestController::class, 'savePurchasingNotes'])->name('pr.save_purchasing_notes');
+    Route::post('request/update-items', [PurchaseRequestController::class, 'updateItems'])->name('pr.update_items');
 
     /* Procurement History */
     Route::middleware('purchasing')->prefix('procurement-history')->name('history.')->group(function () {
@@ -75,7 +81,6 @@ Route::middleware('auth')->group(function () {
 
     /* Vendor Selection (old RFQ-based flow — backward compat, GET only) */
     Route::get('vendor/select/{rfq}', [VendorController::class, 'select'])->name('vendors.select');
-    // POST route removed — old store() method no longer exists; use vendor-selection/store instead
 
     /* Quotation */
     Route::get( 'rfq/{rfq}/quotations/create', [QuotationController::class, 'create'])->name('quotations.create');

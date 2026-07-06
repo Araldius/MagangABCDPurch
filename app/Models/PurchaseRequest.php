@@ -21,7 +21,9 @@ class PurchaseRequest extends Model
         'requested_date', 
         'need_date', 
         'note', 
-        'status'
+        'status',
+        'attachment_path',
+        'purchasing_notes',
     ];
 
     public function user()
