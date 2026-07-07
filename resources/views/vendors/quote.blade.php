@@ -156,20 +156,25 @@
 
         @if(!session('success'))
 
-        <form id="quote-form" method="POST" action="{{ route('vendors.quote.submit', $rfq->vendor_token) }}">
+        <form id="quote-form" method="POST" action="{{ route('vendors.quote.submit', $rfq->vendor_token) }}" enctype="multipart/form-data">
             @csrf
+            <input type="hidden" name="vendor_id" id="vendor_id_input">
             <div class="card">
                 <div class="card-header">
                     <div class="card-title">Vendor Quotation Portal</div>
                     <div class="card-desc">Please provide your company details and quotation for the items below.</div>
                 </div>
                 <div class="card-body">
-                    <div class="form-group" style="margin-bottom:16px;">
+                    <div class="form-group" style="margin-bottom:16px; position:relative;">
                         <label class="form-label flex-between">
                             <span>Company Name *</span>
-                            <a href="#" onclick="openVendorModal(); return false;" style="font-size:12px; color:#3b5bdb; text-decoration:underline;">Select from Catalog</a>
+                            <span id="vendor-status-badge" style="display:none; font-size:11px; background:#dcfce7; color:#15803d; padding:2px 8px; border-radius:4px; font-weight:700;">✓ REGISTERED VENDOR</span>
                         </label>
-                        <input type="text" class="form-control" name="vendor_name" id="vendor_name_input" value="{{ old('vendor_name') }}" required placeholder="Enter vendor name manually or select from catalog">
+                        <div style="position:relative; display:flex; align-items:center;">
+                            <input type="text" class="form-control" name="vendor_name" id="vendor_name_input" value="{{ old('vendor_name') }}" required placeholder="Type your company name..." autocomplete="off">
+                            <button type="button" id="clear-vendor-btn" onclick="resetVendorSelection()" style="display:none; position:absolute; right:10px; background:none; border:none; color:#ef4444; font-weight:bold; cursor:pointer; font-size:16px;">&times;</button>
+                        </div>
+                        <div id="autocomplete-dropdown" style="display:none; position:absolute; left:0; right:0; top:100%; background:#fff; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); z-index:100; max-height:220px; overflow-y:auto; margin-top:4px;"></div>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                         <div class="form-group" style="margin-bottom:0;">
@@ -177,8 +182,8 @@
                             <input type="text" class="form-control" name="vendor_location" id="vendor_location" value="{{ old('vendor_location') }}" placeholder="Jakarta, Indonesia">
                         </div>
                         <div class="form-group" style="margin-bottom:0;">
-                            <label class="form-label">Email *</label>
-                            <input type="email" class="form-control" name="email" id="vendor_contact" value="{{ old('email') }}" required placeholder="email@company.com" oninvalid="this.setCustomValidity('Email must contain \'@\'')" oninput="this.setCustomValidity('')">
+                            <label class="form-label">Email <span style="color:#9ca3af;font-weight:400">(Optional)</span></label>
+                            <input type="email" class="form-control" name="email" id="vendor_contact" value="{{ old('email') }}" placeholder="email@company.com" oninvalid="this.setCustomValidity('Email must contain \'@\'')" oninput="this.setCustomValidity('')">
                         </div>
                     </div>
                 </div>
@@ -223,11 +228,12 @@
                                                     <strong>{{ $item->name ?? $item->item_name }}</strong>
                                                     <input type="hidden" name="items[{{ $idx }}][item_id]" value="{{ $item->id }}">
                                                     <div style="color:var(--text-muted); font-size:12px; margin-top:4px;">{{ $item->specification ?? '-' }}</div>
-                                                    @if($item->admin_notes)
-                                                        <div style="background:#fef3c7;border:1px solid #f59e0b;color:#b45309;padding:6px 10px;border-radius:4px;font-size:11.5px;margin-top:8px;">
-                                                            <strong>Admin Note:</strong> {{ $item->admin_notes }}
+                                                    @if(isset($item->item_notes) && $item->item_notes)
+                                                        <div style="background:#e0f2fe;border:1px solid #38bdf8;color:#0369a1;padding:6px 10px;border-radius:4px;font-size:11.5px;margin-top:8px;">
+                                                            <strong>User Note:</strong> {{ $item->item_notes }}
                                                         </div>
                                                     @endif
+
                                                     <div style="margin-top:8px;">
                                                         <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
                                                             <input type="checkbox" class="diff-toggle" onchange="document.getElementById('spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'" {{ $defSpec ? 'checked' : '' }}>
@@ -280,11 +286,12 @@
                                                 <strong>{{ $item->name ?? $item->item_name }}</strong>
                                                 <input type="hidden" name="items[{{ $idx }}][item_id]" value="{{ $item->id }}">
                                                 <div style="color:var(--text-muted); font-size:12px; margin-top:4px;">{{ $item->specification ?? '-' }}</div>
-                                                @if($item->admin_notes)
-                                                    <div style="background:#fef3c7;border:1px solid #f59e0b;color:#b45309;padding:6px 10px;border-radius:4px;font-size:11.5px;margin-top:8px;">
-                                                        <strong>Admin Note:</strong> {{ $item->admin_notes }}
+                                                @if(isset($item->item_notes) && $item->item_notes)
+                                                    <div style="background:#e0f2fe;border:1px solid #38bdf8;color:#0369a1;padding:6px 10px;border-radius:4px;font-size:11.5px;margin-top:8px;">
+                                                        <strong>User Note:</strong> {{ $item->item_notes }}
                                                     </div>
                                                 @endif
+
                                                     <div style="margin-top:8px;">
                                                         <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
                                                             <input type="checkbox" class="diff-toggle" onchange="document.getElementById('spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'" {{ $defSpec ? 'checked' : '' }}>
@@ -325,6 +332,23 @@
                         </table>
                     </div>
                 </div>
+                
+                <div class="card-body" style="border-top:1px solid var(--border);">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label class="form-label" style="font-weight:700;">Upload Quotation Document (Optional)</label>
+                        <p style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">Supported formats: PDF, Excel (xlsx, xls), JPG, PNG. Max size: 10MB.</p>
+                        <input type="file" name="attachment" class="form-control" accept=".pdf,.xlsx,.xls,.jpg,.jpeg,.png" style="padding:10px;">
+                        @error('attachment')
+                            <div style="color:#ef4444; font-size:12px; margin-top:4px;">{{ $message }}</div>
+                        @enderror
+                        @if($rfq->quotations && $rfq->quotations->where('vendor_id', session('last_vendor_id'))->first() && $rfq->quotations->where('vendor_id', session('last_vendor_id'))->first()->attachment_path)
+                            <div style="margin-top:8px; font-size:12px; color:#10b981;">
+                                ✓ You have previously uploaded a document. Uploading a new one will replace it.
+                            </div>
+                        @endif
+                    </div>
+                </div>
+
 
                 <div class="card-body" style="background:#f9fafb; border-top:1px solid var(--border); text-align:right;">
                     <button type="submit" class="btn btn-primary" style="padding: 12px 32px; font-size: 15px;">Submit Quotation</button>
@@ -333,79 +357,20 @@
             </div>
         </form>
         @endif
-        <div class="modal-overlay" id="vendor-modal">
-            <div class="modal">
-                <div class="modal-header">
-                    <div><div class="modal-title">Vendor Catalog</div><div class="modal-desc">Search and select registered vendors</div></div>
-                    <button type="button" class="modal-close" onclick="closeVendorModal()">&times;</button>
-                </div>
-                <div style="padding: 16px 20px 12px; border-bottom: 1px solid var(--border); background: #fafafa;">
-                    <input class="form-control" id="vendor-search" placeholder="Search vendor name..." oninput="filterVendors(this.value)">
-                </div>
-                <div class="modal-body" style="padding-top: 12px;">
-                    <div id="vendor-list" style="display:flex;flex-direction:column;"></div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn" style="background:#fff;border:1px solid var(--border);color:var(--text-main);" onclick="closeVendorModal()">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="addSelectedVendor()">Select Vendor</button>
-                </div>
-            </div>
-        </div>
-
+        
         <script>
-            const vendors = @json($vendors ?? []);
-            let selectedVendorId = null;
-
-            function filterVendors(q) { renderVendorList(q.toLowerCase()); }
-            function renderVendorList(q='') {
-                const filtered = vendors.filter(v => !q || v.vendor_name.toLowerCase().includes(q));
-                document.getElementById('vendor-list').innerHTML = filtered.map(v => {
-                    const isSelected = String(selectedVendorId) === String(v.id);
-                    return `
-                    <div class="item-option ${isSelected ? 'selected' : ''}" onclick="selectVendorModal('${v.id}')">
-                        <div class="item-option-name">${v.vendor_name}</div>
-                        <div class="item-option-desc">${v.location || '-'} | ${v.email || '-'}</div>
-                    </div>`;
-                }).join('');
-            }
-
-            function selectVendorModal(id) { 
-                selectedVendorId = id; 
-                renderVendorList(document.getElementById('vendor-search').value.toLowerCase()); 
-            }
-            
-            function openVendorModal() { selectedVendorId = null; document.getElementById('vendor-search').value = ''; renderVendorList(); document.getElementById('vendor-modal').classList.add('open'); document.body.style.overflow = 'hidden'; }
-            
-            function closeVendorModal() { 
-                document.getElementById('vendor-modal').classList.remove('open'); 
-                document.body.style.overflow = '';
-            }
-            
-            function addSelectedVendor() {
-                if(!selectedVendorId){ alert('Please select a vendor.'); return; }
-                const v = vendors.find(x => x.id == selectedVendorId);
-                if(!v) return;
-                
-                document.getElementById('vendor_name_input').value = v.vendor_name;
-                document.getElementById('vendor_location').value = v.location || '';
-                document.getElementById('vendor_contact').value = v.email || '';
-                
-                closeVendorModal();
-            }
-            
-            document.getElementById('vendor-modal').addEventListener('click', function(e) {
-                if(e.target === this) closeVendorModal();
-            });
+            let selectedVendor = null;
+            const autocompleteDropdown = document.getElementById('autocomplete-dropdown');
             const vendorNameInput = document.getElementById('vendor_name_input');
-            if(vendorNameInput) {
-                vendorNameInput.addEventListener('keydown', function(e) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        this.blur();
-                        document.getElementById('vendor_contact').focus();
-                    }
-                });
+            const vendorIdInput = document.getElementById('vendor_id_input');
+            const vendorLocationInput = document.getElementById('vendor_location');
+            const vendorContactInput = document.getElementById('vendor_contact');
+            const statusBadge = document.getElementById('vendor-status-badge');
+            const clearBtn = document.getElementById('clear-vendor-btn');
 
+            let debounceTimeout = null;
+
+            if (vendorNameInput) {
                 vendorNameInput.addEventListener('input', function() {
                     let start = this.selectionStart;
                     let end = this.selectionEnd;
@@ -429,15 +394,99 @@
                         this.setSelectionRange(start, end);
                     }
 
-                    if (!newVal.trim()) return;
+                    if (!selectedVendor) {
+                        vendorIdInput.value = '';
+                        vendorLocationInput.value = '';
+                        vendorContactInput.value = '';
+                    }
 
-                    const match = vendors.find(v => v.vendor_name.toLowerCase() === newVal.trim().toLowerCase());
-                    if (match) {
-                        document.getElementById('vendor_location').value = match.location || '';
-                        document.getElementById('vendor_contact').value = match.email || '';
+                    clearTimeout(debounceTimeout);
+                    const query = newVal.trim();
+                    if (query.length < 2 || selectedVendor) {
+                        autocompleteDropdown.style.display = 'none';
+                        return;
+                    }
+
+                    debounceTimeout = setTimeout(() => {
+                        fetch(`/vendor-portal/autocomplete?q=${encodeURIComponent(query)}`)
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.length === 0) {
+                                    autocompleteDropdown.style.display = 'none';
+                                    return;
+                                }
+                                
+                                const exactMatch = data.find(v => v.vendor_name.toLowerCase() === query.toLowerCase());
+                                if (exactMatch) {
+                                    selectVendor(exactMatch.id, exactMatch.vendor_name, exactMatch.location, exactMatch.email);
+                                    return;
+                                }
+
+                                autocompleteDropdown.innerHTML = data.map(v => `
+                                    <div class="item-option" style="padding:10px 14px; cursor:pointer; border-bottom:1px solid var(--border);" onclick="selectVendor(${v.id}, '${v.vendor_name.replace(/'/g, "\\'")}', '${v.location}', '${v.email}')">
+                                        <div style="font-weight:600; color:var(--primary); font-size:13.5px;">${v.vendor_name}</div>
+                                        <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">Location: ${v.location} | Email: ${v.email || '-'}</div>
+                                    </div>
+                                `).join('');
+                                autocompleteDropdown.style.display = 'block';
+                            });
+                    }, 300);
+                });
+
+                // Prevent submitting on Enter inside name input
+                vendorNameInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.blur();
                     }
                 });
             }
+
+            function selectVendor(id, name, location, email) {
+                selectedVendor = { id, name, location, email };
+                
+                vendorIdInput.value = id;
+                vendorNameInput.value = name;
+                vendorNameInput.readOnly = true;
+                
+                vendorLocationInput.value = location;
+                vendorLocationInput.readOnly = true;
+                vendorLocationInput.style.background = '#f1f5f9';
+                
+                vendorContactInput.value = email;
+                vendorContactInput.readOnly = true;
+                vendorContactInput.style.background = '#f1f5f9';
+                
+                statusBadge.style.display = 'inline-flex';
+                clearBtn.style.display = 'block';
+                autocompleteDropdown.style.display = 'none';
+            }
+
+            function resetVendorSelection() {
+                selectedVendor = null;
+                vendorIdInput.value = '';
+                vendorNameInput.value = '';
+                vendorNameInput.readOnly = false;
+                
+                vendorLocationInput.value = '';
+                vendorLocationInput.readOnly = false;
+                vendorLocationInput.style.background = '#fff';
+                
+                vendorContactInput.value = '';
+                vendorContactInput.readOnly = false;
+                vendorContactInput.style.background = '#fff';
+                
+                statusBadge.style.display = 'none';
+                clearBtn.style.display = 'none';
+                vendorNameInput.focus();
+            }
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (autocompleteDropdown && !autocompleteDropdown.contains(e.target) && e.target !== vendorNameInput) {
+                    autocompleteDropdown.style.display = 'none';
+                }
+            });
 
             // Helper: ubah "1.500,75" -> 1500.75 (number biasa)
             function parsePriceValue(str) {
@@ -463,40 +512,17 @@
             }
 
             // Pastikan value yang dikirim ke server tetap angka polos, bukan "1.500,75"
-            document.getElementById('quote-form').addEventListener('submit', function() {
-                document.querySelectorAll('.price-input').forEach(input => {
-                    input.value = parsePriceValue(input.value);
+            const quoteForm = document.getElementById('quote-form');
+            if (quoteForm) {
+                quoteForm.addEventListener('submit', function() {
+                    // Temporarily remove readonly/disabled so values are submitted
+                    vendorLocationInput.readOnly = false;
+                    vendorContactInput.readOnly = false;
+                    
+                    document.querySelectorAll('.price-input').forEach(input => {
+                        input.value = parsePriceValue(input.value);
+                    });
                 });
-            });
-            function toggleDiff(checkbox, idx) {
-                const alertBox = document.getElementById('diff-alert-' + idx);
-                alertBox.style.display = checkbox.checked ? 'block' : 'none';
-                
-                // Jika ada satu saja item yang beda, kotak "Notes" global di bawah akan menjadi REQUIRED
-                const anyChecked = document.querySelectorAll('.diff-toggle:checked').length > 0;
-                const globalNote = document.querySelector('textarea[name="note"]');
-                
-                if (globalNote) {
-                    globalNote.required = anyChecked;
-                    if (anyChecked) {
-                        globalNote.placeholder = "WAJIB DIISI: Jelaskan perbedaan spesifikasi pada item yang Anda ubah...";
-                        globalNote.style.border = "1px solid #ef4444";
-                    } else {
-                        globalNote.placeholder = "Enter notes or conclusion for this quotation...";
-                        globalNote.style.border = "1px solid #d1d5db";
-                    }
-                }
-            }
-
-            // Ter-trigger otomatis jika Vendor mengganti unit di dropdown
-            function checkUnitChange(selectObj, idx, originalUnit) {
-                const toggle = document.querySelector(`.diff-toggle[onchange*="${idx}"]`);
-                if (toggle) {
-                    if (selectObj.value.toLowerCase() !== originalUnit.toLowerCase()) {
-                        toggle.checked = true;
-                    }
-                    toggleDiff(toggle, idx);
-                }
             }
         </script>
     </div>

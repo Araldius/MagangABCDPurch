@@ -38,7 +38,8 @@ class VendorPortalController extends Controller
 
         $vendors = Vendor::select('id', 'vendor_name', 'email', 'location')->get();
 
-        $quotation = Quotation::with('details')->where('rfq_id', $rfq->id)->where('vendor_id', $rfq->vendor_id)->first();
+        $vendorId = session('last_vendor_id') ?: $rfq->vendor_id;
+        $quotation = Quotation::with('details')->where('rfq_id', $rfq->id)->where('vendor_id', $vendorId)->first();
         $existingItems = [];
         if ($quotation) {
             foreach ($quotation->details as $det) {
@@ -87,6 +88,7 @@ class VendorPortalController extends Controller
             'vendor_name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
             'vendor_location' => 'nullable|string|max:255',
+            'attachment' => 'nullable|file|mimes:pdf,xlsx,xls,jpg,jpeg,png|max:10240',
             'items' => 'required|array',
             'items.*.item_id' => 'required',
             'items.*.price' => 'required|numeric|min:0',
@@ -97,11 +99,18 @@ class VendorPortalController extends Controller
             'note' => 'nullable|string',
         ]);
 
-        // Find or create vendor based on exact name and contact
-        $vendor = Vendor::firstOrCreate(
-            ['vendor_name' => $data['vendor_name'], 'email' => $data['email']],
-            ['location' => $data['vendor_location'] ?? '-', 'status' => 'active']
-        );
+        // Find or create vendor
+        $vendor = null;
+        if ($request->filled('vendor_id')) {
+            $vendor = Vendor::find($request->vendor_id);
+        }
+
+        if (!$vendor) {
+            $vendor = Vendor::firstOrCreate(
+                ['vendor_name' => $data['vendor_name'], 'email' => $data['email']],
+                ['location' => $data['vendor_location'] ?? '-', 'status' => 'active']
+            );
+        }
 
         // Find existing quotation for this vendor + RFQ
         $quotation = Quotation::where('rfq_id', $rfq->id)
@@ -112,13 +121,25 @@ class VendorPortalController extends Controller
             return back()->withInput()->with('overwrite_warning', 'You have previously submitted a quotation for this request. Do you want to overwrite your previous submission?');
         }
 
+        $attachmentPath = null;
+        if ($request->hasFile('attachment')) {
+            $attachmentPath = $request->file('attachment')->store('quotations', 'public');
+        }
+
         if ($quotation) {
             // Update
-            $quotation->update([
+            $updateData = [
                 'total_price' => collect($data['items'])->sum(fn($it) => $it['price'] * $it['quantity']),
                 'note' => $data['note'] ?? null,
                 'status' => 'submitted',
-            ]);
+            ];
+            if ($attachmentPath) {
+                $updateData['attachment_path'] = $attachmentPath;
+            }
+            if (!$quotation->vendor_token) {
+                $updateData['vendor_token'] = Str::random(40);
+            }
+            $quotation->update($updateData);
             QuotationDetail::where('quotation_id', $quotation->id)->delete();
         } else {
             // Create
@@ -128,6 +149,8 @@ class VendorPortalController extends Controller
                 'total_price' => collect($data['items'])->sum(fn($it) => $it['price'] * $it['quantity']),
                 'note' => $data['note'] ?? null,
                 'status' => 'submitted',
+                'vendor_token' => Str::random(40),
+                'attachment_path' => $attachmentPath,
             ]);
         }
 
@@ -166,6 +189,85 @@ class VendorPortalController extends Controller
             Notification::send($purchasingUsers, new VendorQuotationSubmitted($rfq, $vendor));
         }
 
-        return back()->with('success', 'Quotation berhasil dikirim! Terima kasih atas penawaran Anda.');
+        // Send Quotation Details + Attachment to Company Email
+        Notification::route('mail', 'purchasing@duniakimiajaya.com')->notify(new \App\Notifications\CompanyQuotationSubmitted($rfq, $vendor, $quotation));
+
+        // Send Edit Link to Vendor
+        if ($quotation->vendor_token) {
+            Notification::send($vendor, new \App\Notifications\VendorQuotationEditLink($rfq, $vendor, $quotation->vendor_token));
+        }
+
+        return back()->with('success', 'Quotation berhasil dikirim! Tautan untuk edit penawaran telah dikirim ke email Anda.');
+    }
+
+    public function showEdit($token)
+    {
+        $quotation = Quotation::where('vendor_token', $token)->firstOrFail();
+        $rfq = $quotation->rfq;
+        
+        // Temporarily set session to remember who is editing
+        session(['last_vendor_id' => $quotation->vendor_id]);
+        
+        return $this->show($rfq->vendor_token);
+    }
+
+    public function submitEdit(Request $request, $token)
+    {
+        $quotation = Quotation::where('vendor_token', $token)->firstOrFail();
+        $rfq = $quotation->rfq;
+        
+        // Pass confirm_overwrite to skip the warning
+        $request->merge(['confirm_overwrite' => true]);
+        
+        return $this->submit($request, $rfq->vendor_token);
+    }
+
+    /**
+     * Autocomplete endpoint for vendor name with word matching and server-side masking.
+     */
+    public function autocomplete(Request $request)
+    {
+        $q = $request->query('q', '');
+        if (empty($q)) {
+            return response()->json([]);
+        }
+
+        $words = array_filter(explode(' ', $q));
+        $queryBuilder = Vendor::query();
+
+        foreach ($words as $word) {
+            $queryBuilder->where('vendor_name', 'like', '%' . $word . '%');
+        }
+
+        $vendors = $queryBuilder->limit(8)->get(['id', 'vendor_name', 'location', 'email']);
+
+        $maskedVendors = $vendors->map(function ($v) {
+            return [
+                'id' => $v->id,
+                'vendor_name' => $v->vendor_name,
+                'location' => $this->maskLocation($v->location),
+                'email' => $this->maskEmail($v->email),
+            ];
+        });
+
+        return response()->json($maskedVendors);
+    }
+
+    private function maskEmail($email)
+    {
+        if (!$email) return '';
+        $parts = explode('@', $email);
+        if (count($parts) < 2) return str_repeat('*', strlen($email));
+        $name = $parts[0];
+        $domain = $parts[1];
+        $maskedName = strlen($name) <= 2 ? $name . '*' : substr($name, 0, 2) . str_repeat('*', strlen($name) - 2);
+        return $maskedName . '@' . $domain;
+    }
+
+    private function maskLocation($location)
+    {
+        if (!$location || $location === '-') return '-';
+        return strlen($location) <= 3 ? $location . '*' : substr($location, 0, 3) . str_repeat('*', strlen($location) - 3);
     }
 }
+

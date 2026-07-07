@@ -215,6 +215,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     let lastNotifIds = new Set();
+    let isFirstFetch = true;
     
     function toggleNotifDropdown() {
         const dd = document.getElementById('notif-dropdown');
@@ -233,7 +234,7 @@
                 toast.addEventListener('mouseleave', Swal.resumeTimer)
                 if (link) {
                     toast.style.cursor = 'pointer';
-                    toast.onclick = () => window.location.href = link;
+                    toast.addEventListener('click', () => window.location.href = link)
                 }
             }
         });
@@ -265,7 +266,7 @@
             showCancelButton: true,
             confirmButtonColor: confirmColor || '#3b82f6',
             cancelButtonColor: '#9ca3af',
-            confirmButtonText: confirmText || 'Lanjutkan',
+            confirmButtonText: confirmText || 'Ya',
             cancelButtonText: 'Batal',
             customClass: {
                 popup: 'swal-custom-popup',
@@ -310,8 +311,8 @@
                     }
                     
                     // Check if it's new and unread, then show toast
-                    if (n.read_at === null && !lastNotifIds.has(n.id) && lastNotifIds.size > 0) {
-                        showToast('New Quotation', `<b>${d.vendor_name}</b> ${d.message} <b>${d.document_number}</b>`, link);
+                    if (n.read_at === null && !lastNotifIds.has(n.id) && !isFirstFetch) {
+                        showToast('New Notification', `<b>${d.vendor_name || ''}</b> ${d.message} <b>${d.document_number || ''}</b>`, link);
                     }
                     lastNotifIds.add(n.id);
 
@@ -333,6 +334,8 @@
             } else {
                 list.innerHTML = '<div style="padding:16px;text-align:center;color:#9ca3af;font-size:12px;">No notifications yet.</div>';
             }
+            
+            isFirstFetch = false;
         })
         .catch(err => console.error(err));
     }
