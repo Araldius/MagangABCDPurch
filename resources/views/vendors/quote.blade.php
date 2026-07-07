@@ -19,7 +19,7 @@
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; }
         body { background: var(--bg-body); color: var(--text-main); font-size: 14px; line-height: 1.5; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; }
+        .container { max-width: 1000px; margin: 0 auto; }
         .card { background: var(--bg-card); border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; margin-bottom: 24px; }
         .card-header { padding: 20px 24px; border-bottom: 1px solid var(--border); }
         .card-title { font-size: 18px; font-weight: 700; color: var(--primary); }
@@ -202,6 +202,7 @@
                                     <th>Item / Service</th>
                                     <th>Unit</th>
                                     <th>Unit Price (Rp)</th>
+                                    <th>Spesifikasi & Catatan</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -212,7 +213,7 @@
                                 
                                 @if($isService)
                                     @foreach($rfq->serviceRequest->jobs as $job)
-                                        <tr><td colspan="4" style="background:#f0f4f8; font-weight:700; color:#374151;">{{ $job->description ?? $job->job_description }}</td></tr>
+                                        <tr><td colspan="5" style="background:#f0f4f8; font-weight:700; color:#374151;">{{ $job->description ?? $job->job_description }}</td></tr>
                                         @foreach($job->items as $item)
                                             @php
                                                 $ex = $existingItems[$item->id] ?? null;
@@ -233,19 +234,6 @@
                                                             <strong>User Note:</strong> {{ $item->item_notes }}
                                                         </div>
                                                     @endif
-
-                                                    <div style="margin-top:8px;">
-                                                        <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
-                                                            <input type="checkbox" class="diff-toggle" onchange="document.getElementById('spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'" {{ $defSpec ? 'checked' : '' }}>
-                                                            <span>Terdapat perbedaan Spesifikasi?</span>
-                                                        </label>
-                                                        <div id="spec-diff-{{ $idx }}" style="display:{{ $defSpec ? 'block' : 'none' }};margin-top:8px;">
-                                                            <input type="text" class="form-control" name="items[{{ $idx }}][specification]" value="{{ old('items.'.$idx.'.specification', $defSpec) }}" placeholder="Tuliskan spesifikasi yang Anda tawarkan..." style="font-size:12px;padding:8px 10px;">
-                                                        </div>
-                                                    </div>
-                                                    <div style="margin-top:8px;">
-                                                        <textarea class="form-control" name="items[{{ $idx }}][notes]" rows="2" placeholder="Catatan untuk item ini (opsional)..." style="font-size:12px;padding:8px 10px;resize:vertical;">{{ old('items.'.$idx.'.notes', $defNotes) }}</textarea>
-                                                    </div>
                                                 </td>
                                                 <td>
                                                     <div style="font-size:11px;color:#6b7280;margin-bottom:4px;font-weight:600;">Target: {{ $item->quantity }} {{ $item->unit }}</div>
@@ -263,8 +251,20 @@
                                                         </select>
                                                     </div>
                                                 </td>
-                                                <td>
+                                                <td style="min-width:130px;">
                                                     <input type="text" inputmode="decimal" class="form-control price-input" name="items[{{ $idx }}][price]" value="{{ old('items.'.$idx.'.price', $defPrice) }}" required placeholder="Rp. 0" oninput="formatPriceInput(this)">
+                                                </td>
+                                                <td style="min-width:260px;">
+                                                    <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
+                                                        <input type="checkbox" class="diff-toggle" onchange="document.getElementById('spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'" {{ $defSpec ? 'checked' : '' }}>
+                                                        <span>Terdapat perbedaan Spesifikasi?</span>
+                                                    </label>
+                                                    <div id="spec-diff-{{ $idx }}" style="display:{{ $defSpec ? 'block' : 'none' }};margin-top:6px;">
+                                                        <input type="text" class="form-control" name="items[{{ $idx }}][specification]" value="{{ old('items.'.$idx.'.specification', $defSpec) }}" placeholder="Tuliskan spesifikasi yang Anda tawarkan..." style="font-size:12px;padding:8px 10px;">
+                                                    </div>
+                                                    <div style="margin-top:6px;">
+                                                        <textarea class="form-control" name="items[{{ $idx }}][notes]" rows="2" placeholder="Catatan untuk item ini (opsional)..." style="font-size:12px;padding:8px 10px;resize:vertical;">{{ old('items.'.$idx.'.notes', $defNotes) }}</textarea>
+                                                    </div>
                                                 </td>
                                             </tr>
                                             @php $idx++; @endphp

@@ -52,7 +52,7 @@ else $rangeText = 'All Time';
         <input type="text" id="hist-search" placeholder="Search vendor..."
             oninput="applyHFilters()"
             style="height:32px;border:1px solid #e5e7eb;border-radius:7px;padding:0 10px;font-size:12.5px;width:200px;outline:none;font-family:inherit;">
-        <div style="position:relative;">
+            <div style="position:relative;">
             <select id="period-filter" onchange="applyHFilters()"
                 style="height:32px;padding:0 28px 0 10px;border:1px solid #e5e7eb;border-radius:7px;font-size:12.5px;color:#374151;background:#fff;appearance:none;cursor:pointer;font-family:inherit;">
                 <option value="">All Locations</option>
@@ -61,6 +61,19 @@ else $rangeText = 'All Time';
                 @endphp
                 @foreach($locations as $loc)
                     <option value="{{ $loc }}">{{ $loc }}</option>
+                @endforeach
+            </select>
+            <svg style="position:absolute;right:8px;top:50%;transform:translateY(-50%);pointer-events:none;color:#6b7280" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke-linecap="round"/></svg>
+        </div>
+        <div style="position:relative;">
+            <select id="plant-filter" onchange="applyHFilters()"
+                style="height:32px;padding:0 28px 0 10px;border:1px solid #e5e7eb;border-radius:7px;font-size:12.5px;color:#374151;background:#fff;appearance:none;cursor:pointer;font-family:inherit;">
+                <option value="">All Plants</option>
+                @php
+                    $allPlants = collect($vendors)->flatMap(fn($v) => collect($v['history'] ?? [])->pluck('plant'))->filter()->unique()->sort()->values();
+                @endphp
+                @foreach($allPlants as $p)
+                    <option value="{{ $p }}">{{ $p }}</option>
                 @endforeach
             </select>
             <svg style="position:absolute;right:8px;top:50%;transform:translateY(-50%);pointer-events:none;color:#6b7280" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke-linecap="round"/></svg>

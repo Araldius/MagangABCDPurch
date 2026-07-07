@@ -57,6 +57,12 @@ else $rangeText = 'All Time';
                     <option value="{{ $d }}">{{ $d }}</option>
                 @endforeach
             </select>
+            <select id="plant-filter" onchange="applyHFilters()" style="height:34px;border:1px solid #d1d5db;border-radius:6px;padding:0 12px;font-size:12.5px;outline:none;background:#fff">
+                <option value="">All Plants</option>
+                @foreach($records->pluck('plant')->filter()->unique() as $p)
+                    <option value="{{ $p }}">{{ $p }}</option>
+                @endforeach
+            </select>
             <div style="display:flex;align-items:center;gap:6px;background:#f3f4f6;padding:4px 8px;border-radius:6px;border:1px solid #d1d5db">
                 <span style="font-size:11px;font-weight:600;color:#6b7280">DATE RANGE</span>
                 <input type="date" id="hist-start-date" value="{{ request('start_date') }}" onchange="updateHistoryRange()" style="border:none;background:transparent;font-size:12.5px;outline:none;color:#111827;cursor:pointer;padding:0">
@@ -80,7 +86,7 @@ else $rangeText = 'All Time';
             </thead>
             <tbody id="hist-tbody">
                 @forelse($records as $idx => $r)
-                <tr style="border-bottom:1px solid #f3f4f6" data-dept="{{ $r->department }}" data-date="{{ $r->completed_date_raw ?? '' }}">
+                <tr style="border-bottom:1px solid #f3f4f6" data-dept="{{ $r->department }}" data-plant="{{ $r->plant }}" data-date="{{ $r->completed_date_raw ?? '' }}">
                     <td style="padding:12px 20px;font-weight:600;color:#111827;font-family:monospace">{{ $r->doc_number }}</td>
                     <td style="padding:12px 14px">
                         <div style="font-weight:600;color:#111827">{{ $r->vendor_name }}</div>
@@ -119,6 +125,7 @@ function updateHistoryRange() {
 function applyHFilters() {
     const q      = (document.getElementById('hist-search')?.value || '').toLowerCase();
     const dept   = document.getElementById('unit-filter')?.value || '';
+    const plant  = document.getElementById('plant-filter')?.value || '';
     const status = document.getElementById('hist-status-filter')?.value || '';
     const dStart = document.getElementById('hist-start-date')?.value;
     const dEnd   = document.getElementById('hist-end-date')?.value;
@@ -127,6 +134,7 @@ function applyHFilters() {
 
     let filtered = rows.filter(r => {
         if (dept   && r.dataset.dept   !== dept)   return false;
+        if (plant  && r.dataset.plant  !== plant)  return false;
         if (status && r.dataset.status !== status) return false;
         if (q && !r.textContent.toLowerCase().includes(q)) return false;
         if (dStart && r.dataset.date < dStart) return false;
@@ -204,7 +212,7 @@ function openDetail(idx) {
     if (!pr) return;
 
     // Fill Header
-    document.getElementById('modal-title-text').innerHTML = `${pr.items[0] ? pr.items[0].name : 'Procurement'} <br><span style="font-size:12px;font-weight:400;color:#6b7280;margin-top:2px;display:block">${pr.doc_number} | ${pr.department}</span>`;
+    document.getElementById('modal-title-text').innerHTML = `${pr.items[0] ? pr.items[0].name : 'Procurement'} <br><span style="font-size:12px;font-weight:400;color:#6b7280;margin-top:2px;display:block">${pr.doc_number} | ${pr.department}${pr.plant ? ' | ' + pr.plant : ''}</span>`;
 
     // Fill Request Info
     document.getElementById('modal-info-submission').textContent = pr.decided_at ? pr.decided_at.split('T')[0] : '-'; // Just as an example, normally submission_date

@@ -194,7 +194,7 @@
                     <input type="hidden" name="id" id="attach-pr-id">
                     <input type="hidden" name="type" id="attach-pr-type">
                     <label style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:7px;cursor:pointer;font-size:12.5px;font-weight:600;color:#15803d;">
-                        📎 <span id="attach-label">Lampirkan File</span>
+                        📎 <span id="attach-label">Attach the file</span>
                         <input type="file" name="attachment" id="attach-file-input" accept=".pdf,.xlsx,.xls,.jpg,.jpeg,.png" style="display:none;" onchange="document.getElementById('attach-label').textContent = this.files[0]?.name || 'Lampirkan File'; document.getElementById('attach-submit-btn').style.display='inline-flex';">
                     </label>
                     <button type="submit" id="attach-submit-btn" style="display:none;padding:7px 14px;background:#15803d;color:#fff;border:none;border-radius:7px;font-size:12.5px;font-weight:600;cursor:pointer;">Upload</button>
@@ -785,21 +785,23 @@ function openPRDetail(id, category) {
             const time  = h.action_date
                 ? new Date(h.action_date).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})
                 : '';
-            return `<div style="display:flex;gap:8px;font-size:12px;margin-bottom:8px">
-                <span style="width:6px;height:6px;border-radius:50%;background:#3b5bdb;margin-top:5px;flex-shrink:0"></span>
+            return `<div style="display:flex;gap:10px;padding:10px;background:#f9fafb;border-radius:8px;margin-bottom:8px;">
+                <span style="width:7px;height:7px;border-radius:50%;background:#3b5bdb;margin-top:6px;flex-shrink:0"></span>
                 <div>
-                    <span style="font-weight:600;color:#111827">${h.action || 'Action'}</span>
-                    ${h.notes ? `<span style="color:#6b7280"> — ${h.notes}</span>` : ''}
-                    <div style="font-size:11px;color:#9ca3af;margin-top:1px">${time} — ${actor}</div>
+                    <div style="font-size:12.5px;font-weight:600;color:#111827;line-height:1.4;">${h.action || 'Action'}</div>
+                    ${h.notes ? `<div style="font-size:12px;color:#6b7280;margin-top:1px;line-height:1.4;">${h.notes}</div>` : ''}
+                    <div style="font-size:11.5px;color:#9ca3af;margin-top:3px;">${time} — ${actor}</div>
                 </div>
             </div>`;
         }).join('');
     } else {
         const subDate2 = new Date(pr.submission_date||pr.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
-        activityHtml = `<div style="display:flex;gap:8px;font-size:12px">
-            <span style="width:6px;height:6px;border-radius:50%;background:#22c55e;margin-top:5px;flex-shrink:0"></span>
-            <div><span style="font-weight:600;color:#111827">${isService?'SR':'PR'} created and submitted</span>
-            <div style="font-size:11px;color:#9ca3af;margin-top:1px">${subDate2} — ${pr.user?.name || 'User'}</div></div>
+        activityHtml = `<div style="display:flex;gap:10px;padding:10px;background:#f9fafb;border-radius:8px;">
+            <span style="width:7px;height:7px;border-radius:50%;background:#22c55e;margin-top:6px;flex-shrink:0"></span>
+            <div>
+                <div style="font-size:12.5px;font-weight:600;color:#111827;line-height:1.4;">${isService?'SR':'PR'} created and submitted</div>
+                <div style="font-size:11.5px;color:#9ca3af;margin-top:3px;">${subDate2} — ${pr.user?.name || 'User'}</div>
+            </div>
         </div>`;
     }
 
@@ -808,29 +810,54 @@ function openPRDetail(id, category) {
         <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:10px">Progress Status</div>
         ${buildProgressBar(pr.status)}
 
+        <div style="margin-top:16px;">
+            <div style="font-size:10.5px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;padding-bottom:5px;border-bottom:2px solid #e5e7eb">
+                📋 Request Information
+            </div>
+            <div style="background:#f9fafb;border-radius:8px;padding:12px 14px;">
+                <div style="display:grid;grid-template-columns:repeat(${isService ? 4 : 5},1fr);gap:10px;">
+                    <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Submission Date</div>
+                         <div style="font-weight:500;font-size:12.5px">${subDate}</div></div>
+                    <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">
+                             ${isService ? 'Service Name' : 'Department'}
+                         </div>
+                         <div style="font-weight:500;font-size:12.5px">${isService ? (pr.service_name || pr.display_title || '—') : (pr.department || '—')}</div></div>
+                    <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Need Date</div>
+                         <div style="font-weight:500;font-size:12.5px">${reqDate} ${isOverdue ? '<span style="background:#fee2e2;color:#991b1b;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-left:4px">OVERDUE</span>' : ''}</div></div>
+                    <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Plant</div>
+                         <div style="font-weight:500;font-size:12.5px">${pr.plant || '—'}</div></div>
+                    ${!isService ? `<div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Priority</div>
+                         <div style="font-weight:500;font-size:12.5px">${pr.priority ? pr.priority.charAt(0).toUpperCase()+pr.priority.slice(1) : 'Normal'}</div></div>` : ''}
+                </div>
+                ${pr.attachment_path ? `
+                <div style="display:flex;align-items:center;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;">
+                    <div style="width:28px;height:28px;background:#dcfce7;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;">📎</div>
+                    <div style="min-width:0;flex:1">
+                        <div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;">Attached File</div>
+                        <div style="font-size:12.5px;font-weight:500;color:#15803d;">Document uploaded</div>
+                    </div>
+                    <a href="/storage/${pr.attachment_path}" target="_blank" style="flex-shrink:0;padding:5px 12px;background:#16a34a;color:#fff;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none;">View</a>
+                </div>` : ''}
+            </div>
+        </div>
+
+        </div>
+
+        ${isPurchasing ? `
+        <div style="margin-top:16px;padding:14px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;">
+            <div style="font-size:10.5px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">✏️ Purchasing Notes</div>
+            <textarea id="general-purchasing-notes" rows="3" style="width:100%;border:1px solid #cbd5e1;border-radius:6px;padding:8px;font-size:12px;font-family:inherit;outline:none;resize:vertical;" placeholder="Add notes for this PR..." onchange="savePurchasingNote(${pr.id}, '${category}', this.value)">${pr.purchasing_notes || ''}</textarea>
+        </div>` : (pr.purchasing_notes ? `
+        <div style="margin-top:16px;padding:14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;">
+            <div style="font-size:10.5px;font-weight:700;color:#1d4ed8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">✏️ Purchasing Notes</div>
+            <div style="font-size:12.5px;color:#374151;white-space:pre-wrap;">${pr.purchasing_notes}</div>
+        </div>` : '')}
+
         <div style="display:flex;gap:20px;margin-top:16px;align-items:flex-start;">
-            <!-- Left Column (Request Info + Items Table) -->
+            <!-- Left Column (Items Table) -->
             <div style="flex:2;min-width:0;display:flex;flex-direction:column;gap:16px;">
                 <div>
-                    <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:8px">Request Information</div>
-                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;background:#f9fafb;border-radius:8px;padding:12px 14px">
-                        <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Submission Date</div>
-                             <div style="font-weight:500;font-size:12.5px">${subDate}</div></div>
-                        <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">
-                                 ${isService ? 'Service Name' : 'Department'}
-                             </div>
-                             <div style="font-weight:500;font-size:12.5px">${isService ? (pr.service_name || pr.display_title || '—') : (pr.department || '—')}</div></div>
-                        <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Need Date</div>
-                             <div style="font-weight:500;font-size:12.5px">${reqDate} ${isOverdue ? '<span style="background:#fee2e2;color:#991b1b;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-left:4px">OVERDUE</span>' : ''}</div></div>
-                        <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Plant</div>
-                             <div style="font-weight:500;font-size:12.5px">${pr.plant || '—'}</div></div>
-                        ${!isService ? `<div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Priority</div>
-                             <div style="font-weight:500;font-size:12.5px">${pr.priority ? pr.priority.charAt(0).toUpperCase()+pr.priority.slice(1) : 'Normal'}</div></div>` : ''}
-                    </div>
-                </div>
-
-                <div>
-                    <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;padding-bottom:5px;border-bottom:2px solid #e5e7eb">
+                    <div style="font-size:10.5px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;padding-bottom:5px;border-bottom:2px solid #e5e7eb">
                         ${isService ? '🛠️ Scope of Work & Items' : '📦 Item List'}
                     </div>
                     ${tableHtml}
@@ -838,29 +865,10 @@ function openPRDetail(id, category) {
                 ${vSumHtml}
             </div>
 
-            <!-- Right Column (Purchasing notes, attached document, activity log) -->
+            <!-- Right Column (Activity Log) -->
             <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:16px;">
-                ${isPurchasing ? `
-                <div style="padding:14px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;">
-                    <div style="font-size:10.5px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Purchasing Notes</div>
-                    <textarea id="general-purchasing-notes" rows="4" style="width:100%;border:1px solid #cbd5e1;border-radius:6px;padding:8px;font-size:12px;font-family:inherit;outline:none;resize:vertical;" placeholder="Add notes for this PR..." onchange="savePurchasingNote(${pr.id}, '${category}', this.value)">${pr.purchasing_notes || ''}</textarea>
-                </div>` : (pr.purchasing_notes ? `
-                <div style="padding:14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;">
-                    <div style="font-size:10.5px;font-weight:700;color:#1d4ed8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Purchasing Notes</div>
-                    <div style="font-size:12.5px;color:#374151;white-space:pre-wrap;">${pr.purchasing_notes}</div>
-                </div>` : '')}
-
-                ${pr.attachment_path ? `
-                <div style="padding:12px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;display:flex;align-items:center;gap:10px;">
-                    <span style="font-size:16px">📎</span>
-                    <div style="min-width:0;flex:1">
-                        <div style="font-size:10px;font-weight:700;color:#15803d;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">Attached File</div>
-                        <a href="/storage/${pr.attachment_path}" target="_blank" style="font-size:12px;font-weight:600;color:#166534;text-decoration:none;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${pr.attachment_path.split('/').pop()}">${pr.attachment_path.split('/').pop()}</a>
-                    </div>
-                </div>` : ''}
-
                 <div>
-                    <div style="font-size:10.5px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;padding-bottom:5px;border-bottom:2px solid #e5e7eb">Activity Log</div>
+                    <div style="font-size:10.5px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;padding-bottom:5px;border-bottom:2px solid #e5e7eb">🕒 Activity Log</div>
                     ${activityHtml}
                 </div>
             </div>

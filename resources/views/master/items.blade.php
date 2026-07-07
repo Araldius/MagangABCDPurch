@@ -46,12 +46,12 @@
             </thead>
             <tbody id="item-tbody">
                 @forelse($items as $item)
-                <tr style="border-bottom:1px solid #f3f4f6;opacity:{{ $item->is_archived ? '0.55' : '1' }}"
+                <tr style="border-bottom:1px solid #f3f4f6"
                     data-status="{{ $item->is_archived ? 'archived' : 'active' }}"
                     onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='transparent'">
-                    <td style="padding:13px 20px;font-family:monospace;color:#374151;">{{ $item->item_code ?: '-' }}</td>
-                    <td style="padding:13px 14px;font-weight:600;color:#111827;">{{ $item->item_name }}</td>
-                    <td style="padding:13px 14px;color:#374151;">{{ $item->unit }}</td>
+                    <td style="padding:13px 20px;font-family:monospace;color:#374151;opacity:{{ $item->is_archived ? '0.55' : '1' }}">{{ $item->item_code ?: '-' }}</td>
+                    <td style="padding:13px 14px;font-weight:600;color:#111827;opacity:{{ $item->is_archived ? '0.55' : '1' }}">{{ $item->item_name }}</td>
+                    <td style="padding:13px 14px;color:#374151;opacity:{{ $item->is_archived ? '0.55' : '1' }}">{{ $item->unit }}</td>
                     <td style="padding:13px 14px;text-align:center;">
                         @if($item->is_archived)
                             <span style="background:#fef2f2;color:#dc2626;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:600;">Archived</span>

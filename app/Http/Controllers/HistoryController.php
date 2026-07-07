@@ -222,6 +222,7 @@ class HistoryController extends Controller
                             'item_name' => $pri->item_name ?? $pri->name ?? '-',
                             'vendor' => $vName,
                             'vendor_city' => optional($vendor)->location ?? '',
+                            'plant' => $pr->plant ?? '-',
                             'value' => $si->final_price_per_item * $si->final_quantity,
                             'qty' => $si->final_quantity,
                             'unit' => $qd->offered_unit ?? $pri->unit ?? '-',
@@ -321,6 +322,7 @@ class HistoryController extends Controller
                         $vendorMap[$vid]['history'][] = [
                             'item_id' => $pri->item_id ?? $pri->item_code ?? '-',
                             'item_name' => $pri->item_name ?? $pri->name ?? '-',
+                            'plant' => $pr->plant ?? '-',
                             'value' => $val,
                             'qty' => $si->final_quantity,
                             'unit' => $pri->unit ?? '-',
