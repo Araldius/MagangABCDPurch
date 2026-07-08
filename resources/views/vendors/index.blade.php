@@ -110,6 +110,11 @@ h1 { font-size:20px;font-weight:700;color:#111827;margin:0 0 3px }
    must have the same height.
    Item row height = 52px header + 245px per item.
    ============================================================ */
+
+   .req-item-card {
+    min-height: 170px;   /* atur sesuai kebutuhan, makin besar makin panjang ke bawah */
+    padding: 16px;       /* biar isi kontennya juga lebih lega, opsional */
+}
 /* Left panel header row */
 .req-row-header {
     height: 52px;
@@ -124,7 +129,6 @@ h1 { font-size:20px;font-weight:700;color:#111827;margin:0 0 3px }
     color: #6b7280;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-}
 }
 
 /* Right panel: vendor card rows */
@@ -236,28 +240,15 @@ h1 { font-size:20px;font-weight:700;color:#111827;margin:0 0 3px }
     {{-- Requirements table + Vendor cards, side by side --}}
     <div style="display:flex;align-items:stretch;gap:16px;margin-bottom:14px;width:100%;min-width:0;overflow:hidden;">
         {{-- LEFT: Requirements table (tetap di tempat, tidak ikut geser) --}}
-        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;width:650px;flex-shrink:0;display:flex;flex-direction:column;height:640px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #f3f4f6">
-                <div>
-                    <div style="font-size:13.5px;font-weight:700;color:#111827">Item / Service Requirements</div>
-                    <div id="ws-item-count" style="font-size:11.5px;color:#6b7280;margin-top:1px"></div>
-                </div>
-                <div style="font-size:12px;color:#6b7280">Items Fulfilled: <span id="sel-count" style="font-weight:700;color:#111827">0</span> of <span id="sel-total" style="font-weight:700;color:#111827">0</span></div>
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;width:400px;flex-shrink:0;display:flex;flex-direction:column;height:640px;">
+        <div class="vendor-card-header" style="background:#f9fafb;">
+            <div>
+                <div style="font-size:13.5px;font-weight:700;color:#111827">Item / Service Requirements</div>
+                <div id="ws-item-count" style="font-size:11.5px;color:#6b7280;margin-top:1px"></div>
             </div>
-            <div style="overflow-y:auto;overflow-x:auto;flex:1">
-                <table class="req-table">
-                    <thead>
-                        <tr>
-                            <th>NO</th>
-                            <th>ITEM ID</th>
-                            <th>ITEM NAME</th>
-                            <th style="text-align:right">QTY</th>
-                            <th>STATUS</th>
-                        </tr>
-                    </thead>
-                    <tbody id="items-requirement-tbody"></tbody>
-                </table>
-            </div>
+            <div style="font-size:12px;color:#6b7280">Items Fulfilled: <span id="sel-count" style="font-weight:700;color:#111827">0</span> of <span id="sel-total" style="font-weight:700;color:#111827">0</span></div>
+        </div>
+                <div id="items-requirement-tbody" class="vendor-card-body"></div>
         </div>
 
         {{-- RIGHT: Vendor cards grid (carousel, tetap bisa digeser kiri-kanan) --}}
@@ -508,50 +499,52 @@ function getRowBg(label) {
     return '#fff';
 }
 
+function requirementCardHtml(item, label, bg, tc, dot) {
+    const isSelected = label !== 'Pending';
+    const cardBg = isSelected ? bg : '#fff';
+    const cardBorder = isSelected ? dot : '#e2e8f0';
+
+    return `<div class="vc-row-item req-item-card" style="border:1px solid ${cardBorder};border-left:4px solid ${cardBorder};background:${cardBg};">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px">
+            <div>
+                <div style="font-family:monospace;font-size:10px;font-weight:600;color:#3b5bdb;margin-bottom:2px;">${item.item_id || '—'}</div>
+                <div style="font-size:12.5px;font-weight:700;color:#111827;">${item.item_name}</div>
+            </div>
+            <span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;background:${isSelected ? '#fff' : bg};font-size:10px;font-weight:700;color:${tc};white-space:nowrap;flex-shrink:0;">
+                <span style="width:5px;height:5px;border-radius:50%;background:${dot}"></span>${label}
+            </span>
+        </div>
+        <div style="display:grid;grid-template-columns:60px 1fr;gap:5px 8px;align-items:center;font-size:11px;">
+            <div style="color:#9ca3af">Qty</div>
+            <div style="font-weight:700;color:#111827">${item.quantity} ${item.unit}</div>
+            <div style="color:#9ca3af">Spec</div>
+            <div style="color:#111827;font-size:10.5px;">${item.specification || '-'}</div>
+            <div style="color:#9ca3af">Notes</div>
+            <div style="color:#6b7280;font-style:italic;font-size:10.5px;">${item.item_notes || item.notes || '-'}</div>
+        </div>
+    </div>`;
+}
+
 function renderRequirementsTable(){
-    const tbody = document.getElementById('items-requirement-tbody');
+    const container = document.getElementById('items-requirement-tbody');
     let html = '';
-    let counter = 1;
 
     if (currentPR.type === 'service') {
         currentPR.jobs.forEach(job => {
-            html += `<tr>
-                <td colspan="5" style="background:#f8fafc; font-weight:700; color:#374151; padding:10px 14px; border-bottom:1px solid #e5e7eb;">
-                    💼 Service Job: ${job.job_description}
-                </td>
-            </tr>`;
+            html += `<div class="vc-row-job">💼 ${job.job_description}</div>`;
             job.items.forEach(item => {
                 const [label,bg,tc,dot] = getItemStatus(item.id);
-                html += `<tr style="background:${getRowBg(label)}">
-                    <td style="padding:10px 14px; color:#9ca3af">${counter++}</td>
-                    <td style="padding:10px 14px; font-weight:600; font-family:monospace; color:#3b5bdb;">${item.item_id || '—'}</td>
-                    <td style="padding:10px 14px; font-weight:600; color:#111827;">${item.item_name}</td>
-                    <td style="padding:10px 14px; text-align:right; font-weight:700; color:#111827">${item.quantity} ${item.unit}</td>
-                    <td style="padding:10px 14px;">
-                        <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;background:${bg};font-size:11px;font-weight:600;color:${tc}">
-                            <span style="width:5px;height:5px;border-radius:50%;background:${dot}"></span>${label}
-                        </span>
-                    </td>
-                </tr>`;
+                html += requirementCardHtml(item, label, bg, tc, dot);
             });
         });
     } else {
-        currentPR.items.forEach((item, i) => {
+        currentPR.items.forEach(item => {
             const [label,bg,tc,dot] = getItemStatus(item.id);
-            html += `<tr style="background:${getRowBg(label)}">
-                <td style="padding:10px 14px; color:#9ca3af">${i+1}</td>
-                <td style="padding:10px 14px; font-weight:600; font-family:monospace; color:#3b5bdb;">${item.item_id || '—'}</td>
-                <td style="padding:10px 14px; font-weight:500; color:#111827;">${item.item_name}</td>
-                <td style="padding:10px 14px; text-align:right; font-weight:700; color:#111827">${item.quantity} ${item.unit}</td>
-                <td style="padding:10px 14px;">
-                    <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;background:${bg};font-size:11px;font-weight:600;color:${tc}">
-                        <span style="width:5px;height:5px;border-radius:50%;background:${dot}"></span>${label}
-                    </span>
-                </td>
-            </tr>`;
+            html += requirementCardHtml(item, label, bg, tc, dot);
         });
     }
-    tbody.innerHTML = html;
+
+    container.innerHTML = html;
 }
 
 function toggleVendorService(vId, isChecked) {
