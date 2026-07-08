@@ -75,6 +75,19 @@ else $rangeText = 'All Time';
             </select>
             <svg style="position:absolute;right:8px;top:50%;transform:translateY(-50%);pointer-events:none;color:#6b7280" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke-linecap="round"/></svg>
         </div>
+        <div style="position:relative;">
+            <select id="plant-filter" onchange="applyHFilters()"
+                style="height:32px;padding:0 28px 0 10px;border:1px solid #e5e7eb;border-radius:7px;font-size:12.5px;color:#374151;background:#fff;appearance:none;cursor:pointer;font-family:inherit;">
+                <option value="">All Plants</option>
+                @php
+                    $allPlants = collect($items)->flatMap(fn($it) => collect($it['history'] ?? [])->pluck('plant'))->filter()->unique()->sort()->values();
+                @endphp
+                @foreach($allPlants as $p)
+                    <option value="{{ $p }}">{{ $p }}</option>
+                @endforeach
+            </select>
+            <svg style="position:absolute;right:8px;top:50%;transform:translateY(-50%);pointer-events:none;color:#6b7280" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" stroke-linecap="round"/></svg>
+        </div>
         <div style="display:flex;align-items:center;gap:6px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:7px;padding:0 10px;height:32px;">
             <span style="font-size:10.5px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;">Date Range</span>
             <input type="date" id="hist-start-date" value="{{ request('start_date') }}" onchange="updateHistoryRange()" style="border:none;background:transparent;font-size:12.5px;outline:none;color:#111827;cursor:pointer;padding:0;font-family:inherit;">
@@ -100,6 +113,7 @@ else $rangeText = 'All Time';
                     data-period="{{ $item['last_purchase'] ? \Carbon\Carbon::parse($item['last_purchase'])->format('Y-m') : '' }}"
                     data-date="{{ $item['last_purchase'] }}"
                     data-value="{{ $item['last_value'] }}"
+                    data-plants="{{ collect($item['history'] ?? [])->pluck('plant')->filter()->unique()->implode('|') }}"
                     onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='transparent'">
                     <td style="padding:13px 20px"><span style="font-family:'Courier New',monospace;font-size:12px;font-weight:600;color:#111827">{{ $item['item_id'] }}</span></td>
                     <td style="padding:13px 14px;font-size:12.5px;font-weight:600;color:#111827">{{ $item['item_name'] }}</td>
@@ -121,6 +135,7 @@ else $rangeText = 'All Time';
     <div style="background:#fff;border-radius:12px;width:100%;max-width:1200px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 10px 25px -5px rgba(0,0,0,0.1)">
         <div style="padding:16px 24px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center">
             <h2 style="font-size:14px;font-weight:700;color:#111827;margin:0" id="item-modal-title">Item History —</h2>
+            <p style="font-size:11.5px;color:#6b7280;margin:3px 0 0;font-family:'Courier New',monospace" id="item-modal-subtitle"></p>
             <button onclick="closeItemDetail()" style="background:none;border:none;color:#9ca3af;cursor:pointer;font-size:20px;line-height:1">×</button>
         </div>
         <div style="padding:0;overflow-y:auto;flex:1">
@@ -152,31 +167,45 @@ let itemsData = @json($items);
 function openItemDetail(idx) {
     const item = itemsData[idx];
     if (!item) return;
-    document.getElementById('item-modal-title').innerText = `Item History — ${item.item_id}`;
+
+    const activePlant = document.getElementById('plant-filter')?.value || '';
+    const fullHistory = item.history || [];
+    const history = activePlant
+        ? fullHistory.filter(h => h.plant === activePlant)
+        : fullHistory;
+
+    const plants = [...new Set(history.map(h => h.plant).filter(Boolean))];
+    const plantText = plants.length ? ` | ${plants.join(', ')}` : '';
+    document.getElementById('item-modal-title').innerText = `Item History — ${item.item_id}${plantText}`;
+
     let tbody = '';
-    item.history.forEach(h => {
-        tbody += `
-        <tr style="border-bottom:1px solid #f3f4f6">
-        <td style="padding:10px 14px;font-family:monospace;font-weight:600;font-size:11px">${h.doc_no || '-'}</td>
-            <td style="padding:10px 14px;font-weight:600">${h.item_name}</td>
-            <td style="padding:10px 14px">
-                <div style="font-weight:600">${h.vendor}</div>
-                <div style="font-size:10.5px;color:#9ca3af">${h.vendor_city}</div>
-            </td>
-            <td style="padding:10px 14px;font-weight:700">${new Intl.NumberFormat('id-ID').format(h.value)}</td>
-            <td style="padding:10px 14px">${h.qty}</td>
-            <td style="padding:10px 14px">${h.unit}</td>
-            <td style="padding:10px 14px;font-size:11.5px;color:#6b7280;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${h.spec}">
-                <div style="font-weight:600;color:#374151;">${h.spec}</div>
-                ${h.notes && h.notes !== '-' ? `<div style="font-size:10.5px;color:#9ca3af;font-style:italic;">Notes: ${h.notes}</div>` : ''}
-            </td>
-            <td style="padding:10px 14px">${h.requested_by}</td>
-            <td style="padding:10px 14px">${h.lead_time}</td>
-            <td style="padding:10px 14px">${h.req_date}</td>
-            <td style="padding:10px 14px"><button onclick="window.location.href='/procurement-history/orders?search=${h.doc_no || ''}'" style="padding:4px 10px;font-size:11.5px;font-weight:600;color:#374151;background:#fff;border:1px solid #e5e7eb;border-radius:6px;cursor:pointer">Detail</button></td>
-        </tr>
-        `;
-    });
+    if (history.length === 0) {
+        tbody = `<tr><td colspan="11" style="text-align:center;padding:28px 14px;color:#9ca3af;font-size:12.5px">No records for this plant.</td></tr>`;
+    } else {
+        history.forEach(h => {
+            tbody += `
+            <tr style="border-bottom:1px solid #f3f4f6">
+            <td style="padding:10px 14px;font-family:monospace;font-weight:600;font-size:11px">${h.doc_no || '-'}</td>
+                <td style="padding:10px 14px;font-weight:600">${h.item_name}</td>
+                <td style="padding:10px 14px">
+                    <div style="font-weight:600">${h.vendor}</div>
+                    <div style="font-size:10.5px;color:#9ca3af">${h.vendor_city}</div>
+                </td>
+                <td style="padding:10px 14px;font-weight:700">${new Intl.NumberFormat('id-ID').format(h.value)}</td>
+                <td style="padding:10px 14px">${h.qty}</td>
+                <td style="padding:10px 14px">${h.unit}</td>
+                <td style="padding:10px 14px;font-size:11.5px;color:#6b7280;max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${h.spec}">
+                    <div style="font-weight:600;color:#374151;">${h.spec}</div>
+                    ${h.notes && h.notes !== '-' ? `<div style="font-size:10.5px;color:#9ca3af;font-style:italic;">Notes: ${h.notes}</div>` : ''}
+                </td>
+                <td style="padding:10px 14px">${h.requested_by}</td>
+                <td style="padding:10px 14px">${h.lead_time}</td>
+                <td style="padding:10px 14px">${h.req_date}</td>
+                <td style="padding:10px 14px"><button onclick="window.location.href='/procurement-history/orders?search=${h.doc_no || ''}'" style="padding:4px 10px;font-size:11.5px;font-weight:600;color:#374151;background:#fff;border:1px solid #e5e7eb;border-radius:6px;cursor:pointer">Detail</button></td>
+            </tr>
+            `;
+        });
+    }
     document.getElementById('item-modal-tbody').innerHTML = tbody;
     document.getElementById('item-modal').style.display = 'flex';
     document.body.style.overflow = 'hidden';
@@ -207,6 +236,7 @@ function applyHFilters() {
     const q = (document.getElementById('hist-search')?.value || '').toLowerCase();
     const period = document.getElementById('period-filter')?.value || '';
     const valueRange = document.getElementById('value-filter')?.value || '';
+    const plant = document.getElementById('plant-filter')?.value || '';
     const dStart = document.getElementById('hist-start-date')?.value;
     const dEnd   = document.getElementById('hist-end-date')?.value;
 
@@ -216,6 +246,10 @@ function applyHFilters() {
         if (period && (r.dataset.period || '') !== period) return false;
         if (dStart && r.dataset.date < dStart) return false;
         if (dEnd && r.dataset.date > dEnd) return false;
+        if (plant) {
+            const plants = (r.dataset.plants || '').split('|');
+            if (!plants.includes(plant)) return false;
+        }
         if (valueRange) {
             const val = parseFloat(r.dataset.value || '0');
             if (valueRange === 'low' && val >= 1000000) return false;

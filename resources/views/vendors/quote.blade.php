@@ -19,7 +19,7 @@
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', system-ui, sans-serif; }
         body { background: var(--bg-body); color: var(--text-main); font-size: 14px; line-height: 1.5; padding: 20px; }
-        .container { max-width: 800px; margin: 0 auto; }
+        .container { max-width: 1000px; margin: 0 auto; }
         .card { background: var(--bg-card); border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); overflow: hidden; margin-bottom: 24px; }
         .card-header { padding: 20px 24px; border-bottom: 1px solid var(--border); }
         .card-title { font-size: 18px; font-weight: 700; color: var(--primary); }
@@ -62,6 +62,50 @@
     </style>
 </head>
 <body>
+    @if(!isset($closedReason) && !request()->routeIs('vendors.quote.edit') && !session('success'))
+    <!-- Token Initial Page Overlay -->
+    <div id="initialTokenModal" style="position: fixed; inset: 0; background: #f3f6f9; z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;">
+        <script>document.body.style.overflow = 'hidden';</script>
+        <div style="background: #fff; border-radius: 12px; width: 100%; max-width: 500px; text-align: center; padding: 40px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
+            <div style="margin-bottom: 24px;">
+                <svg width="48" height="48" fill="none" stroke="#1e3a5f" stroke-width="2" viewBox="0 0 24 24" style="margin: 0 auto;"><path d="M21 12V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2h7.5m4.5 2.5l2.5-2.5m0 0l2.5 2.5m-2.5-2.5v7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <h3 style="margin: 0 0 16px 0; font-size: 24px; color: #1e3a5f; font-weight: 700;">Welcome to Vendor Portal</h3>
+            <p style="margin: 0 0 32px 0; font-size: 15px; color: #4b5563; line-height: 1.6;">Would you like to submit a new quotation or continue editing a previously saved quotation?</p>
+            
+            <div style="margin-bottom: 24px; text-align: left; background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <label style="font-size: 14px; font-weight: 600; color: #334155; display: block; margin-bottom: 8px;">Edit Quotation</label>
+                <p style="font-size: 12px; color: #64748b; margin-bottom: 12px;">Please enter the Token provided in your email to load your previous data.</p>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="initial_edit_token" class="form-control" placeholder="Enter your Token" style="flex: 1; padding: 10px 14px; font-size: 14px;">
+                    <button onclick="submitEditToken()" class="btn btn-primary" style="white-space: nowrap;">Continue Editing</button>
+                </div>
+            </div>
+
+            <div style="display: flex; align-items: center; margin: 20px 0;">
+                <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
+                <span style="padding: 0 16px; color: #94a3b8; font-size: 13px; font-weight: 500;">OR</span>
+                <div style="flex: 1; height: 1px; background: #e2e8f0;"></div>
+            </div>
+
+            <button onclick="closeInitialModal()" class="btn btn-block" style="background:#fff; color:#1e3a5f; border:2px solid #1e3a5f; padding: 12px; font-size: 15px;">Create New Quotation</button>
+        </div>
+    </div>
+    <script>
+        function closeInitialModal() {
+            document.getElementById('initialTokenModal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+        function submitEditToken() {
+            const token = document.getElementById('initial_edit_token').value.trim();
+            if (!token) {
+                alert('Silakan masukkan token terlebih dahulu.');
+                return;
+            }
+            window.location.href = `/vendor-portal/edit/${token}`;
+        }
+    </script>
+    @endif
     @if(isset($closedReason))
     <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.65); backdrop-filter: blur(4px); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;">
         <script>document.body.style.overflow = 'hidden';</script>
@@ -90,17 +134,60 @@
     </div>
     @endif
 
-    <div class="container">
-        @if(session('success'))
-            <div class="alert alert-success text-center">
-                {{ session('success') }}
+    @if(session('overwrite_warning'))
+    <div id="overwriteModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.65); backdrop-filter: blur(4px); z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 20px;">
+        <script>document.body.style.overflow = 'hidden';</script>
+        <div style="background: #fff; border-radius: 12px; width: 100%; max-width: 500px; text-align: center; padding: 40px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
+            <div style="width: 80px; height: 80px; background: #fef3c7; color: #d97706; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width: 40px; height: 40px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
             </div>
-            <script>
-                setTimeout(() => {
-                    window.location.reload();
-                }, 5000);
-            </script>
-        @endif
+            <h1 style="font-size: 20px; font-weight: 700; color: #111827; margin-bottom: 12px;">Quotation Already Exists</h1>
+            <p style="font-size: 15px; color: #4b5563; line-height: 1.6; margin-bottom: 24px;">
+                You have previously submitted a quotation for this request. Are you sure you wish to overwrite your previous submission with this new data?
+            </p>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button type="button" onclick="cancelOverwrite()" class="btn" style="background:#f3f4f6; color:#374151; border:1px solid #d1d5db; flex: 1;">Cancel</button>
+                <button type="button" onclick="confirmOverwrite()" class="btn btn-primary" style="flex: 1;">Yes, Overwrite</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        function cancelOverwrite() {
+            document.getElementById('overwriteModal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+        function confirmOverwrite() {
+            const form = document.querySelector('form');
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'confirm_overwrite';
+            input.value = '1';
+            form.appendChild(input);
+            form.submit();
+        }
+    </script>
+    @endif
+
+    @if(session('success'))
+    <div style="position: fixed; inset: 0; background: #f3f6f9; z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 20px;">
+        <script>document.body.style.overflow = 'hidden';</script>
+        <div style="background: #fff; border-radius: 12px; width: 100%; max-width: 500px; text-align: center; padding: 40px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
+            <div style="width: 80px; height: 80px; background: #dcfce7; color: #166534; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
+                <svg fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24" style="width: 40px; height: 40px;">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+                </svg>
+            </div>
+            <h1 style="font-size: 24px; font-weight: 700; color: #111827; margin-bottom: 16px;">Thank You</h1>
+            <p style="font-size: 16px; color: #4b5563; line-height: 1.6; margin-bottom: 0;">
+                {{ session('success') }}
+            </p>
+        </div>
+    </div>
+    @endif
+
+    <div class="container">
 
         @if($errors->any())
             <div class="alert alert-danger">
@@ -112,47 +199,7 @@
             </div>
         @endif
 
-        @if(session('overwrite_warning'))
-            <script>
-                document.addEventListener('DOMContentLoaded', function() {
-                    const overlay = document.createElement('div');
-                    overlay.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.65); backdrop-filter: blur(4px); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;';
-                    
-                    const box = document.createElement('div');
-                    box.style.cssText = 'background: #fff; border-radius: 12px; width: 100%; max-width: 450px; text-align: center; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.2); padding: 32px 24px;';
-                    
-                    box.innerHTML = `
-                        <div style="width: 64px; height: 64px; background: #fef3c7; color: #d97706; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
-                            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width: 32px; height: 32px;">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                            </svg>
-                        </div>
-                        <h1 style="font-size: 20px; font-weight: 700; color: #111827; margin-bottom: 12px;">Quotation Already Exists</h1>
-                        <p style="font-size: 14px; color: #6b7280; line-height: 1.6; margin-bottom: 24px;">
-                            {{ session('overwrite_warning') }}
-                        </p>
-                        <div style="display: flex; gap: 12px;">
-                            <button onclick="this.closest('div').parentElement.remove(); document.body.style.overflow = 'auto';" style="flex:1; background: #f3f4f6; color: #374151; border: none; padding: 10px 24px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer;">Cancel</button>
-                            <button onclick="confirmOverwrite()" style="flex:1; background: #d97706; color: #fff; border: none; padding: 10px 24px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer;">Yes, Overwrite</button>
-                        </div>
-                    `;
-                    
-                    overlay.appendChild(box);
-                    document.body.appendChild(overlay);
-                    document.body.style.overflow = 'hidden';
-                });
 
-                function confirmOverwrite() {
-                    const form = document.getElementById('quote-form');
-                    const input = document.createElement('input');
-                    input.type = 'hidden';
-                    input.name = 'confirm_overwrite';
-                    input.value = '1';
-                    form.appendChild(input);
-                    form.submit();
-                }
-            </script>
-        @endif
 
         @if(!session('success'))
 
@@ -202,6 +249,7 @@
                                     <th>Item / Service</th>
                                     <th>Unit</th>
                                     <th>Unit Price (Rp)</th>
+                                    <th>SPECIFICATION & NOTES</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -212,7 +260,7 @@
                                 
                                 @if($isService)
                                     @foreach($rfq->serviceRequest->jobs as $job)
-                                        <tr><td colspan="4" style="background:#f0f4f8; font-weight:700; color:#374151;">{{ $job->description ?? $job->job_description }}</td></tr>
+                                        <tr><td colspan="5" style="background:#f0f4f8; font-weight:700; color:#374151;">{{ $job->description ?? $job->job_description }}</td></tr>
                                         @foreach($job->items as $item)
                                             @php
                                                 $ex = $existingItems[$item->id] ?? null;
@@ -233,19 +281,6 @@
                                                             <strong>User Note:</strong> {{ $item->item_notes }}
                                                         </div>
                                                     @endif
-
-                                                    <div style="margin-top:8px;">
-                                                        <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
-                                                            <input type="checkbox" class="diff-toggle" onchange="document.getElementById('spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'" {{ $defSpec ? 'checked' : '' }}>
-                                                            <span>Terdapat perbedaan Spesifikasi?</span>
-                                                        </label>
-                                                        <div id="spec-diff-{{ $idx }}" style="display:{{ $defSpec ? 'block' : 'none' }};margin-top:8px;">
-                                                            <input type="text" class="form-control" name="items[{{ $idx }}][specification]" value="{{ old('items.'.$idx.'.specification', $defSpec) }}" placeholder="Tuliskan spesifikasi yang Anda tawarkan..." style="font-size:12px;padding:8px 10px;">
-                                                        </div>
-                                                    </div>
-                                                    <div style="margin-top:8px;">
-                                                        <textarea class="form-control" name="items[{{ $idx }}][notes]" rows="2" placeholder="Catatan untuk item ini (opsional)..." style="font-size:12px;padding:8px 10px;resize:vertical;">{{ old('items.'.$idx.'.notes', $defNotes) }}</textarea>
-                                                    </div>
                                                 </td>
                                                 <td>
                                                     <div style="font-size:11px;color:#6b7280;margin-bottom:4px;font-weight:600;">Target: {{ $item->quantity }} {{ $item->unit }}</div>
@@ -263,8 +298,30 @@
                                                         </select>
                                                     </div>
                                                 </td>
-                                                <td>
-                                                    <input type="text" inputmode="decimal" class="form-control price-input" name="items[{{ $idx }}][price]" value="{{ old('items.'.$idx.'.price', $defPrice) }}" required placeholder="Rp. 0" oninput="formatPriceInput(this)">
+                                                <td style="min-width:130px;">
+                                                    @php
+                                                        $rawPrice = old('items.'.$idx.'.price', $defPrice);
+                                                        $formattedPrice = '';
+                                                        if (is_numeric($rawPrice) && $rawPrice > 0) {
+                                                            $formattedPrice = 'Rp. ' . rtrim(rtrim(number_format((float)$rawPrice, 2, ',', '.'), '0'), ',');
+                                                        } elseif ($rawPrice !== '' && $rawPrice !== null) {
+                                                            $formattedPrice = $rawPrice;
+                                                        }
+                                                    @endphp
+                                                    <input type="hidden" name="items[{{ $idx }}][price]" id="hidden-price-{{ $idx }}" value="{{ $rawPrice }}">
+                                                    <input type="text" inputmode="decimal" class="form-control price-input" value="{{ $formattedPrice }}" required placeholder="Rp. 0" oninput="formatPriceInput(this, 'hidden-price-{{ $idx }}')">
+                                                </td>
+                                                <td style="min-width:260px;">
+                                                    <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
+                                                        <input type="checkbox" class="diff-toggle" onchange="document.getElementById('spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'" {{ $defSpec ? 'checked' : '' }}>
+                                                        <span>Different Specification?</span>
+                                                    </label>
+                                                    <div id="spec-diff-{{ $idx }}" style="display:{{ $defSpec ? 'block' : 'none' }};margin-top:6px;">
+                                                        <input type="text" class="form-control" name="items[{{ $idx }}][specification]" value="{{ old('items.'.$idx.'.specification', $defSpec) }}" placeholder="Write the specification you offer..." style="font-size:12px;padding:8px 10px;">
+                                                    </div>
+                                                    <div style="margin-top:6px;">
+                                                        <textarea class="form-control" name="items[{{ $idx }}][notes]" rows="2" placeholder="Notes for this item (optional)..." style="font-size:12px;padding:8px 10px;resize:vertical;">{{ old('items.'.$idx.'.notes', $defNotes) }}</textarea>
+                                                    </div>
                                                 </td>
                                             </tr>
                                             @php $idx++; @endphp
@@ -291,19 +348,6 @@
                                                         <strong>User Note:</strong> {{ $item->item_notes }}
                                                     </div>
                                                 @endif
-
-                                                    <div style="margin-top:8px;">
-                                                        <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
-                                                            <input type="checkbox" class="diff-toggle" onchange="document.getElementById('spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'" {{ $defSpec ? 'checked' : '' }}>
-                                                            <span>Terdapat perbedaan Spesifikasi?</span>
-                                                        </label>
-                                                        <div id="spec-diff-{{ $idx }}" style="display:{{ $defSpec ? 'block' : 'none' }};margin-top:8px;">
-                                                            <input type="text" class="form-control" name="items[{{ $idx }}][specification]" value="{{ old('items.'.$idx.'.specification', $defSpec) }}" placeholder="Tuliskan spesifikasi yang Anda tawarkan..." style="font-size:12px;padding:8px 10px;">
-                                                        </div>
-                                                    </div>
-                                                    <div style="margin-top:8px;">
-                                                        <textarea class="form-control" name="items[{{ $idx }}][notes]" rows="2" placeholder="Catatan untuk item ini (opsional)..." style="font-size:12px;padding:8px 10px;resize:vertical;">{{ old('items.'.$idx.'.notes', $defNotes) }}</textarea>
-                                                    </div>
                                             </td>
                                             <td>
                                                 <div style="font-size:11px;color:#6b7280;margin-bottom:4px;font-weight:600;">Target: {{ $item->quantity }} {{ $item->unit }}</div>
@@ -322,7 +366,29 @@
                                                 </div>
                                             </td>
                                             <td>
-                                                <input type="text" inputmode="decimal" class="form-control price-input" name="items[{{ $idx }}][price]" value="{{ old('items.'.$idx.'.price', $defPrice) }}" required placeholder="Rp. 0" oninput="formatPriceInput(this)">
+                                                @php
+                                                    $rawPrice = old('items.'.$idx.'.price', $defPrice);
+                                                    $formattedPrice = '';
+                                                    if (is_numeric($rawPrice) && $rawPrice > 0) {
+                                                        $formattedPrice = 'Rp. ' . rtrim(rtrim(number_format((float)$rawPrice, 2, ',', '.'), '0'), ',');
+                                                    } elseif ($rawPrice !== '' && $rawPrice !== null) {
+                                                        $formattedPrice = $rawPrice;
+                                                    }
+                                                @endphp
+                                                <input type="hidden" name="items[{{ $idx }}][price]" id="hidden-price-{{ $idx }}" value="{{ $rawPrice }}">
+                                                <input type="text" inputmode="decimal" class="form-control price-input" value="{{ $formattedPrice }}" required placeholder="Rp. 0" oninput="formatPriceInput(this, 'hidden-price-{{ $idx }}')">
+                                            </td>
+                                            <td style="min-width:260px;">
+                                                <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
+                                                    <input type="checkbox" class="diff-toggle" onchange="document.getElementById('spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'" {{ $defSpec ? 'checked' : '' }}>
+                                                    <span>Different Specification?</span>
+                                                </label>
+                                                <div id="spec-diff-{{ $idx }}" style="display:{{ $defSpec ? 'block' : 'none' }};margin-top:8px;">
+                                                    <input type="text" class="form-control" name="items[{{ $idx }}][specification]" value="{{ old('items.'.$idx.'.specification', $defSpec) }}" placeholder="Write the specification you offer..." style="font-size:12px;padding:8px 10px;">
+                                                </div>
+                                                <div style="margin-top:8px;">
+                                                    <textarea class="form-control" name="items[{{ $idx }}][notes]" rows="2" placeholder="Notes for this item (optional)..." style="font-size:12px;padding:8px 10px;resize:vertical;">{{ old('items.'.$idx.'.notes', $defNotes) }}</textarea>
+                                                </div>
                                             </td>
                                         </tr>
                                         @php $idx++; @endphp
@@ -367,6 +433,14 @@
             const vendorContactInput = document.getElementById('vendor_contact');
             const statusBadge = document.getElementById('vendor-status-badge');
             const clearBtn = document.getElementById('clear-vendor-btn');
+
+            @if(isset($currentVendor))
+                selectVendor('{{ $currentVendor->id }}', '{!! addslashes($currentVendor->vendor_name) !!}', '{!! addslashes($currentVendor->location) !!}', '{!! addslashes($currentVendor->email) !!}');
+            @endif
+
+            document.addEventListener('DOMContentLoaded', function() {
+                // Formatting is now done server-side on load, no need to loop here
+            });
 
             let debounceTimeout = null;
 
@@ -496,7 +570,7 @@
             }
 
             // Format live saat input: titik = pemisah ribuan, koma = desimal
-            function formatPriceInput(input) {
+            function formatPriceInput(input, hiddenId) {
                 let val = input.value.replace(/[^0-9,]/g, '');
                 const commaIndex = val.indexOf(',');
                 let intPart = commaIndex === -1 ? val : val.slice(0, commaIndex);
@@ -509,19 +583,19 @@
                     ? formattedInt + ',' + decPart
                     : (commaIndex !== -1 ? formattedInt + ',' : formattedInt);
                 input.value = finalValue ? 'Rp. ' + finalValue : '';
+                
+                if (hiddenId) {
+                    let cleanStr = val.replace(',', '.');
+                    document.getElementById(hiddenId).value = parseFloat(cleanStr) || 0;
+                }
             }
 
-            // Pastikan value yang dikirim ke server tetap angka polos, bukan "1.500,75"
             const quoteForm = document.getElementById('quote-form');
             if (quoteForm) {
-                quoteForm.addEventListener('submit', function() {
+                quoteForm.addEventListener('submit', function(e) {
                     // Temporarily remove readonly/disabled so values are submitted
-                    vendorLocationInput.readOnly = false;
-                    vendorContactInput.readOnly = false;
-                    
-                    document.querySelectorAll('.price-input').forEach(input => {
-                        input.value = parsePriceValue(input.value);
-                    });
+                    if(vendorLocationInput) vendorLocationInput.readOnly = false;
+                    if(vendorContactInput) vendorContactInput.readOnly = false;
                 });
             }
         </script>
