@@ -33,6 +33,7 @@ Route::middleware('auth')->group(function () {
 
     /* Dashboard */
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('dashboard/chart-data', [DashboardController::class, 'getChartData'])->name('dashboard.chart_data');
 
     /* Purchase Requests */
     Route::get( 'purchase-request/create', [PurchaseRequestController::class, 'create'])->name('purchase_requests.create');

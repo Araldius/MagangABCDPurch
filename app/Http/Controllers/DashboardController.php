@@ -1,12 +1,11 @@
 <?php
-
 namespace App\Http\Controllers;
-
 use App\Models\PurchaseRequest;
 use App\Models\ServiceRequest;
 use App\Models\VendorSelection;
 use Illuminate\Support\Facades\Auth;
-
+use Illuminate\Http\Request;
+use Carbon\Carbon;
 class DashboardController extends Controller
 {
     public function index(\Illuminate\Http\Request $request)
@@ -15,6 +14,66 @@ class DashboardController extends Controller
         return $user->role === 'purchasing'
             ? $this->purchasingDashboard()
             : $this->userDashboard($request);
+    }
+    public function getChartData(Request $request)
+    {
+        $user = Auth::user();
+        if ($user->role !== 'purchasing') {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+        $filter = $request->query('filter', 'month'); // week, month, year, all
+        $query = VendorSelection::with(['vendor', 'selectionItems', 'rfq.purchaseRequest.items'])
+            ->whereHas('rfq.purchaseRequest', function ($q) {
+                $q->where('status', 'completed');
+            });
+        // Filter tanggal berdasarkan decided_at
+        if ($filter === 'week') {
+            $query->where('decided_at', '>=', Carbon::now()->startOfWeek());
+        } elseif ($filter === 'month') {
+            $query->where('decided_at', '>=', Carbon::now()->startOfMonth());
+        } elseif ($filter === 'year') {
+            $query->where('decided_at', '>=', Carbon::now()->startOfYear());
+        }
+        $selections = $query->get();
+        // Agregasi data per vendor
+        $data = $selections->groupBy('vendor_id')->map(function ($group) {
+            $vendor = $group->first()->vendor;
+            $vendorName = $vendor->vendor_name ?? $vendor->name ?? 'Unknown';
+            
+            // Frekuensi terpilih
+            $frequency = $group->count();
+            
+            // Total nilai transaksi (Rupiah)
+            $totalValue = $group->reduce(function ($carry, $selection) {
+                return $carry + $selection->selectionItems->sum(function ($item) {
+                    return ($item->final_price_per_item ?? 0) * ($item->final_quantity ?? 0);
+                });
+            }, 0);
+        // Detail item per vendor — diambil dari order records (PR items, match via purchase_request_item_id)
+        $items = $group->flatMap(function ($selection) {
+            $prItems     = optional(optional($selection->rfq)->purchaseRequest)->items ?? collect();
+            $prItemsById = $prItems->keyBy('id');
+
+            return $selection->selectionItems->map(function ($si) use ($prItemsById) {
+                $prItem = $prItemsById->get($si->purchase_request_item_id);
+                return [
+                    'item_name' => $prItem->item_name ?? ($prItem->name ?? ('Item #' . $si->purchase_request_item_id)),
+                    'quantity'  => $si->final_quantity,
+                    'price'     => $si->final_price_per_item,
+                    'total'     => ($si->final_price_per_item ?? 0) * ($si->final_quantity ?? 0),
+                ];
+            });
+        });
+
+            return [
+                'vendor'      => $vendorName,
+                'frequency'   => $frequency,
+                'total_value' => $totalValue,
+                'items'       => $items->values(),
+            ];
+        })->values();
+
+        return response()->json(['data' => $data]);
     }
 
     private function userDashboard($request)
@@ -80,7 +139,6 @@ class DashboardController extends Controller
             });
 
         $requests = $prs->concat($srs)->sortByDesc('created_at')->values();
-
         $activePrs        = $requests->whereNotIn('status', ['completed', 'rejected', 'cancelled'])->count();
         $awaitingApproval = $requests->where('status', 'submitted')->count();
         $inProcess        = $requests->whereIn('status', ['vendor_search', 'vendor_selection'])->count();
@@ -101,7 +159,6 @@ class DashboardController extends Controller
             ->latest('decided_at')
             ->limit(5)
             ->get();
-
         return view('dashboard.user', compact(
             'requests', 'activePrs', 'awaitingApproval', 'inProcess',
             'completedMonth', 'recentHistory', 'startDate', 'endDate'

@@ -322,7 +322,7 @@
                                                     <div style="margin-top:6px;">
                                                         <textarea class="form-control" name="items[{{ $idx }}][notes]" rows="2" placeholder="Notes for this item (optional)..." style="font-size:12px;padding:8px 10px;resize:vertical;">{{ old('items.'.$idx.'.notes', $defNotes) }}</textarea>
                                                     </div>
-                                                </td>
+                                                    </td>
                                             </tr>
                                             @php $idx++; @endphp
                                         @endforeach
@@ -402,7 +402,7 @@
                 <div class="card-body" style="border-top:1px solid var(--border);">
                     <div class="form-group" style="margin-bottom:0;">
                         <label class="form-label" style="font-weight:700;">Upload Quotation Document (Optional)</label>
-                        <p style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">Supported formats: PDF, Excel (xlsx, xls), JPG, PNG. Max size: 10MB.</p>
+                        <p style="font-size:11px; color:var(--text-muted); margin-bottom:8px;">Supported formats: PDF, Excel (xlsx, xls), JPG, PNG. Max size:<strong> 10MB.</strong></p>
                         <input type="file" name="attachment" class="form-control" accept=".pdf,.xlsx,.xls,.jpg,.jpeg,.png" style="padding:10px;">
                         @error('attachment')
                             <div style="color:#ef4444; font-size:12px; margin-top:4px;">{{ $message }}</div>

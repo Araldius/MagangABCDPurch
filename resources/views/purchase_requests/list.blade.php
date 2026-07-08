@@ -829,14 +829,13 @@ function openPRDetail(id, category) {
                     ${!isService ? `<div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Priority</div>
                          <div style="font-weight:500;font-size:12.5px">${pr.priority ? pr.priority.charAt(0).toUpperCase()+pr.priority.slice(1) : 'Normal'}</div></div>` : ''}
                 </div>
-                ${pr.attachment_path ? `
+                    ${pr.attachment_path ? `
                 <div style="display:flex;align-items:center;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;">
                     <div style="width:28px;height:28px;background:#dcfce7;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;">📎</div>
                     <div style="min-width:0;flex:1">
                         <div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;">Attached File</div>
-                        <div style="font-size:12.5px;font-weight:500;color:#15803d;">Document uploaded</div>
+                        <a href="/storage/${pr.attachment_path}" target="_blank" style="font-size:12.5px;font-weight:600;color:#16a34a;text-decoration:underline;">View the Document</a>
                     </div>
-                    <a href="/storage/${pr.attachment_path}" target="_blank" style="flex-shrink:0;padding:5px 12px;background:#16a34a;color:#fff;border-radius:6px;font-size:11px;font-weight:600;text-decoration:none;">View</a>
                 </div>` : ''}
             </div>
         </div>
