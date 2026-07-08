@@ -12,6 +12,7 @@ class Item extends Model
         'item_name',
         'unit',
         'specification',
+        'brand',
         'item_notes',
         'is_archived'
     ];

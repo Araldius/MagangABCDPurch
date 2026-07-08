@@ -14,6 +14,7 @@ class QuotationDetail extends Model
         'offered_quantity',
         'offered_unit',
         'offered_specification',
+        'offered_brand',
         'item_notes',
     ];
 

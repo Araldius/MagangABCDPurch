@@ -306,7 +306,7 @@
                     let link = `/vendor-selection?key=${d.category}_${d.pr_id || d.rfq_id}`;
                     
                     if (n.type && n.type.includes('VendorSelectedNotification')) {
-                        const baseUrl = "{{ Auth::user()->role === 'purchasing' ? route('pr.list') : route('dashboard') }}";
+                        const baseUrl = "{{ route('pr.list') }}";
                         link = `${baseUrl}?open_pr=${d.pr_id}&category=${d.category}`;
                     }
                     

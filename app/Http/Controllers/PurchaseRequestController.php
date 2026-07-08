@@ -59,8 +59,9 @@ class PurchaseRequestController extends Controller
 
         $allRequests  = $prs->concat($srs)->sortByDesc('created_at')->values();
         $isPurchasing = $user->role === 'purchasing';
+        $isAdmin = $user->role === 'admin';
 
-        return view('purchase_requests.list', compact('allRequests', 'isPurchasing'));
+        return view('purchase_requests.list', compact('allRequests', 'isPurchasing', 'isAdmin'));
     }
 
     public function create()
@@ -204,6 +205,7 @@ class PurchaseRequestController extends Controller
                     'quantity'            => $item['quantity'],
                     'unit'                => $item['unit'],
                     'specification'       => $item['specification'] ?? null,
+                    'brand'               => $item['brand'] ?? null,
                     'item_notes'          => $item['item_notes'] ?? null,
                 ]);
             }

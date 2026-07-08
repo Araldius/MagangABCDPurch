@@ -43,8 +43,18 @@ class ItemController extends Controller
             'item_name' => 'required|string|max:255',
             'unit' => 'required|string|max:50',
             'specification' => 'nullable|string',
+            'brand' => 'nullable|string',
             'item_notes' => 'nullable|string',
         ]);
+
+        $exists = Item::where('item_name', $request->item_name)
+                      ->where('specification', $request->specification)
+                      ->where('brand', $request->brand)
+                      ->exists();
+        
+        if ($exists) {
+            return back()->with('error', 'Item dengan nama, spesifikasi, dan merek tersebut sudah ada.');
+        }
 
         $data = $request->all();
         if (empty($data['item_code'])) {
@@ -71,8 +81,19 @@ class ItemController extends Controller
             'item_name' => 'required|string|max:255',
             'unit' => 'required|string|max:50',
             'specification' => 'nullable|string',
+            'brand' => 'nullable|string',
             'item_notes' => 'nullable|string',
         ]);
+
+        $exists = Item::where('item_name', $request->item_name)
+                      ->where('specification', $request->specification)
+                      ->where('brand', $request->brand)
+                      ->where('id', '!=', $id)
+                      ->exists();
+        
+        if ($exists) {
+            return back()->with('error', 'Item dengan nama, spesifikasi, dan merek tersebut sudah ada.');
+        }
 
         $item->update($request->all());
 
@@ -83,7 +104,14 @@ class ItemController extends Controller
     {
         $item = Item::findOrFail($id);
         
-        $isUsedInPR = \App\Models\PurchaseRequestItem::where('item_id', $item->item_code)->exists();
+        // Cek apakah digunakan dalam Purchase Request (menggunakan item_code atau TEMP-id)
+        $isUsedInPR = \App\Models\PurchaseRequestItem::where(function($query) use ($item) {
+            if ($item->item_code) {
+                $query->where('item_id', $item->item_code);
+            }
+            $query->orWhere('item_id', 'TEMP-' . $item->id);
+        })->exists();
+
         if ($isUsedInPR) {
             return back()->with('error', 'Item tidak bisa dihapus karena sedang digunakan dalam Purchase Request.');
         }

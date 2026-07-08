@@ -66,7 +66,7 @@
                     <td style="padding:13px 20px">
                         <div style="display:flex;gap:6px;">
                             <button onclick="window.location.href='{{ route('history.vendor.detail', $vendor['vendor_id']) }}'" style="padding:4px 10px;font-size:11.5px;font-weight:600;color:#3b82f6;background:#fff;border:1px solid #e5e7eb;border-radius:6px;cursor:pointer">Detail</button>
-                            <button onclick="openEditVendor({{ $vendor['vendor_id'] }}, '{{ addslashes($vendor['vendor_name']) }}', '{{ addslashes($vendor['email'] ?? '') }}')" style="background:#fff;border:1px solid #e5e7eb;color:#374151;border-radius:6px;cursor:pointer;font-weight:600;font-size:11.5px;padding:4px 10px;">Edit</button>
+                            <button onclick="openEditVendor({{ $vendor['vendor_id'] }}, '{{ addslashes($vendor['vendor_name']) }}', '{{ addslashes($vendor['email'] ?? '') }}', '{{ addslashes($vendor['department'] ?? '') }}')" style="background:#fff;border:1px solid #e5e7eb;color:#374151;border-radius:6px;cursor:pointer;font-weight:600;font-size:11.5px;padding:4px 10px;">Edit</button>
                         </div>
                     </td>
                 </tr>
@@ -147,10 +147,11 @@ function histSort(col) {
 function histGoto(p) { histPage = p; applyHFilters(); }
 function histSetPageSize(s) { histPageSize = parseInt(s); histPage = 1; applyHFilters(); }
 
-function openEditVendor(id, name, email) {
+function openEditVendor(id, name, email, department) {
     document.getElementById('edit-vendor-form').action = `/procurement-history/master-vendors/${id}/update`;
     document.getElementById('edit-vendor-name').value = name;
     document.getElementById('edit-vendor-email').value = email;
+    document.getElementById('edit-vendor-department').value = department;
     document.getElementById('edit-vendor-modal').style.display = 'flex';
 }
 function closeEditVendor() {
@@ -169,9 +170,13 @@ document.addEventListener('DOMContentLoaded', () => { applyHFilters(); });
                 <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px">Vendor Name</label>
                 <input type="text" name="vendor_name" id="edit-vendor-name" required style="width:100%;height:36px;border:1px solid #d1d5db;border-radius:6px;padding:0 10px;font-size:13px;outline:none;">
             </div>
-            <div style="margin-bottom:20px">
+            <div style="margin-bottom:12px">
                 <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px">Email <span style="color:#9ca3af;font-weight:400">(Optional)</span></label>
                 <input type="email" name="email" id="edit-vendor-email" style="width:100%;height:36px;border:1px solid #d1d5db;border-radius:6px;padding:0 10px;font-size:13px;outline:none;">
+            </div>
+            <div style="margin-bottom:20px">
+                <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px">Department <span style="color:#9ca3af;font-weight:400">(Optional)</span></label>
+                <input type="text" name="department" id="edit-vendor-department" style="width:100%;height:36px;border:1px solid #d1d5db;border-radius:6px;padding:0 10px;font-size:13px;outline:none;">
             </div>
             <div style="display:flex;justify-content:flex-end;gap:10px;">
                 <button type="button" onclick="closeEditVendor()" style="padding:8px 16px;font-size:13px;font-weight:600;color:#4b5563;background:#f3f4f6;border:none;border-radius:6px;cursor:pointer">Cancel</button>

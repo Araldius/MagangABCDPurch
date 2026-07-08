@@ -249,7 +249,7 @@
                                     <th>Item / Service</th>
                                     <th>Unit</th>
                                     <th>Unit Price (Rp)</th>
-                                    <th>SPECIFICATION & NOTES</th>
+                                    <th>BRAND, SPEC & NOTES</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -267,6 +267,7 @@
                                                 $defQty = $ex ? $ex->offered_quantity : $item->quantity;
                                                 $defUnit = $ex ? $ex->offered_unit : $item->unit;
                                                 $defPrice = $ex ? $ex->offered_price_per_item : '';
+                                                $defBrand = $ex ? $ex->offered_brand : '';
                                                 $defSpec = $ex ? $ex->offered_specification : '';
                                                 $defNotes = $ex ? $ex->item_notes : '';
                                             @endphp
@@ -313,16 +314,17 @@
                                                 </td>
                                                 <td style="min-width:260px;">
                                                     <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
-                                                        <input type="checkbox" class="diff-toggle" onchange="document.getElementById('spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'" {{ $defSpec ? 'checked' : '' }}>
-                                                        <span>Different Specification?</span>
+                                                        <input type="checkbox" class="diff-toggle" onchange="document.getElementById('brand-spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'" {{ ($defBrand || $defSpec) ? 'checked' : '' }}>
+                                                        <span>Different Brand/Specification?</span>
                                                     </label>
-                                                    <div id="spec-diff-{{ $idx }}" style="display:{{ $defSpec ? 'block' : 'none' }};margin-top:6px;">
+                                                    <div id="brand-spec-diff-{{ $idx }}" style="display:{{ ($defBrand || $defSpec) ? 'block' : 'none' }};margin-top:8px;">
+                                                        <input type="text" class="form-control" name="items[{{ $idx }}][brand]" value="{{ old('items.'.$idx.'.brand', $defBrand) }}" placeholder="Write the brand you offer..." style="font-size:12px;padding:8px 10px;margin-bottom:4px;">
                                                         <input type="text" class="form-control" name="items[{{ $idx }}][specification]" value="{{ old('items.'.$idx.'.specification', $defSpec) }}" placeholder="Write the specification you offer..." style="font-size:12px;padding:8px 10px;">
                                                     </div>
-                                                    <div style="margin-top:6px;">
+                                                    <div style="margin-top:8px;">
                                                         <textarea class="form-control" name="items[{{ $idx }}][notes]" rows="2" placeholder="Notes for this item (optional)..." style="font-size:12px;padding:8px 10px;resize:vertical;">{{ old('items.'.$idx.'.notes', $defNotes) }}</textarea>
                                                     </div>
-                                                    </td>
+                                                </td>
                                             </tr>
                                             @php $idx++; @endphp
                                         @endforeach
@@ -334,6 +336,7 @@
                                             $defQty = $ex ? $ex->offered_quantity : $item->quantity;
                                             $defUnit = $ex ? $ex->offered_unit : $item->unit;
                                             $defPrice = $ex ? $ex->offered_price_per_item : '';
+                                            $defBrand = $ex ? $ex->offered_brand : '';
                                             $defSpec = $ex ? $ex->offered_specification : '';
                                             $defNotes = $ex ? $ex->item_notes : '';
                                         @endphp
@@ -380,10 +383,11 @@
                                             </td>
                                             <td style="min-width:260px;">
                                                 <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
-                                                    <input type="checkbox" class="diff-toggle" onchange="document.getElementById('spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'" {{ $defSpec ? 'checked' : '' }}>
-                                                    <span>Different Specification?</span>
+                                                    <input type="checkbox" class="diff-toggle" onchange="document.getElementById('brand-spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'" {{ ($defBrand || $defSpec) ? 'checked' : '' }}>
+                                                    <span>Different Brand/Specification?</span>
                                                 </label>
-                                                <div id="spec-diff-{{ $idx }}" style="display:{{ $defSpec ? 'block' : 'none' }};margin-top:8px;">
+                                                <div id="brand-spec-diff-{{ $idx }}" style="display:{{ ($defBrand || $defSpec) ? 'block' : 'none' }};margin-top:8px;">
+                                                    <input type="text" class="form-control" name="items[{{ $idx }}][brand]" value="{{ old('items.'.$idx.'.brand', $defBrand) }}" placeholder="Write the brand you offer..." style="font-size:12px;padding:8px 10px;margin-bottom:4px;">
                                                     <input type="text" class="form-control" name="items[{{ $idx }}][specification]" value="{{ old('items.'.$idx.'.specification', $defSpec) }}" placeholder="Write the specification you offer..." style="font-size:12px;padding:8px 10px;">
                                                 </div>
                                                 <div style="margin-top:8px;">

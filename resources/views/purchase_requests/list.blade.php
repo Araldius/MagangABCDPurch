@@ -49,6 +49,14 @@
             <option value="Cibitung">Cibitung</option>
             <option value="Gresik">Gresik</option>
         </select>
+        @if($isPurchasing)
+        <select id="vendor-filter" onchange="applyFilters()" style="height:32px;padding:0 28px 0 10px;border:1px solid #e5e7eb;border-radius:7px;font-size:12.5px;background:#fff;cursor:pointer">
+            <option value="">All Vendors</option>
+            @foreach($allRequests->pluck('vendor_name')->unique()->filter()->sort()->values() as $vend)
+            <option value="{{ $vend }}">{{ $vend }}</option>
+            @endforeach
+        </select>
+        @endif
         <select id="status-filter" onchange="applyFilters()" style="height:32px;padding:0 28px 0 10px;border:1px solid #e5e7eb;border-radius:7px;font-size:12.5px;background:#fff;cursor:pointer">
             <option value="">All Status</option>
             <option value="submitted">{{ Auth::user()->role === 'purchasing' ? 'Awaiting Approval' : 'Purchasing Approval' }}</option>
@@ -118,6 +126,7 @@
                     data-dept="{{ $pr->department ?? 'General' }}"
                     data-type="{{ $prCategory }}"
                     data-plant="{{ $plantVal }}"
+                    data-vendor="{{ $pr->vendor_name ?? '' }}"
                     data-date="{{ \Carbon\Carbon::parse($pr->created_at)->format('Y-m-d') }}"
                     style="border-bottom:1px solid #f3f4f6"
                     onmouseover="this.style.background='#fafafa'"
@@ -301,10 +310,12 @@ const isAdmin = @json(auth()->check() && auth()->user()->role === 'admin');
 
 const allPRs = @json(
     $allRequests->mapWithKeys(function($r) {
-        return [($r->type ?? 'goods') . '_' . $r->id => $r];
+        $cat = $r instanceof \App\Models\ServiceRequest ? 'service' : 'goods';
+        return [$cat . '_' . $r->id => $r];
     })->toArray()
 );
 const isPurchasing = {{ $isPurchasing ? 'true' : 'false' }};
+const isAdmin = {{ isset($isAdmin) && $isAdmin ? 'true' : 'false' }};
 const prEng = { page:1, pageSize:10, sortCol:null, sortDir:'asc', gotoFn:'prGoto', sizeFn:'prPageSz' };
 
 function fmtRp(n) {
@@ -347,6 +358,7 @@ function applyFilters() {
     const status =  document.getElementById('status-filter')?.value || '';
     const plant  =  document.getElementById('plant-filter')?.value  || '';
     const dept   = isPurchasing ? (document.getElementById('dept-filter')?.value || '') : '';
+    const vendor = isPurchasing ? (document.getElementById('vendor-filter')?.value || '') : '';
     const startDateVal = document.getElementById('start-date-filter')?.value || '';
     const endDateVal   = document.getElementById('end-date-filter')?.value || '';
 
@@ -359,6 +371,7 @@ function applyFilters() {
         if (type   && r.dataset.type   !== type)   return false;
         if (dept   && r.dataset.dept   !== dept)   return false;
         if (plant  && r.dataset.plant  !== plant)  return false;
+        if (vendor && (r.dataset.vendor || '') !== vendor) return false;
         if (q      && !r.textContent.toLowerCase().includes(q)) return false;
         
         if (startDateVal || endDateVal) {
@@ -434,6 +447,7 @@ function openPRDetail(id, category) {
                 qty:        parseInt(si.final_quantity) || 0,
                 total:      (parseFloat(si.final_price_per_item)||0) * (parseInt(si.final_quantity)||0),
                 unit:       si.final_unit || null,
+                brand:      si.final_brand || null,
                 spec:       si.final_specification || null,
                 notes:      si.notes || null,
             };
@@ -533,9 +547,13 @@ function openPRDetail(id, category) {
         attachForm.style.alignItems = 'center';
         attachForm.style.gap = '8px';
     }
-    // User can edit items only when status = quotation_reopen
-    if (!isPurchasing && editItemsBtn && pr.status === 'quotation_reopen') {
-        editItemsBtn.style.display = 'inline-flex';
+    // User can edit items only when status = quotation_reopen. Admin can always edit active PRs.
+    if (editItemsBtn) {
+        if (isAdmin && pr.status !== 'completed' && pr.status !== 'rejected') {
+            editItemsBtn.style.display = 'inline-flex';
+        } else if (!isPurchasing && pr.status === 'quotation_reopen') {
+            editItemsBtn.style.display = 'inline-flex';
+        }
     }
 
     if (isPurchasing) {
@@ -697,8 +715,8 @@ function openPRDetail(id, category) {
                     ${vs && vs.notes && vs.notes !== 'Selected' ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px">VENDOR NOTE</div>` : ''}
                 </td>
                 <td style="${tdS};color:#6b7280;font-size:11.5px">
-                    ${vs && vs.spec ? vs.spec : (it.specification || '—')}
-                    ${vs && vs.spec && vs.spec.toLowerCase() !== (it.specification||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Spec: ${it.specification || '-'}">DIFFERS</div>` : ''}
+                    ${vs && vs.brand ? vs.brand : (it.brand || '—')}
+                    ${vs && vs.brand && vs.brand.toLowerCase() !== (it.brand||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Brand: ${it.brand || '-'}">DIFFERS</div>` : ''}
                 </td>
                 <td style="${tdS};text-align:right;font-weight:600">${it.quantity || 0}</td>
                 <td style="${tdS};color:#6b7280">
@@ -737,7 +755,7 @@ function openPRDetail(id, category) {
                         <th style="${thS}">ITEM ID</th>
                         <th style="${thS}">ITEM NAME</th>
                         <th style="${thS}">NOTES</th>
-                        <th style="${thS}">SPEC</th>
+                        <th style="${thS}">BRAND</th>
                         <th style="${thS};text-align:right">QTY</th>
                         <th style="${thS}">UNIT</th>
                         ${gTh}
@@ -985,7 +1003,17 @@ function openEditItemsModal() {
     document.getElementById('edit-items-modal').style.display = 'flex';
 }
 
-document.addEventListener('DOMContentLoaded', applyFilters);
+document.addEventListener('DOMContentLoaded', () => {
+    applyFilters();
+    
+    // Auto-open PR if requested via query string (e.g. from Notifications)
+    const urlParams = new URLSearchParams(window.location.search);
+    const openPrId = urlParams.get('open_pr');
+    const category = urlParams.get('category');
+    if (openPrId && category) {
+        openPRDetail(openPrId, category);
+    }
+});
 </script>
 
 {{-- ── EDIT ITEMS MODAL ── --}}

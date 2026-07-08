@@ -9,7 +9,7 @@
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Back
         </a>
         <h1 style="font-size:24px;font-weight:700;color:#111827;margin:0;">{{ $vendor->vendor_name ?? $vendor->name }}</h1>
-        <p style="color:#6b7280;margin:4px 0 0;font-size:14px;">Email: {{ $vendor->email ?? '-' }} &nbsp;|&nbsp; Location: {{ $vendor->location ?? '-' }} &nbsp;|&nbsp; Total Supplied Value: Rp {{ number_format($totalValue, 0, ',', '.') }}</p>
+        <p style="color:#6b7280;margin:4px 0 0;font-size:14px;">Email: {{ $vendor->email ?? '-' }} &nbsp;|&nbsp; Location: {{ $vendor->location ?? '-' }} &nbsp;|&nbsp; Department: {{ $vendor->department ?? '-' }} &nbsp;|&nbsp; Total Supplied Value: Rp {{ number_format($totalValue, 0, ',', '.') }}</p>
     </div>
     <button onclick="document.getElementById('edit-vendor-modal').style.display='flex'" style="padding:8px 16px; background:#111827; color:#fff; border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;">
         Edit Vendor
@@ -31,8 +31,12 @@
                     <input type="text" name="vendor_name" value="{{ $vendor->vendor_name ?? $vendor->name }}" required style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:6px;font-size:13.5px;color:#111827;box-sizing:border-box">
                 </div>
                 <div style="margin-bottom:16px">
-                    <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px">Email Address</label>
+                    <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px">Email Address <span style="color:#9ca3af;font-weight:400">(Optional)</span></label>
                     <input type="email" name="email" value="{{ $vendor->email }}" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:6px;font-size:13.5px;color:#111827;box-sizing:border-box">
+                </div>
+                <div style="margin-bottom:16px">
+                    <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px">Department <span style="color:#9ca3af;font-weight:400">(Optional)</span></label>
+                    <input type="text" name="department" value="{{ $vendor->department }}" style="width:100%;padding:10px;border:1px solid #d1d5db;border-radius:6px;font-size:13.5px;color:#111827;box-sizing:border-box">
                 </div>
             </div>
             <div style="padding:16px 20px;border-top:1px solid #f3f4f6;display:flex;justify-content:flex-end;gap:10px;background:#f9fafb">

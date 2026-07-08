@@ -382,6 +382,7 @@ class HistoryController extends Controller
                 'vendor_name' => $vendor->vendor_name ?? '-',
                 'vendor_city' => $vendor->location ?? '-',
                 'email' => $vendor->email ?? '',
+                'department' => $vendor->department ?? '',
                 'last_submitted' => $lastSubmitted ? $lastSubmitted->format('Y-m-d') : '-',
                 'quotation_count' => $quotations->count(),
                 'completed_count' => $completedCount,

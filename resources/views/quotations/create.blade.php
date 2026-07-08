@@ -189,10 +189,11 @@
                                 @endif
                                 <div style="margin-top:8px;">
                                     <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
-                                        <input type="checkbox" class="diff-toggle" onchange="document.getElementById('spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'">
-                                        <span>Terdapat perbedaan Spesifikasi?</span>
+                                        <input type="checkbox" class="diff-toggle" onchange="document.getElementById('brand-spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'">
+                                        <span>Terdapat perbedaan Brand/Spesifikasi?</span>
                                     </label>
-                                    <div id="spec-diff-{{ $idx }}" style="display:none;margin-top:8px;">
+                                    <div id="brand-spec-diff-{{ $idx }}" style="display:none;margin-top:8px;">
+                                        <input type="text" class="form-control" name="items[{{ $idx }}][brand]" placeholder="Tuliskan brand yang ditawarkan..." style="font-size:12px;padding:8px 10px;margin-bottom:4px;">
                                         <input type="text" class="form-control" name="items[{{ $idx }}][specification]" placeholder="Tuliskan spesifikasi yang ditawarkan..." style="font-size:12px;padding:8px 10px;">
                                     </div>
                                 </div>

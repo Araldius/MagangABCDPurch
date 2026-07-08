@@ -13,6 +13,9 @@ class SelectionItem extends Model
         'service_request_item_id',
         'final_price_per_item',
         'final_quantity',
+        'final_unit',
+        'final_specification',
+        'final_brand',
         'notes',
     ];
 

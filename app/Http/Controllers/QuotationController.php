@@ -83,6 +83,7 @@ class QuotationController extends Controller
                 'offered_price_per_item' => $it['price'],
                 'offered_quantity' => $it['quantity'],
                 'offered_unit' => $it['unit'] ?? null,
+                'offered_brand' => $it['brand'] ?? null,
                 'offered_specification' => $it['specification'] ?? null,
                 'item_notes' => $it['notes'] ?? null,
             ]);
@@ -163,6 +164,7 @@ class QuotationController extends Controller
                 'offered_price_per_item' => $it['price'],
                 'offered_quantity' => $it['quantity'],
                 'offered_unit' => $it['unit'] ?? null,
+                'offered_brand' => $it['brand'] ?? null,
                 'offered_specification' => $it['specification'] ?? null,
                 'item_notes' => $it['notes'] ?? null,
             ]);

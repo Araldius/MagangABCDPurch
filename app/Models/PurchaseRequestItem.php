@@ -16,6 +16,7 @@ class PurchaseRequestItem extends Model
         'quantity',
         'unit',
         'specification',
+        'brand',
         'item_notes',
         'admin_notes'
     ];

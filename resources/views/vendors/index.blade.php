@@ -302,7 +302,7 @@ h1 { font-size:20px;font-weight:700;color:#111827;margin:0 0 3px }
  
     <div style="margin-bottom:14px">
         <div style="font-size:11.5px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px">Total per Vendor</div>
-        <div id="vendor-summary-cards" style="display:flex;gap:12px;flex-wrap:wrap"></div>
+        <div id="vendor-summary-cards" style="display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;"></div>
     </div>
  
     <div style="display:flex;justify-content:flex-end;margin-top:20px">
@@ -358,6 +358,7 @@ function buildVendorOffers(pr, vendors) {
                             unit_price: det.offered_price_per_item || det.price || 0,
                             unit_offered: det.offered_unit || '',
                             notes: det.notes || det.item_notes || '',
+                            brand_offered: det.offered_brand || '',
                             specification_offered: det.offered_specification || ''
                         };
                     }
@@ -428,6 +429,7 @@ function loadPR(uniqueKey) {
                                     unit: si.offered_unit || pItem.unit,
                                     subtotal: parseFloat(si.quantity) * parseFloat(si.unit_price),
                                     notes: si.notes || '',
+                                    brand: si.final_brand || '',
                                     specification: si.offered_specification || ''
                                 };
                             }
@@ -759,7 +761,7 @@ function toggleVendorJob(vId, jIdx, isChecked) {
                     let remainingNeed = parseFloat(item.quantity) - qtyAlreadySelected;
                     let defaultBuyQty = Math.min(Math.max(1, remainingNeed), offer.qty_offered);
 
-                    selections[selKey] = { vendor_id: vId, item_id: item.id, item_name: item.item_name, unit_price: offer.unit_price, quantity: defaultBuyQty, unit: offer.unit_offered || item.unit, specification: offer.specification_offered || '', notes: offer.notes || '' };
+                    selections[selKey] = { vendor_id: vId, item_id: item.id, item_name: item.item_name, unit_price: offer.unit_price, quantity: defaultBuyQty, unit: offer.unit_offered || item.unit, brand: offer.brand_offered || item.brand || '', specification: offer.specification_offered || '', notes: offer.notes || '' };
                     selections[selKey].subtotal = defaultBuyQty * offer.unit_price;
                 }
             }
@@ -788,7 +790,7 @@ function toggleSelect(vId, itemId, forceRenderOnlyAtEnd = false) {
             let remainingNeed = parseFloat(item.quantity) - qtyAlreadySelected;
             let defaultBuyQty = Math.min(Math.max(1, remainingNeed), offer.qty_offered);
 
-            selections[selKey] = { vendor_id: vId, item_id: itemId, item_name: item.item_name, unit_price: offer.unit_price, quantity: defaultBuyQty, unit: offer.unit_offered || item.unit, specification: offer.specification_offered || '', notes: offer.notes || '' };
+            selections[selKey] = { vendor_id: vId, item_id: itemId, item_name: item.item_name, unit_price: offer.unit_price, quantity: defaultBuyQty, unit: offer.unit_offered || item.unit, brand: offer.brand_offered || item.brand || '', specification: offer.specification_offered || '', notes: offer.notes || '' };
             selections[selKey].subtotal = defaultBuyQty * offer.unit_price;
         }
     }
@@ -938,7 +940,7 @@ function renderResultWorkspace() {
     });
 
     document.getElementById('vendor-summary-cards').innerHTML = Object.values(vSummaries).map(vs=>`
-        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:14px;min-width:250px;flex:1">
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:14px;min-width:250px;flex:0 0 250px">
             <div style="display:flex;justify-content:space-between;border-bottom:1px solid #f3f4f6;padding-bottom:10px;margin-bottom:10px">
                 <div style="font-size:13.5px;font-weight:700;color:#1d4ed8">${vs.name}</div><div style="font-size:13.5px;font-weight:800;color:#111827">${fmt(vs.total)}</div>
             </div>

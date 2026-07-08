@@ -174,6 +174,7 @@ class VendorController extends Controller
                         'final_quantity'            => $row['quantity'],
                         'notes'                     => $row['notes'] ?? 'Selected',
                         'final_unit'                => $row['unit'] ?? null,
+                        'final_brand'               => $row['brand'] ?? null,
                         'final_specification'       => $row['specification'] ?? null,
                         'purchase_request_item_id'  => $isService ? null : $row['item_id'],
                         'service_request_item_id'   => $isService ? $row['item_id'] : null,
@@ -222,12 +223,14 @@ class VendorController extends Controller
         $request->validate([
             'vendor_name' => 'required|string|max:255',
             'email' => 'nullable|email|max:255',
+            'department' => 'nullable|string|max:255',
         ]);
 
         $vendor = Vendor::findOrFail($id);
         $vendor->update([
             'vendor_name' => $request->vendor_name,
             'email' => $request->email,
+            'department' => $request->department,
         ]);
 
         return back()->with('success', 'Vendor information updated successfully.');
@@ -265,26 +268,41 @@ class VendorController extends Controller
         }
 
         // 3. Build headers
-        $headers = ['<b>NO.</b>', '<b>NAMA BARANG</b>', '<b>Qty</b>', '<b>UoM</b>', '<b>KETERANGAN</b>'];
+        // 3. Build headers
+        $headerTop = ['<b>NO.</b>', '<b>ITEM ID</b>', '<b>NAMA BARANG</b>', '<b>SPEC/BRAND</b>', '<b>QTY</b>', '<b>UNIT</b>', '<b>NOTES</b>'];
+        $headerBottom = ['', '', '', '', '', '', ''];
+        
         foreach ($participatingVendors as $vName) {
-            $headers[] = '<b>' . $vName . '</b>';
-            $headers[] = ''; // Empty column for specifications
+            $headerTop[] = '<b>' . $vName . '</b>';
+            $headerTop[] = '';
+            $headerTop[] = '';
+            $headerTop[] = '';
+            $headerTop[] = '';
+            
+            $headerBottom[] = '<b>QTY</b>';
+            $headerBottom[] = '<b>UNIT</b>';
+            $headerBottom[] = '<b>NOTES</b>';
+            $headerBottom[] = '<b>PRICE/ITEM</b>';
+            $headerBottom[] = '<b>TOTAL PRICE</b>';
         }
-        $data = [$headers];
+        $data = [$headerTop, $headerBottom];
 
         // 4. Build rows per item
         $no = 1;
+        $vendorTotals = array_fill_keys(array_keys($participatingVendors), 0);
+
         foreach ($items as $item) {
             $row = [
                 $no++,
+                $item->item_id ?? '-',
                 $item->item_name ?? $item->name ?? '-',
+                $type === 'service' ? ($item->specification ?? '-') : ($item->brand ?? '-'),
                 $item->quantity ?? '-',
                 $item->unit ?? '-',
                 $item->item_notes ?? $item->admin_notes ?? '-'
             ];
 
             foreach ($vendorQuotations as $qId => $quotation) {
-                // Find detail for this item
                 $detail = $quotation->details->first(function($d) use ($item, $type) {
                     if ($type === 'service') {
                         return $d->service_request_item_id == $item->id;
@@ -293,15 +311,38 @@ class VendorController extends Controller
                 });
 
                 if ($detail) {
-                    $row[] = $detail->offered_price_per_item ?? $detail->unit_price;
-                    $row[] = $detail->offered_specification ?? $detail->item_notes ?? '';
+                    $qQty = $detail->offered_quantity ?? $item->quantity;
+                    $qPrice = $detail->offered_price_per_item ?? 0;
+                    $qTotal = $qQty * $qPrice;
+                    
+                    $row[] = $qQty;
+                    $row[] = $detail->offered_unit ?? $item->unit;
+                    $row[] = $detail->item_notes ?? '-';
+                    $row[] = $qPrice;
+                    $row[] = $qTotal;
+                    
+                    $vendorTotals[$qId] += $qTotal;
                 } else {
-                    $row[] = 'x';
-                    $row[] = '';
+                    $row[] = '-';
+                    $row[] = '-';
+                    $row[] = '-';
+                    $row[] = '-';
+                    $row[] = '-';
                 }
             }
             $data[] = $row;
         }
+        
+        // 5. Build Grand Total row
+        $totalRow = ['', '', '', '', '', '', '<b>GRAND TOTAL</b>'];
+        foreach ($participatingVendors as $qId => $vName) {
+            $totalRow[] = '';
+            $totalRow[] = '';
+            $totalRow[] = '';
+            $totalRow[] = '';
+            $totalRow[] = '<b>' . $vendorTotals[$qId] . '</b>';
+        }
+        $data[] = $totalRow;
 
         $xlsFileName = "quotations_{$doc->document_number}_" . date('Ymd_His') . '.xlsx';
         $xlsx = \Shuchkin\SimpleXLSXGen::fromArray($data);
