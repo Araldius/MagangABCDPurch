@@ -40,6 +40,8 @@ class VendorPortalController extends Controller
 
         $vendorId = session('last_vendor_id') ?: $rfq->vendor_id;
         $quotation = Quotation::with('details')->where('rfq_id', $rfq->id)->where('vendor_id', $vendorId)->first();
+        $currentVendor = $vendorId ? Vendor::find($vendorId) : null;
+
         $existingItems = [];
         if ($quotation) {
             foreach ($quotation->details as $det) {
@@ -48,7 +50,7 @@ class VendorPortalController extends Controller
             }
         }
 
-        return view('vendors.quote', compact('rfq', 'items', 'neededDate', 'closedDate', 'vendors', 'closedReason', 'existingItems'));
+        return view('vendors.quote', compact('rfq', 'items', 'neededDate', 'closedDate', 'vendors', 'closedReason', 'existingItems', 'currentVendor'));
     }
 
     public function submit(Request $request, $token)
@@ -98,6 +100,10 @@ class VendorPortalController extends Controller
             'items.*.notes' => 'nullable|string',
             'note' => 'nullable|string',
         ]);
+
+        if (!$request->filled('vendor_id') && str_contains($data['email'], '*')) {
+            return back()->withInput()->withErrors(['email' => 'Silakan pilih vendor dari daftar dengan benar, atau masukkan alamat email lengkap secara manual jika membuat vendor baru (tanpa tanda bintang).']);
+        }
 
         // Find or create vendor
         $vendor = null;
@@ -189,15 +195,16 @@ class VendorPortalController extends Controller
             Notification::send($purchasingUsers, new VendorQuotationSubmitted($rfq, $vendor));
         }
 
-        // Send Quotation Details + Attachment to Company Email
-        Notification::route('mail', 'purchasing@duniakimiajaya.com')->notify(new \App\Notifications\CompanyQuotationSubmitted($rfq, $vendor, $quotation));
+        // Send Quotation Details + Attachment to Company Email (using system email)
+        $companyEmail = env('MAIL_FROM_ADDRESS', 'purchasing@duniakimiajaya.com');
+        Notification::route('mail', $companyEmail)->notify(new \App\Notifications\CompanyQuotationSubmitted($rfq, $vendor, $quotation));
 
         // Send Edit Link to Vendor
         if ($quotation->vendor_token) {
-            Notification::send($vendor, new \App\Notifications\VendorQuotationEditLink($rfq, $vendor, $quotation->vendor_token));
+            $vendor->notify(new \App\Notifications\VendorQuotationEditLink($rfq, $vendor, $quotation->vendor_token));
         }
 
-        return back()->with('success', 'Quotation berhasil dikirim! Tautan untuk edit penawaran telah dikirim ke email Anda.');
+        return back()->with('success', 'Quotation submitted successfully. An edit link has been sent to your email address.');
     }
 
     public function showEdit($token)
@@ -270,4 +277,3 @@ class VendorPortalController extends Controller
         return strlen($location) <= 3 ? $location . '*' : substr($location, 0, 3) . str_repeat('*', strlen($location) - 3);
     }
 }
-

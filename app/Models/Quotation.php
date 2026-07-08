@@ -17,6 +17,8 @@ class Quotation extends Model
         'total_price',
         'note',
         'status',
+        'vendor_token',
+        'attachment_path',
     ];
 
     public function rfq()

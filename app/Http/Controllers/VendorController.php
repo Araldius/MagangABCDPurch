@@ -239,37 +239,68 @@ class VendorController extends Controller
         $type = $request->query('type', 'goods');
 
         $doc = $type === 'service' ? ServiceRequest::findOrFail($id) : PurchaseRequest::findOrFail($id);
-        $rfqs = Rfq::where($type === 'service' ? 'service_request_id' : 'purchase_request_id', $id)->get();
+        
+        // 1. Get all items in the request
+        if ($type === 'service') {
+            $items = collect();
+            foreach ($doc->jobs as $job) {
+                $items = $items->merge($job->items);
+            }
+        } else {
+            $items = $doc->items;
+        }
 
-        $columns = ['Vendor Name', 'Item ID', 'Item Name', 'Unit Price (Rp)', 'Target Qty', 'Offered Qty', 'Unit', 'Specification', 'Subtotal (Rp)', 'Notes'];
-        $data = [$columns];
-
+        // 2. Get all participating vendors and their quotations
+        $rfqs = Rfq::with('quotations.vendor', 'quotations.details')->where($type === 'service' ? 'service_request_id' : 'purchase_request_id', $id)->get();
+        $participatingVendors = [];
+        $vendorQuotations = []; 
+        
         foreach ($rfqs as $rfq) {
             foreach ($rfq->quotations as $quotation) {
-                $vendor = $quotation->vendor;
-                foreach ($quotation->details as $detail) {
-                    if ($type === 'service') {
-                        $item = $detail->serviceRequestItem;
-                    } else {
-                        $item = $detail->purchaseRequestItem;
-                    }
-                    
-                    if (!$item) continue;
+                $v = $quotation->vendor;
+                $vName = $v->vendor_name ?? $v->name ?? 'Unknown Vendor';
+                $participatingVendors[$quotation->id] = $vName;
+                $vendorQuotations[$quotation->id] = $quotation;
+            }
+        }
 
-                    $data[] = [
-                        $vendor->vendor_name ?? $vendor->name ?? '-',
-                        $item->item_id ?? '-',
-                        $item->item_name ?? '-',
-                        $detail->offered_price_per_item ?? $detail->unit_price,
-                        $item->quantity ?? '-',
-                        $detail->offered_quantity ?? $detail->quantity,
-                        $detail->offered_unit ?? $detail->unit ?? $item->unit ?? '-',
-                        $detail->offered_specification ?? $detail->specification ?? $item->specification ?? '-',
-                        ($detail->offered_price_per_item ?? $detail->unit_price) * ($detail->offered_quantity ?? $detail->quantity),
-                        $detail->item_notes ?? $item->item_notes ?? '-'
-                    ];
+        // 3. Build headers
+        $headers = ['<b>NO.</b>', '<b>NAMA BARANG</b>', '<b>Qty</b>', '<b>UoM</b>', '<b>KETERANGAN</b>'];
+        foreach ($participatingVendors as $vName) {
+            $headers[] = '<b>' . $vName . '</b>';
+            $headers[] = ''; // Empty column for specifications
+        }
+        $data = [$headers];
+
+        // 4. Build rows per item
+        $no = 1;
+        foreach ($items as $item) {
+            $row = [
+                $no++,
+                $item->item_name ?? $item->name ?? '-',
+                $item->quantity ?? '-',
+                $item->unit ?? '-',
+                $item->item_notes ?? $item->admin_notes ?? '-'
+            ];
+
+            foreach ($vendorQuotations as $qId => $quotation) {
+                // Find detail for this item
+                $detail = $quotation->details->first(function($d) use ($item, $type) {
+                    if ($type === 'service') {
+                        return $d->service_request_item_id == $item->id;
+                    }
+                    return $d->purchase_request_item_id == $item->id;
+                });
+
+                if ($detail) {
+                    $row[] = $detail->offered_price_per_item ?? $detail->unit_price;
+                    $row[] = $detail->offered_specification ?? $detail->item_notes ?? '';
+                } else {
+                    $row[] = 'x';
+                    $row[] = '';
                 }
             }
+            $data[] = $row;
         }
 
         $xlsFileName = "quotations_{$doc->document_number}_" . date('Ymd_His') . '.xlsx';
