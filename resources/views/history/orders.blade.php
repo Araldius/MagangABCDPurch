@@ -239,10 +239,9 @@ function openDetail(idx) {
                 <td style="padding:10px 14px;font-weight:700">${it.item_id||it.item_code||'-'}</td>
                 <td style="padding:10px 14px;font-weight:600">${it.name||it.item_name||'-'}</td>
                 <td style="padding:10px 14px;font-size:11.5px;color:#6b7280">${it.description||'-'}</td>
-                <td style="padding:10px 14px;font-size:11.5px;color:#6b7280;max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-                    <div style="font-weight:600;color:#374151;">${it.specification||'-'}</div>
-                    ${it.notes && it.notes !== '-' ? `<div style="font-size:10.5px;color:#9ca3af;font-style:italic;">Notes: ${it.notes}</div>` : ''}
-                </td>
+                <td style="padding:10px 14px;font-size:11.5px;color:#374151;font-weight:600;max-width:160px;white-space:normal;word-wrap:break-word;">${it.specification||'-'}</td>
+                <td style="padding:10px 14px;font-size:11.5px;color:#374151;font-weight:600">${it.brand||'-'}</td>
+                <td style="padding:10px 14px;font-size:11.5px;color:#9ca3af;font-style:italic;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${it.notes||'-'}</td>
                 <td style="padding:10px 14px;font-weight:600">${it.quantity}</td>
                 <td style="padding:10px 14px">${it.unit}</td>
                 <td style="padding:10px 14px;font-weight:600">Rp ${new Intl.NumberFormat('id-ID').format(uPrice)}</td>
@@ -342,7 +341,10 @@ document.getElementById('pr-modal').addEventListener('click', function(e) {
                                 <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">ITEM ID</th>
                                 <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">ITEM NAME</th>
                                 <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">DESCRIPTION</th>
-                                <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">SPEC & NOTES</th>
+    <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">SPECIFICATION</th>
+    <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">BRAND</th>
+    <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">NOTES</th>
+    
                                 <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">QTY</th>
                                 <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">UNIT</th>
                                 <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">UNIT PRICE (RP)</th>

@@ -315,7 +315,6 @@ const allPRs = @json(
     })->toArray()
 );
 const isPurchasing = {{ $isPurchasing ? 'true' : 'false' }};
-const isAdmin = {{ isset($isAdmin) && $isAdmin ? 'true' : 'false' }};
 const prEng = { page:1, pageSize:10, sortCol:null, sortDir:'asc', gotoFn:'prGoto', sizeFn:'prPageSz' };
 
 function fmtRp(n) {
