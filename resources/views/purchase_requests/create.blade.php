@@ -84,7 +84,7 @@
     <div class="page-desc">Fill in the form below to submit a new procurement/service request.</div>
 </div>
 
-<form action="{{ route('purchase_requests.store') }}" method="post" id="pr-form">
+<form action="{{ route('purchase_requests.store') }}" method="post" id="pr-form" enctype="multipart/form-data">
 @csrf
 <input type="hidden" name="item_type" id="item_type_field" value="goods">
 
@@ -99,7 +99,7 @@
         </div>
     </div>
     <div class="card-body">
-        <div class="form-row" style="grid-template-columns: 1fr 1fr 1fr; margin-bottom:0;">
+        <div class="form-row" style="grid-template-columns: 1fr 1fr 1fr; margin-bottom:16px;">
             <div class="form-group" style="margin-bottom:0;"><label class="form-label">Requested Date <span class="req">*</span></label><input class="form-control" type="date" name="requested_date" value="{{ date('Y-m-d') }}" readonly required style="background:#f9fafb;color:#6b7280;cursor:not-allowed;" title="Auto-filled"></div>
             <div class="form-group" style="margin-bottom:0;"><label class="form-label">Need Date <span class="req">*</span></label><input class="form-control" type="date" name="need_date" min="{{ date('Y-m-d') }}" required></div>
             <div class="form-group" style="margin-bottom:0;">
@@ -111,6 +111,11 @@
                     <option value="Gresik">Gresik</option>
                 </select>
             </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Attachment (Optional)</label>
+            <input type="file" class="form-control" name="attachment" accept=".pdf,.xlsx,.xls,.jpg,.jpeg,.png">
+            <span style="font-size:11px;color:#9ca3af;margin-top:4px">Max 10MB (PDF, Excel, Images)</span>
         </div>
     </div>
 </div>

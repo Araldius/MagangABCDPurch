@@ -197,17 +197,7 @@
         <div style="padding:14px 22px;border-top:1px solid #f3f4f6;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                 <button onclick="closePRDetail()" style="padding:7px 18px;border:1px solid #d1d5db;border-radius:7px;background:#fff;font-size:13px;cursor:pointer;color:#374151">Close</button>
-                {{-- Attachment Upload (for User on any status, shown conditionally) --}}
-                <form id="detail-attachment-form" method="POST" action="{{ route('pr.upload_attachment') }}" enctype="multipart/form-data" style="display:none;margin:0;">
-                    @csrf
-                    <input type="hidden" name="id" id="attach-pr-id">
-                    <input type="hidden" name="type" id="attach-pr-type">
-                    <label style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:7px;cursor:pointer;font-size:12.5px;font-weight:600;color:#15803d;">
-                        📎 <span id="attach-label">Attach the file</span>
-                        <input type="file" name="attachment" id="attach-file-input" accept=".pdf,.xlsx,.xls,.jpg,.jpeg,.png" style="display:none;" onchange="document.getElementById('attach-label').textContent = this.files[0]?.name || 'Lampirkan File'; document.getElementById('attach-submit-btn').style.display='inline-flex';">
-                    </label>
-                    <button type="submit" id="attach-submit-btn" style="display:none;padding:7px 14px;background:#15803d;color:#fff;border:none;border-radius:7px;font-size:12.5px;font-weight:600;cursor:pointer;">Upload</button>
-                </form>
+                {{-- Attachment Upload removed --}}
             </div>
             <div style="display:flex; gap:8px" id="detail-actions">
                 <form id="detail-approve-form" method="POST" action="{{ route('requests.approve') }}" style="display:none; margin:0">
@@ -530,22 +520,8 @@ function openPRDetail(id, category) {
         document.getElementById('detail-select-vendor-btn').href = `/vendor-selection?key=${category}_${id}`;
     }
 
-    // ── Attachment form + Edit Items button visibility ──
-    const attachForm = document.getElementById('detail-attachment-form');
     const editItemsBtn = document.getElementById('detail-edit-items-btn');
-    if (attachForm) {
-        attachForm.style.display = 'none';
-        document.getElementById('attach-pr-id').value = pr.id;
-        document.getElementById('attach-pr-type').value = category;
-    }
     if (editItemsBtn) editItemsBtn.style.display = 'none';
-
-    // Non-purchasing (User) can always attach files
-    if (!isPurchasing && attachForm) {
-        attachForm.style.display = 'inline-flex';
-        attachForm.style.alignItems = 'center';
-        attachForm.style.gap = '8px';
-    }
     // User can edit items only when status = quotation_reopen. Admin can always edit active PRs.
     if (editItemsBtn) {
         if (isAdmin && pr.status !== 'completed' && pr.status !== 'rejected') {

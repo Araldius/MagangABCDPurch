@@ -198,7 +198,9 @@ class DashboardController extends Controller
     public function adminStats(\Illuminate\Http\Request $request)
     {
         $data = $this->getFilteredRequests($request);
-        $allRequests = $data['prs']->concat($data['srs']);
+        $prs = $data['prs']->map(function($req) { $req->req_type = 'Goods'; return $req; });
+        $srs = $data['srs']->map(function($req) { $req->req_type = 'Service'; return $req; });
+        $allRequests = $prs->concat($srs);
 
         $statusTrend = [];
         $monthlySpend = [];
@@ -207,6 +209,7 @@ class DashboardController extends Controller
         $orderRecords = [];
         $itemCatalog = [];
         $plantSpend = [];
+        $serviceGoods = ['Goods' => 0, 'Service' => 0];
 
         // Always show 12 months for trend if year or all is selected
         for ($i=1; $i<=12; $i++) {
@@ -274,6 +277,10 @@ class DashboardController extends Controller
 
                 if (!isset($plantSpend[$p])) $plantSpend[$p] = 0;
                 $plantSpend[$p] += $reqSpend;
+
+                $typeLabel = $req->req_type ?? 'Goods';
+                if (!isset($serviceGoods[$typeLabel])) $serviceGoods[$typeLabel] = 0;
+                $serviceGoods[$typeLabel] += $reqSpend;
             }
         }
 
@@ -319,6 +326,10 @@ class DashboardController extends Controller
                 'plantSpend' => [
                     'labels' => array_keys($plantSpend),
                     'data' => array_values($plantSpend)
+                ],
+                'serviceGoods' => [
+                    'labels' => array_keys($serviceGoods),
+                    'data' => array_values($serviceGoods)
                 ]
             ],
             'entities' => [

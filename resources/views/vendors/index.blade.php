@@ -240,7 +240,7 @@ h1 { font-size:20px;font-weight:700;color:#111827;margin:0 0 3px }
     {{-- Requirements table + Vendor cards, side by side --}}
     <div style="display:flex;align-items:stretch;gap:16px;margin-bottom:14px;width:100%;min-width:0;overflow:hidden;">
         {{-- LEFT: Requirements table (tetap di tempat, tidak ikut geser) --}}
-        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;width:400px;flex-shrink:0;display:flex;flex-direction:column;height:640px;">
+        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;width:400px;flex-shrink:0;display:flex;flex-direction:column;height:calc(100vh - 250px);min-height:400px;">
         <div class="vendor-card-header" style="background:#f9fafb;">
             <div>
                 <div style="font-size:13.5px;font-weight:700;color:#111827">Item / Service Requirements</div>
@@ -252,7 +252,7 @@ h1 { font-size:20px;font-weight:700;color:#111827;margin:0 0 3px }
         </div>
 
         {{-- RIGHT: Vendor cards grid (carousel, tetap bisa digeser kiri-kanan) --}}
-        <div id="vendor-cards-grid" style="display:flex;overflow-x:auto;gap:16px;padding-bottom:12px;scroll-snap-type:x mandatory;flex:1;min-width:0;height:640px;"></div>
+        <div id="vendor-cards-grid" style="display:flex;overflow-x:auto;gap:16px;padding-bottom:12px;scroll-snap-type:x mandatory;flex:1;min-width:0;height:calc(100vh - 250px);min-height:400px;"></div>
     </div>
  
     {{-- Footer bar --}}
@@ -350,6 +350,7 @@ function buildVendorOffers(pr, vendors) {
             
             if (offers[vId]) {
                 offers[vId].quotation_id = quot.id;
+                offers[vId].attachment = quot.attachment_path || quot.attachment;
                 details.forEach(det => {
                     const itemId = det.purchase_request_item_id || det.service_request_item_id;
                     if (itemId) {
@@ -510,7 +511,7 @@ function requirementCardHtml(item, label, bg, tc, dot) {
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px">
             <div>
                 <div style="font-family:monospace;font-size:10px;font-weight:600;color:#3b5bdb;margin-bottom:2px;">${item.item_id || '—'}</div>
-                <div style="font-size:12.5px;font-weight:700;color:#111827;">${item.item_name}</div>
+                <div style="font-size:13.5px;font-weight:700;color:#111827;">${item.item_name}</div>
             </div>
             <span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;background:${isSelected ? '#fff' : bg};font-size:10px;font-weight:700;color:${tc};white-space:nowrap;flex-shrink:0;">
                 <span style="width:5px;height:5px;border-radius:50%;background:${dot}"></span>${label}
@@ -519,6 +520,8 @@ function requirementCardHtml(item, label, bg, tc, dot) {
         <div style="display:grid;grid-template-columns:60px 1fr;gap:5px 8px;align-items:center;font-size:11px;">
             <div style="color:#9ca3af">Qty</div>
             <div style="font-weight:700;color:#111827">${item.quantity} ${item.unit}</div>
+            <div style="color:#9ca3af">Brand</div>
+            <div style="color:#111827;font-size:13px;font-weight:800;">${item.brand || '-'}</div>
             <div style="color:#9ca3af">Spec</div>
             <div style="color:#111827;font-size:10.5px;">${item.specification || '-'}</div>
             <div style="color:#9ca3af">Notes</div>
@@ -640,8 +643,9 @@ function renderVendorCards(){
 
         return `<div class="vendor-card" style="border-left:3px solid ${isVendorChecked ? '#3b5bdb' : 'transparent'};">
             <div class="vendor-card-header" style="background:${isVendorChecked ? '#eff6ff' : '#fff'}">
-                <div style="font-size:13.5px;font-weight:700;color:${isVendorChecked ? '#1d4ed8' : '#111827'};display:flex;align-items:center;flex-wrap:wrap;gap:4px;">
-                    ${vName}${prevBadge}
+                <div style="font-size:13.5px;font-weight:700;color:${isVendorChecked ? '#1d4ed8' : '#111827'};display:flex;flex-direction:column;gap:4px;">
+                    <div>${vName}${prevBadge}</div>
+                    ${off && off.attachment ? `<a href="/storage/${off.attachment}" target="_blank" style="font-size:11px;color:#3b5bdb;text-decoration:none;display:inline-flex;align-items:center;gap:4px;font-weight:600;"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg> View Attachment</a>` : ''}
                 </div>
             </div>
             <div class="vendor-card-body">

@@ -39,8 +39,9 @@
                 <tr style="background:#f9fafb">
                     <th onclick="itemSort(0)" style="padding:9px 20px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;">CODE <span id="is0" style="font-size:9px;">↕</span></th>
                     <th onclick="itemSort(1)" style="padding:9px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;">ITEM NAME <span id="is1" style="font-size:9px;">↕</span></th>
-                    <th onclick="itemSort(2)" style="padding:9px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;">UNIT <span id="is2" style="font-size:9px;">+ </span></th>
-                    <th onclick="itemSort(3)" style="padding:9px 14px;text-align:center;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;">STATUS <span id="is3" style="font-size:9px;">+ </span></th>
+                    <th onclick="itemSort(2)" style="padding:9px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;">UNIT <span id="is2" style="font-size:9px;">↕</span></th>
+                    <th onclick="itemSort(3)" style="padding:9px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;">TYPE <span id="is3" style="font-size:9px;">+ </span></th>
+                    <th onclick="itemSort(4)" style="padding:9px 14px;text-align:center;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;">STATUS <span id="is4" style="font-size:9px;">+ </span></th>
                     <th style="padding:9px 20px;text-align:center;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;">ACTIONS</th>
                 </tr>
             </thead>
@@ -52,6 +53,7 @@
                     <td style="padding:13px 20px;font-family:monospace;color:#374151;opacity:{{ $item->is_archived ? '0.55' : '1' }}">{{ $item->item_code ?: '-' }}</td>
                     <td style="padding:13px 14px;font-weight:600;color:#111827;opacity:{{ $item->is_archived ? '0.55' : '1' }}">{{ $item->full_name }}</td>
                     <td style="padding:13px 14px;color:#374151;opacity:{{ $item->is_archived ? '0.55' : '1' }}">{{ $item->unit }}</td>
+                    <td style="padding:13px 14px;color:#374151;opacity:{{ $item->is_archived ? '0.55' : '1' }}">{{ ucfirst($item->type) }}</td>
                     <td style="padding:13px 14px;text-align:center;">
                         @if($item->is_archived)
                             <span style="background:#fef2f2;color:#dc2626;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:600;">Archived</span>
@@ -84,9 +86,9 @@
                     </td>
                 </tr>
                 @empty
-                <tr id="item-empty" style="display:none;"><td colspan="5" style="text-align:center;padding:36px 20px;color:#9ca3af;font-size:12.5px">No items found.</td></tr>
+                <tr id="item-empty" style="display:none;"><td colspan="6" style="text-align:center;padding:36px 20px;color:#9ca3af;font-size:12.5px">No items found.</td></tr>
                 @endforelse
-                <tr id="item-empty-js" style="display:none;"><td colspan="5" style="text-align:center;padding:36px 20px;color:#9ca3af;font-size:12.5px">No items found matching your search.</td></tr>
+                <tr id="item-empty-js" style="display:none;"><td colspan="6" style="text-align:center;padding:36px 20px;color:#9ca3af;font-size:12.5px">No items found matching your search.</td></tr>
             </tbody>
         </table>
     </div>
@@ -136,6 +138,13 @@ textarea.form-control { height:auto; padding:8px 10px; resize:vertical; }
                     </select>
                 </div>
                 <div>
+                    <label class="form-label">Type <span style="color:#ef4444">*</span></label>
+                    <select name="type" id="input_type" class="form-control" required>
+                        <option value="goods">Goods</option>
+                        <option value="service">Service</option>
+                    </select>
+                </div>
+                <div>
                     <label class="form-label">Brand / Merek</label>
                     <input type="text" name="brand" id="input_brand" class="form-control">
                 </div>
@@ -175,6 +184,7 @@ textarea.form-control { height:auto; padding:8px 10px; resize:vertical; }
         document.getElementById('input_item_code').value = item.item_code || '';
         document.getElementById('input_item_name').value = item.item_name || '';
         document.getElementById('input_unit').value = item.unit || '';
+        document.getElementById('input_type').value = item.type || 'goods';
         document.getElementById('input_brand').value = item.brand || '';
         document.getElementById('input_specification').value = item.specification || '';
         document.getElementById('input_item_notes').value = item.item_notes || '';
