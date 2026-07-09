@@ -40,7 +40,6 @@
                     <th onclick="itemSort(0)" style="padding:9px 20px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;">CODE <span id="is0" style="font-size:9px;">↕</span></th>
                     <th onclick="itemSort(1)" style="padding:9px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;">ITEM NAME <span id="is1" style="font-size:9px;">↕</span></th>
                     <th onclick="itemSort(2)" style="padding:9px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;">UNIT <span id="is2" style="font-size:9px;">+ </span></th>
-                    <th style="padding:9px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;">BRAND</th>
                     <th onclick="itemSort(3)" style="padding:9px 14px;text-align:center;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;">STATUS <span id="is3" style="font-size:9px;">+ </span></th>
                     <th style="padding:9px 20px;text-align:center;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;">ACTIONS</th>
                 </tr>
@@ -51,9 +50,8 @@
                     data-status="{{ $item->is_archived ? 'archived' : 'active' }}"
                     onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='transparent'">
                     <td style="padding:13px 20px;font-family:monospace;color:#374151;opacity:{{ $item->is_archived ? '0.55' : '1' }}">{{ $item->item_code ?: '-' }}</td>
-                    <td style="padding:13px 14px;font-weight:600;color:#111827;opacity:{{ $item->is_archived ? '0.55' : '1' }}">{{ $item->item_name }}</td>
+                    <td style="padding:13px 14px;font-weight:600;color:#111827;opacity:{{ $item->is_archived ? '0.55' : '1' }}">{{ $item->full_name }}</td>
                     <td style="padding:13px 14px;color:#374151;opacity:{{ $item->is_archived ? '0.55' : '1' }}">{{ $item->unit }}</td>
-                    <td style="padding:13px 14px;color:#374151;opacity:{{ $item->is_archived ? '0.55' : '1' }}">{{ $item->brand ?? '-' }}</td>
                     <td style="padding:13px 14px;text-align:center;">
                         @if($item->is_archived)
                             <span style="background:#fef2f2;color:#dc2626;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:600;">Archived</span>
@@ -86,9 +84,9 @@
                     </td>
                 </tr>
                 @empty
-                <tr id="item-empty" style="display:none;"><td colspan="6" style="text-align:center;padding:36px 20px;color:#9ca3af;font-size:12.5px">No items found.</td></tr>
+                <tr id="item-empty" style="display:none;"><td colspan="5" style="text-align:center;padding:36px 20px;color:#9ca3af;font-size:12.5px">No items found.</td></tr>
                 @endforelse
-                <tr id="item-empty-js" style="display:none;"><td colspan="6" style="text-align:center;padding:36px 20px;color:#9ca3af;font-size:12.5px">No items found matching your search.</td></tr>
+                <tr id="item-empty-js" style="display:none;"><td colspan="5" style="text-align:center;padding:36px 20px;color:#9ca3af;font-size:12.5px">No items found matching your search.</td></tr>
             </tbody>
         </table>
     </div>

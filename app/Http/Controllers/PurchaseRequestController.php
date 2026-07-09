@@ -72,9 +72,8 @@ class PurchaseRequestController extends Controller
             ->get()->map(function ($item) {
                 return [
                     'id'    => $item->item_code ?? 'ITM-' . $item->id,
-                    'name'  => $item->item_name,
+                    'name'  => $item->full_name,
                     'unit'  => $item->unit,
-                    'spec'  => $item->specification ?? '',
                     'notes' => $item->item_notes ?? '',
                 ];
             })->values();

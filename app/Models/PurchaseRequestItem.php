@@ -21,6 +21,18 @@ class PurchaseRequestItem extends Model
         'admin_notes'
     ];
 
+    public function getFullNameAttribute()
+    {
+        $parts = [$this->item_name];
+        if (!empty($this->specification)) {
+            $parts[] = $this->specification;
+        }
+        if (!empty($this->brand)) {
+            $parts[] = $this->brand;
+        }
+        return implode('_', $parts);
+    }
+
     public function purchaseRequest()
     {
         return $this->belongsTo(PurchaseRequest::class);

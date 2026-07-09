@@ -57,7 +57,7 @@ class DashboardController extends Controller
             return $selection->selectionItems->map(function ($si) use ($prItemsById) {
                 $prItem = $prItemsById->get($si->purchase_request_item_id);
                 return [
-                    'item_name' => $prItem->item_name ?? ($prItem->name ?? ('Item #' . $si->purchase_request_item_id)),
+                    'item_name' => $prItem->full_name ?? $prItem->item_name ?? ($prItem->name ?? ('Item #' . $si->purchase_request_item_id)),
                     'quantity'  => $si->final_quantity,
                     'price'     => $si->final_price_per_item,
                     'total'     => ($si->final_price_per_item ?? 0) * ($si->final_quantity ?? 0),
@@ -254,11 +254,11 @@ class DashboardController extends Controller
                             $itemName = 'Item #' . $itemId;
                             if (isset($req->items)) {
                                 $f = collect($req->items)->firstWhere('id', $itemId);
-                                if ($f) $itemName = $f->item_name ?? $f->name ?? $itemName;
+                                if ($f) $itemName = $f->full_name ?? $f->item_name ?? $f->name ?? $itemName;
                             } elseif (isset($req->jobs)) {
                                 foreach($req->jobs as $job) {
                                     $f = collect($job->items)->firstWhere('id', $itemId);
-                                    if ($f) { $itemName = $f->item_name ?? $f->name ?? $itemName; break; }
+                                    if ($f) { $itemName = $f->full_name ?? $f->item_name ?? $f->name ?? $itemName; break; }
                                 }
                             }
 
@@ -417,11 +417,11 @@ class DashboardController extends Controller
                                 $itemName = 'Item #' . $itemId;
                                 if (isset($req->items)) {
                                     $f = collect($req->items)->firstWhere('id', $itemId);
-                                    if ($f) $itemName = $f->item_name ?? $f->name ?? $itemName;
+                                    if ($f) $itemName = $f->full_name ?? $f->item_name ?? $f->name ?? $itemName;
                                 } elseif (isset($req->jobs)) {
                                     foreach($req->jobs as $job) {
                                         $f = collect($job->items)->firstWhere('id', $itemId);
-                                        if ($f) { $itemName = $f->item_name ?? $f->name ?? $itemName; break; }
+                                        if ($f) { $itemName = $f->full_name ?? $f->item_name ?? $f->name ?? $itemName; break; }
                                     }
                                 }
                                 

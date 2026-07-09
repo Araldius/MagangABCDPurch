@@ -306,7 +306,6 @@
 @endphp
 
 // key = "type_id" to prevent PR id=1 and SR id=1 collision
-const isAdmin = @json(auth()->check() && auth()->user()->role === 'admin');
 
 const allPRs = @json(
     $allRequests->mapWithKeys(function($r) {
@@ -647,12 +646,12 @@ function openPRDetail(id, category) {
                     </td>
                     <td style="${tdS};color:#6b7280;font-size:11.5px">
                         ${vs && vs.spec ? vs.spec : (it.specification || '-')}
-                        ${vs && vs.spec && vs.spec.toLowerCase() !== (it.specification||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Spec: ${it.specification || '-'}">DIFFERS</div>` : ''}
+                        ${vs && vs.spec && String(vs.spec).toLowerCase() !== String(it.specification||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Spec: ${it.specification || '-'}">DIFFERS</div>` : ''}
                     </td>
-                    <td style="${tdS};text-align:right;font-weight:600;color:#111827">${it.quantity || 0}</td>
+                    <td style="${tdS};text-align:right;font-weight:600;color:#111827;font-family:monospace">${it.quantity || 0}</td>
                     <td style="${tdS};color:#6b7280">
                         ${vs && vs.unit ? vs.unit : (it.unit || '-')}
-                        ${vs && vs.unit && vs.unit.toLowerCase() !== (it.unit||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Unit: ${it.unit || '-'}">DIFFERS</div>` : ''}
+                        ${vs && vs.unit && String(vs.unit).toLowerCase() !== String(it.unit||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Unit: ${it.unit || '-'}">DIFFERS</div>` : ''}
                     </td>
                     ${hasVS ? `
                     <td style="${tdS};font-family:monospace;font-weight:600;color:#111827;text-align:right;">${vs ? fmtRp(vs.unit_price) : '-'}</td>
@@ -715,13 +714,17 @@ function openPRDetail(id, category) {
                     ${vs && vs.notes && vs.notes !== 'Selected' ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px">VENDOR NOTE</div>` : ''}
                 </td>
                 <td style="${tdS};color:#6b7280;font-size:11.5px">
-                    ${vs && vs.brand ? vs.brand : (it.brand || '—')}
-                    ${vs && vs.brand && vs.brand.toLowerCase() !== (it.brand||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Brand: ${it.brand || '-'}">DIFFERS</div>` : ''}
+                    ${vs && vs.spec ? vs.spec : (it.specification || '-')}
+                    ${vs && vs.spec && String(vs.spec).toLowerCase() !== String(it.specification||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Spec: ${it.specification || '-'}">DIFFERS</div>` : ''}
                 </td>
-                <td style="${tdS};text-align:right;font-weight:600">${it.quantity || 0}</td>
+                <td style="${tdS};color:#6b7280;font-size:11.5px">
+                    ${vs && vs.brand ? vs.brand : (it.brand || '—')}
+                    ${vs && vs.brand && String(vs.brand).toLowerCase() !== String(it.brand||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Brand: ${it.brand || '-'}">DIFFERS</div>` : ''}
+                </td>
+                <td style="${tdS};text-align:right;font-weight:600;color:#111827;font-family:monospace">${it.quantity || 0}</td>
                 <td style="${tdS};color:#6b7280">
                     ${vs && vs.unit ? vs.unit : (it.unit || '—')}
-                    ${vs && vs.unit && vs.unit.toLowerCase() !== (it.unit||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Unit: ${it.unit || '-'}">DIFFERS</div>` : ''}
+                    ${vs && vs.unit && String(vs.unit).toLowerCase() !== String(it.unit||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Unit: ${it.unit || '-'}">DIFFERS</div>` : ''}
                 </td>
                 ${hasPriceCol ? `
                 <td style="${tdS};font-family:monospace;font-weight:600">${vs ? fmtRp(vs.unit_price) : '—'}</td>
@@ -755,6 +758,7 @@ function openPRDetail(id, category) {
                         <th style="${thS}">ITEM ID</th>
                         <th style="${thS}">ITEM NAME</th>
                         <th style="${thS}">NOTES</th>
+                        <th style="${thS}">SPEC</th>
                         <th style="${thS}">BRAND</th>
                         <th style="${thS};text-align:right">QTY</th>
                         <th style="${thS}">UNIT</th>

@@ -110,7 +110,7 @@ class HistoryController extends Controller
                             
                             $rec->items->push((object)[
                                 'item_id' => $item->item_id ?? $item->item_code,
-                                'name' => $item->item_name,
+                                'name' => $item->full_name ?? $item->item_name,
                                 'description' => $item->description,
                                 'specification' => $qd->offered_specification ?? $item->specification,
                                 'quantity' => $si->final_quantity,
@@ -131,7 +131,7 @@ class HistoryController extends Controller
 
                                 $rec->items->push((object)[
                                     'item_id' => $item->item_id ?? $item->item_code ?? '-',
-                                    'name' => $item->item_name,
+                                    'name' => $item->full_name ?? $item->item_name,
                                     'description' => $job->job_description,
                                     'specification' => $qd->offered_specification ?? $item->specification,
                                     'quantity' => $si->final_quantity,
@@ -195,7 +195,7 @@ class HistoryController extends Controller
                         if (!isset($itemMap[$itemId])) {
                             $itemMap[$itemId] = [
                                 'item_id' => $itemId,
-                                'item_name' => $pri->item_name ?? $pri->name ?? '-',
+                                'item_name' => $pri->full_name ?? $pri->item_name ?? $pri->name ?? '-',
                                 'last_purchase' => null,
                                 'last_value' => 0,
                                 'history' => []
@@ -219,7 +219,7 @@ class HistoryController extends Controller
                         })->first();
 
                         $itemMap[$itemId]['history'][] = [
-                            'item_name' => $pri->item_name ?? $pri->name ?? '-',
+                            'item_name' => $pri->full_name ?? $pri->item_name ?? $pri->name ?? '-',
                             'vendor' => $vName,
                             'vendor_city' => optional($vendor)->location ?? '',
                             'plant' => $pr->plant ?? '-',
@@ -321,7 +321,7 @@ class HistoryController extends Controller
 
                         $vendorMap[$vid]['history'][] = [
                             'item_id' => $pri->item_id ?? $pri->item_code ?? '-',
-                            'item_name' => $pri->item_name ?? $pri->name ?? '-',
+                            'item_name' => $pri->full_name ?? $pri->item_name ?? $pri->name ?? '-',
                             'plant' => $pr->plant ?? '-',
                             'value' => $val,
                             'qty' => $si->final_quantity,
@@ -431,7 +431,7 @@ class HistoryController extends Controller
             $itemsList = $q->details->map(function($d) {
                 $originalItem = $d->purchaseRequestItem ?? $d->serviceRequestItem;
                 return [
-                    'name' => $originalItem ? $originalItem->item_name : '-',
+                    'name' => $originalItem ? ($originalItem->full_name ?? $originalItem->item_name) : '-',
                     'qty' => $d->offered_quantity,
                     'unit' => $d->offered_unit ?? ($originalItem ? $originalItem->unit : '-'),
                     'price' => $d->offered_price_per_item,
@@ -468,7 +468,7 @@ class HistoryController extends Controller
                             if (!$si) continue;
                             $prItemsData[] = [
                                 'item_id' => $item->item_id ?? $item->item_code,
-                                'name' => $item->item_name,
+                                'name' => $item->full_name ?? $item->item_name,
                                 'description' => $item->description,
                                 'specification' => $item->specification,
                                 'quantity' => $si->final_quantity,
@@ -484,7 +484,7 @@ class HistoryController extends Controller
                                 if (!$si) continue;
                                 $prItemsData[] = [
                                     'item_id' => $item->item_id ?? $item->item_code ?? '-',
-                                    'name' => $item->item_name,
+                                    'name' => $item->full_name ?? $item->item_name,
                                     'description' => $job->job_description,
                                     'specification' => $item->specification,
                                     'quantity' => $si->final_quantity,
