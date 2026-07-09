@@ -84,7 +84,7 @@ h1 { font-size:20px;font-weight:700;color:#111827;margin:0 0 3px }
     display: flex;
     justify-content: space-between;
     align-items: center;
-    min-height: 52px;
+    min-height: 60px;
     box-sizing: border-box;
     flex-shrink: 0;
 }
