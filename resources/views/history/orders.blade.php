@@ -341,10 +341,9 @@ document.getElementById('pr-modal').addEventListener('click', function(e) {
                                 <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">ITEM ID</th>
                                 <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">ITEM NAME</th>
                                 <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">DESCRIPTION</th>
-    <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">SPECIFICATION</th>
-    <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">BRAND</th>
-    <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">NOTES</th>
-    
+                                <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">SPECIFICATION</th>
+                                <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">BRAND</th>
+                                <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">NOTES</th>
                                 <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">QTY</th>
                                 <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">UNIT</th>
                                 <th style="padding:10px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase">UNIT PRICE (RP)</th>
