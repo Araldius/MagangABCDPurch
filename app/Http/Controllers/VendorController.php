@@ -268,9 +268,8 @@ class VendorController extends Controller
         }
 
         // 3. Build headers
-        // 3. Build headers
-        $headerTop = ['<b>NO.</b>', '<b>ITEM ID</b>', '<b>NAMA BARANG</b>', '<b>SPEC/BRAND</b>', '<b>QTY</b>', '<b>UNIT</b>', '<b>NOTES</b>'];
-        $headerBottom = ['', '', '', '', '', '', ''];
+        $headerTop = ['<b>NO.</b>', '<b>ITEM ID</b>', '<b>NAMA_SPEK_BRAND</b>', '<b>QTY</b>', '<b>UNIT</b>', '<b>NOTES</b>'];
+        $headerBottom = ['', '', '', '', '', ''];
         
         foreach ($participatingVendors as $vName) {
             $headerTop[] = '<b>' . $vName . '</b>';
@@ -282,7 +281,7 @@ class VendorController extends Controller
             $headerBottom[] = '<b>QTY</b>';
             $headerBottom[] = '<b>UNIT</b>';
             $headerBottom[] = '<b>NOTES</b>';
-            $headerBottom[] = '<b>PRICE/ITEM</b>';
+            $headerBottom[] = '<b>PRICE</b>';
             $headerBottom[] = '<b>TOTAL PRICE</b>';
         }
         $data = [$headerTop, $headerBottom];
@@ -292,11 +291,12 @@ class VendorController extends Controller
         $vendorTotals = array_fill_keys(array_keys($participatingVendors), 0);
 
         foreach ($items as $item) {
+            $fullName = $item->full_name ?? ($item->item_name . '_' . ($item->specification ?: 'nsp') . '_' . ($item->brand ?: 'nbr'));
+            $fullName = \Illuminate\Support\Str::limit($fullName, 40, '');
             $row = [
                 $no++,
                 $item->item_id ?? '-',
-                $item->item_name ?? $item->name ?? '-',
-                $type === 'service' ? ($item->specification ?? '-') : ($item->brand ?? '-'),
+                $fullName,
                 $item->quantity ?? '-',
                 $item->unit ?? '-',
                 $item->item_notes ?? $item->admin_notes ?? '-'
@@ -312,11 +312,15 @@ class VendorController extends Controller
 
                 if ($detail) {
                     $qQty = $detail->offered_quantity ?? $item->quantity;
+                    $qUnit = $detail->offered_unit ?? $item->unit;
                     $qPrice = $detail->offered_price_per_item ?? 0;
                     $qTotal = $qQty * $qPrice;
                     
-                    $row[] = $qQty;
-                    $row[] = $detail->offered_unit ?? $item->unit;
+                    $qtyFmt = ($qQty != $item->quantity) ? '<style bgcolor="#fcd34d">' . $qQty . '</style>' : $qQty;
+                    $unitFmt = (strtolower(trim($qUnit)) != strtolower(trim($item->unit))) ? '<style bgcolor="#fcd34d">' . $qUnit . '</style>' : $qUnit;
+
+                    $row[] = $qtyFmt;
+                    $row[] = $unitFmt;
                     $row[] = $detail->item_notes ?? '-';
                     $row[] = $qPrice;
                     $row[] = $qTotal;
@@ -334,7 +338,7 @@ class VendorController extends Controller
         }
         
         // 5. Build Grand Total row
-        $totalRow = ['', '', '', '', '', '', '<b>GRAND TOTAL</b>'];
+        $totalRow = ['', '', '', '', '', '<b>GRAND TOTAL</b>'];
         foreach ($participatingVendors as $qId => $vName) {
             $totalRow[] = '';
             $totalRow[] = '';

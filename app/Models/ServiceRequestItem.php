@@ -48,4 +48,12 @@ class ServiceRequestItem extends Model
     {
         return $this->hasMany(QuotationDetail::class, 'service_request_item_id');
     }
+
+    public function getFullNameAttribute()
+    {
+        $spec = empty($this->specification) ? 'nsp' : $this->specification;
+        $brand = empty($this->brand) ? 'nbr' : $this->brand;
+        $fullName = $this->item_name . '_' . $spec . '_' . $brand;
+        return \Illuminate\Support\Str::limit($fullName, 40, '');
+    }
 }

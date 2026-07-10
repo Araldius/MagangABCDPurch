@@ -109,7 +109,7 @@
     </div>
 
     <!-- Charts Row 3 -->
-    <div class="chart-row-3">
+    <div class="chart-row-2">
         <div class="chart-card">
             <div class="chart-header">Order Records by Plant</div>
             <div style="position: relative; height: 200px; width: 100%;">
@@ -122,10 +122,20 @@
                 <canvas id="chartItemCatalog"></canvas>
             </div>
         </div>
+    </div>
+
+    <!-- Charts Row 4 -->
+    <div class="chart-row-2">
         <div class="chart-card">
             <div class="chart-header">Spend by Plant</div>
             <div style="position: relative; height: 200px; width: 100%;">
                 <canvas id="chartPlantSpend"></canvas>
+            </div>
+        </div>
+        <div class="chart-card">
+            <div class="chart-header">Service vs Goods (Spend)</div>
+            <div style="position: relative; height: 200px; width: 100%;">
+                <canvas id="chartServiceGoods"></canvas>
             </div>
         </div>
     </div>
@@ -298,6 +308,8 @@
                 createOrUpdateChart('chartItemCatalog', 'bar', c.itemCatalog.labels, c.itemCatalog.data, (lbl) => openDrillModal('itemCatalog', lbl, '', 'Item Catalog Details'), true);
                 // 7. Plant Spend
                 createOrUpdateChart('chartPlantSpend', 'doughnut', c.plantSpend.labels, c.plantSpend.data, (lbl) => openDrillModal('plantSpend', lbl, '', 'Spend by Plant'), true);
+                // 8. Service vs Goods
+                createOrUpdateChart('chartServiceGoods', 'doughnut', c.serviceGoods.labels, c.serviceGoods.data, null, true);
             });
     }
 

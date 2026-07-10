@@ -45,6 +45,7 @@ class ItemController extends Controller
             'specification' => 'nullable|string',
             'brand' => 'nullable|string',
             'item_notes' => 'nullable|string',
+            'type' => 'required|in:goods,service',
         ]);
 
         $exists = Item::where('item_name', $request->item_name)
@@ -83,6 +84,7 @@ class ItemController extends Controller
             'specification' => 'nullable|string',
             'brand' => 'nullable|string',
             'item_notes' => 'nullable|string',
+            'type' => 'required|in:goods,service',
         ]);
 
         $exists = Item::where('item_name', $request->item_name)
@@ -159,7 +161,8 @@ class ItemController extends Controller
                 0 => 'item_code',
                 1 => 'item_name',
                 2 => 'unit',
-                3 => 'is_archived',
+                3 => 'type',
+                4 => 'is_archived',
             ];
             if (isset($cols[$sortColIndex])) {
                 $query->orderBy($cols[$sortColIndex], $sortDir);
@@ -174,7 +177,7 @@ class ItemController extends Controller
         $xlsFileName = 'master_items_' . date('Ymd_His') . '.xlsx';
         
         $data = [
-            ['Item Code', 'Item Name', 'Unit', 'Specification', 'Notes', 'Status']
+            ['Item Code', 'Item Name', 'Unit', 'Type', 'Specification', 'Notes', 'Status']
         ];
         
         foreach ($items as $item) {
@@ -182,6 +185,7 @@ class ItemController extends Controller
                 $item->item_code,
                 $item->item_name,
                 $item->unit,
+                ucfirst($item->type),
                 $item->specification,
                 $item->item_notes,
                 $item->is_archived ? 'Archived' : 'Active'

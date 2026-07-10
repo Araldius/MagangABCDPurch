@@ -83,44 +83,44 @@ class DatabaseSeeder extends Seeder
         // 3. PR/SR GENERATOR (100 Records)
         $goodsItems = [
             // IT & Electronics
-            ['name' => 'Laptop Thinkpad E15', 'spec' => 'Core i7, 16GB RAM', 'unit' => 'Unit', 'price' => 15000000],
-            ['name' => 'Monitor Dell 24 inch', 'spec' => 'FHD IPS 60Hz', 'unit' => 'Pcs', 'price' => 2000000],
-            ['name' => 'Kabel UTP Cat6', 'spec' => 'Belden 1 Roll 305m', 'unit' => 'Roll', 'price' => 1800000],
-            ['name' => 'Mouse Wireless Logitech', 'spec' => 'M220 Silent', 'unit' => 'Pcs', 'price' => 120000],
-            ['name' => 'Keyboard Mechanical', 'spec' => 'Keychron K2', 'unit' => 'Pcs', 'price' => 1500000],
-            ['name' => 'UPS APC 1000VA', 'spec' => 'Back-UPS Pro', 'unit' => 'Unit', 'price' => 2500000],
-            ['name' => 'SSD Samsung 1TB', 'spec' => 'NVMe M.2 980 Pro', 'unit' => 'Pcs', 'price' => 2200000],
-            ['name' => 'Router Mikrotik', 'spec' => 'RB450Gx4', 'unit' => 'Unit', 'price' => 1850000],
-            ['name' => 'Switch Hub Cisco', 'spec' => '24 Port Gigabit', 'unit' => 'Unit', 'price' => 4500000],
-            ['name' => 'Webcam HD 1080p', 'spec' => 'Logitech C920', 'unit' => 'Pcs', 'price' => 1100000],
+            ['name' => 'Laptop Thinkpad E15', 'spec' => 'Core i7, 16GB RAM', 'unit' => 'Unit', 'price' => 15000000, 'brand' => 'Lenovo'],
+            ['name' => 'Monitor Dell 24 inch', 'spec' => 'FHD IPS 60Hz', 'unit' => 'Pcs', 'price' => 2000000, 'brand' => 'Dell'],
+            ['name' => 'Kabel UTP Cat6', 'spec' => 'Belden 1 Roll 305m', 'unit' => 'Roll', 'price' => 1800000, 'brand' => 'Belden'],
+            ['name' => 'Mouse Wireless Logitech', 'spec' => 'M220 Silent', 'unit' => 'Pcs', 'price' => 120000, 'brand' => 'Logitech'],
+            ['name' => 'Keyboard Mechanical', 'spec' => 'Keychron K2', 'unit' => 'Pcs', 'price' => 1500000, 'brand' => 'Keychron'],
+            ['name' => 'UPS APC 1000VA', 'spec' => 'Back-UPS Pro', 'unit' => 'Unit', 'price' => 2500000, 'brand' => 'APC'],
+            ['name' => 'SSD Samsung 1TB', 'spec' => 'NVMe M.2 980 Pro', 'unit' => 'Pcs', 'price' => 2200000, 'brand' => 'Samsung'],
+            ['name' => 'Router Mikrotik', 'spec' => 'RB450Gx4', 'unit' => 'Unit', 'price' => 1850000, 'brand' => 'Mikrotik'],
+            ['name' => 'Switch Hub Cisco', 'spec' => '24 Port Gigabit', 'unit' => 'Unit', 'price' => 4500000, 'brand' => 'Cisco'],
+            ['name' => 'Webcam HD 1080p', 'spec' => 'Logitech C920', 'unit' => 'Pcs', 'price' => 1100000, 'brand' => 'Logitech'],
             
             // Office Supplies
-            ['name' => 'Tinta Printer Epson', 'spec' => '003 Black', 'unit' => 'Botol', 'price' => 85000],
-            ['name' => 'Kertas HVS A4 80gsm', 'spec' => 'PaperOne 1 Dus', 'unit' => 'Dus', 'price' => 250000],
-            ['name' => 'Meja Kerja Kantor', 'spec' => '120x60cm Kayu Jati', 'unit' => 'Unit', 'price' => 1200000],
-            ['name' => 'Kursi Ergonomis', 'spec' => 'IKEA Markus', 'unit' => 'Unit', 'price' => 2500000],
-            ['name' => 'Papan Tulis Whiteboard', 'spec' => '120x240cm Magnetik', 'unit' => 'Pcs', 'price' => 850000],
-            ['name' => 'Proyektor Epson', 'spec' => 'EB-X06 XGA', 'unit' => 'Unit', 'price' => 5600000],
-            ['name' => 'Spidol Snowman', 'spec' => 'Board Marker Hitam', 'unit' => 'Lusin', 'price' => 85000],
-            ['name' => 'Map Folder Plastik', 'spec' => 'Isi 50 Pcs', 'unit' => 'Pak', 'price' => 150000],
+            ['name' => 'Tinta Printer Epson', 'spec' => '003 Black', 'unit' => 'Botol', 'price' => 85000, 'brand' => 'Epson'],
+            ['name' => 'Kertas HVS A4 80gsm', 'spec' => 'PaperOne 1 Dus', 'unit' => 'Dus', 'price' => 250000, 'brand' => 'PaperOne'],
+            ['name' => 'Meja Kerja Kantor', 'spec' => '120x60cm Kayu Jati', 'unit' => 'Unit', 'price' => 1200000, 'brand' => 'Informa'],
+            ['name' => 'Kursi Ergonomis', 'spec' => 'IKEA Markus', 'unit' => 'Unit', 'price' => 2500000, 'brand' => 'IKEA'],
+            ['name' => 'Papan Tulis Whiteboard', 'spec' => '120x240cm Magnetik', 'unit' => 'Pcs', 'price' => 850000, 'brand' => 'Sakura'],
+            ['name' => 'Proyektor Epson', 'spec' => 'EB-X06 XGA', 'unit' => 'Unit', 'price' => 5600000, 'brand' => 'Epson'],
+            ['name' => 'Spidol Snowman', 'spec' => 'Board Marker Hitam', 'unit' => 'Lusin', 'price' => 85000, 'brand' => 'Snowman'],
+            ['name' => 'Map Folder Plastik', 'spec' => 'Isi 50 Pcs', 'unit' => 'Pak', 'price' => 150000, 'brand' => 'Bantex'],
             
             // Industrial & Safety
-            ['name' => 'Asam Sulfat 98%', 'spec' => 'Grade Industri, sertifikasi COA', 'unit' => 'Liter', 'price' => 50000],
-            ['name' => 'Helm Safety Full Face', 'spec' => 'ANSI Z89.1, warna putih', 'unit' => 'Pcs', 'price' => 150000],
-            ['name' => 'Sepatu Safety', 'spec' => 'Krusher Ukuran 42', 'unit' => 'Pasang', 'price' => 450000],
-            ['name' => 'Sarung Tangan Las', 'spec' => 'Kulit Sapi Asli', 'unit' => 'Pasang', 'price' => 85000],
-            ['name' => 'Masker N95 3M', 'spec' => 'Particulate Respirator 8210', 'unit' => 'Box', 'price' => 250000],
-            ['name' => 'Kacamata Safety', 'spec' => 'Anti-Scratch Clear', 'unit' => 'Pcs', 'price' => 45000],
-            ['name' => 'Ear Plug 3M', 'spec' => 'Corded Silicone', 'unit' => 'Box', 'price' => 150000],
-            ['name' => 'Rompi Safety Reflektif', 'spec' => 'Hijau Stabilo 2 Garis', 'unit' => 'Pcs', 'price' => 35000],
-            ['name' => 'Fire Extinguisher', 'spec' => 'APAR Dry Chemical 3kg', 'unit' => 'Tabung', 'price' => 450000],
-            ['name' => 'Oli Mesin Pertamina', 'spec' => 'Meditran SX 15W-40', 'unit' => 'Drum', 'price' => 6500000],
+            ['name' => 'Asam Sulfat 98%', 'spec' => 'Grade Industri, sertifikasi COA', 'unit' => 'Liter', 'price' => 50000, 'brand' => 'Brataco'],
+            ['name' => 'Helm Safety Full Face', 'spec' => 'ANSI Z89.1, warna putih', 'unit' => 'Pcs', 'price' => 150000, 'brand' => 'Krisbow'],
+            ['name' => 'Sepatu Safety', 'spec' => 'Krusher Ukuran 42', 'unit' => 'Pasang', 'price' => 450000, 'brand' => 'Krusher'],
+            ['name' => 'Sarung Tangan Las', 'spec' => 'Kulit Sapi Asli', 'unit' => 'Pasang', 'price' => 85000, 'brand' => 'Krisbow'],
+            ['name' => 'Masker N95 3M', 'spec' => 'Particulate Respirator 8210', 'unit' => 'Box', 'price' => 250000, 'brand' => '3M'],
+            ['name' => 'Kacamata Safety', 'spec' => 'Anti-Scratch Clear', 'unit' => 'Pcs', 'price' => 45000, 'brand' => 'Krisbow'],
+            ['name' => 'Ear Plug 3M', 'spec' => 'Corded Silicone', 'unit' => 'Box', 'price' => 150000, 'brand' => '3M'],
+            ['name' => 'Rompi Safety Reflektif', 'spec' => 'Hijau Stabilo 2 Garis', 'unit' => 'Pcs', 'price' => 35000, 'brand' => 'Gosave'],
+            ['name' => 'Fire Extinguisher', 'spec' => 'APAR Dry Chemical 3kg', 'unit' => 'Tabung', 'price' => 450000, 'brand' => 'Servvo'],
+            ['name' => 'Oli Mesin Pertamina', 'spec' => 'Meditran SX 15W-40', 'unit' => 'Drum', 'price' => 6500000, 'brand' => 'Pertamina'],
             
             // Miscellaneous
-            ['name' => 'Lampu LED Philips', 'spec' => '14 Watt Cool Daylight', 'unit' => 'Pcs', 'price' => 45000],
-            ['name' => 'Sapu Ijuk', 'spec' => 'Gagang Kayu', 'unit' => 'Pcs', 'price' => 25000],
-            ['name' => 'Kain Pel Lantai', 'spec' => 'Microfiber', 'unit' => 'Pcs', 'price' => 65000],
-            ['name' => 'Sabun Cuci Tangan', 'spec' => 'Lifebuoy 5 Liter', 'unit' => 'Jerigen', 'price' => 180000],
+            ['name' => 'Lampu LED Philips', 'spec' => '14 Watt Cool Daylight', 'unit' => 'Pcs', 'price' => 45000, 'brand' => 'Philips'],
+            ['name' => 'Sapu Ijuk', 'spec' => 'Gagang Kayu', 'unit' => 'Pcs', 'price' => 25000, 'brand' => 'Dragon'],
+            ['name' => 'Kain Pel Lantai', 'spec' => 'Microfiber', 'unit' => 'Pcs', 'price' => 65000, 'brand' => 'Bagus'],
+            ['name' => 'Sabun Cuci Tangan', 'spec' => 'Lifebuoy 5 Liter', 'unit' => 'Jerigen', 'price' => 180000, 'brand' => 'Lifebuoy'],
         ];
 
         // ════════════════════════════════════════════════════════════════════
@@ -133,6 +133,7 @@ class DatabaseSeeder extends Seeder
                 'item_name' => $itemDef['name'],
                 'unit' => $itemDef['unit'],
                 'specification' => $itemDef['spec'],
+                'brand' => $itemDef['brand'],
                 'item_notes' => null,
                 'is_archived' => false,
             ]);
@@ -196,6 +197,7 @@ class DatabaseSeeder extends Seeder
                         'quantity' => $qty,
                         'unit' => $itemDef['unit'],
                         'specification' => $itemDef['spec'],
+                        'brand' => $itemDef['brand'],
                     ]);
                 }
 
@@ -340,6 +342,8 @@ class DatabaseSeeder extends Seeder
                         'offered_price_per_item' => $offeredPrice,
                         'offered_quantity' => $offeredQty,
                         'offered_unit' => $item->unit,
+                        'offered_specification' => $item->specification,
+                        'offered_brand' => $item->brand,
                     ]);
 
                     $totalPrice += ($offeredPrice * $offeredQty);
@@ -384,6 +388,9 @@ class DatabaseSeeder extends Seeder
                         'service_request_item_id' => $sr ? $qd->service_request_item_id : null,
                         'final_price_per_item' => $qd->offered_price_per_item,
                         'final_quantity' => $qd->offered_quantity,
+                        'final_specification' => $qd->offered_specification,
+                        'final_brand' => $qd->offered_brand,
+                        'final_unit' => $qd->offered_unit,
                         'notes' => null,
                     ]);
                 }

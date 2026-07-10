@@ -72,9 +72,8 @@ class PurchaseRequestController extends Controller
             ->get()->map(function ($item) {
                 return [
                     'id'    => $item->item_code ?? 'ITM-' . $item->id,
-                    'name'  => $item->item_name,
+                    'name'  => $item->full_name,
                     'unit'  => $item->unit,
-                    'spec'  => $item->specification ?? '',
                     'notes' => $item->item_notes ?? '',
                 ];
             })->values();
@@ -118,6 +117,14 @@ class PurchaseRequestController extends Controller
 
     public function store(Request $request)
     {
+        $attachmentPath = null;
+        if ($request->hasFile('attachment')) {
+            $request->validate([
+                'attachment' => 'file|mimes:pdf,xlsx,xls,jpg,jpeg,png|max:10240',
+            ]);
+            $attachmentPath = $request->file('attachment')->store('pr-attachments', 'public');
+        }
+
         if ($request->item_type === 'service') {
             $request->validate([
                 'requested_date' => 'required|date',
@@ -139,6 +146,7 @@ class PurchaseRequestController extends Controller
                     'requested_date'  => $request->requested_date,
                     'plant'           => $request->plant,
                     'status'          => 'submitted',
+                    'attachment_path' => $attachmentPath,
                 ]);
 
                 foreach ($svcData['jobs'] as $jobData) {
@@ -195,6 +203,7 @@ class PurchaseRequestController extends Controller
                 'requested_date'  => $request->requested_date,
                 'need_date'       => $request->need_date,
                 'status'          => 'submitted',
+                'attachment_path' => $attachmentPath,
             ]);
 
             foreach ($request->items as $item) {

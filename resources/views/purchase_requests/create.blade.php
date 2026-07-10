@@ -84,7 +84,7 @@
     <div class="page-desc">Fill in the form below to submit a new procurement/service request.</div>
 </div>
 
-<form action="{{ route('purchase_requests.store') }}" method="post" id="pr-form">
+<form action="{{ route('purchase_requests.store') }}" method="post" id="pr-form" enctype="multipart/form-data">
 @csrf
 <input type="hidden" name="item_type" id="item_type_field" value="goods">
 
@@ -99,7 +99,7 @@
         </div>
     </div>
     <div class="card-body">
-        <div class="form-row" style="grid-template-columns: 1fr 1fr 1fr; margin-bottom:0;">
+        <div class="form-row" style="grid-template-columns: 1fr 1fr 1fr; margin-bottom:16px;">
             <div class="form-group" style="margin-bottom:0;"><label class="form-label">Requested Date <span class="req">*</span></label><input class="form-control" type="date" name="requested_date" value="{{ date('Y-m-d') }}" readonly required style="background:#f9fafb;color:#6b7280;cursor:not-allowed;" title="Auto-filled"></div>
             <div class="form-group" style="margin-bottom:0;"><label class="form-label">Need Date <span class="req">*</span></label><input class="form-control" type="date" name="need_date" min="{{ date('Y-m-d') }}" required></div>
             <div class="form-group" style="margin-bottom:0;">
@@ -111,6 +111,11 @@
                     <option value="Gresik">Gresik</option>
                 </select>
             </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Attachment (Optional)</label>
+            <input type="file" class="form-control" name="attachment" accept=".pdf,.xlsx,.xls,.jpg,.jpeg,.png">
+            <span style="font-size:11px;color:#9ca3af;margin-top:4px">Max 10MB (PDF, Excel, Images)</span>
         </div>
     </div>
 </div>
@@ -157,7 +162,6 @@
                             <th>ITEM NAME</th>
                             <th style="width:70px;">QTY</th>
                             <th style="width:100px;">UNIT</th>
-                            <th>BRAND</th>
                             <th>NOTES</th>
                             <th style="width:40px;"></th>
                         </tr>
@@ -264,7 +268,6 @@
                     </select>
                 </div>
             </div>
-            <div class="form-group"><label class="form-label">Brand / Merek</label><input type="text" class="form-control" id="new-item-brand"></div>
             <div class="form-group" style="margin-bottom:0;"><label class="form-label">Notes</label><textarea class="form-control" id="new-item-notes"></textarea></div>
         </div>
         <div class="modal-footer">
@@ -379,7 +382,7 @@ function renderItemList(q='', u='', s='name_asc') {
     document.getElementById('item-list').innerHTML = filtered.map(i=>`
         <div class="item-option ${selectedItemId===i.id?'selected':''}" onclick="selectItem('${i.id}')">
             <div class="item-option-name">[${i.id}] ${i.name}</div>
-            <div class="item-option-desc">Brand: ${i.brand || '—'} | Unit: ${i.unit}</div>
+            <div class="item-option-desc">Unit: ${i.unit}</div>
         </div>`).join('');
 }
 function selectItem(id){ selectedItemId=id; filterItems(); }
@@ -388,7 +391,7 @@ function closeItemModal(){ document.getElementById('item-modal').classList.remov
 function addSelectedItem(){
     if(!selectedItemId){alert('Please select an item.');return;}
     const i=catalog.find(x=>x.id===selectedItemId); if(!i)return;
-    addedItems.push({idx:itemCounter++, id:i.id, name:i.name, unit:i.unit, brand:i.brand, notes:i.notes, qty:1});
+    addedItems.push({idx:itemCounter++, id:i.id, name:i.name, unit:i.unit, notes:i.notes, qty:1});
     renderGoodsTable(); closeItemModal();
 }
 function removeGoods(idx){ addedItems=addedItems.filter(i=>i.idx!==idx); renderGoodsTable(); }
@@ -398,13 +401,13 @@ function saveNewItem(){
     saveCurrentGoodsInputValuesToState();
     const name=document.getElementById('new-item-name').value.trim();
     if(!name){alert('Item name is required.');return;}
-    const unit=document.getElementById('new-item-unit').value, brand=document.getElementById('new-item-brand').value.trim(), notes=document.getElementById('new-item-notes').value.trim();
+    const unit=document.getElementById('new-item-unit').value, notes=document.getElementById('new-item-notes').value.trim();
     const qty=parseFloat(document.getElementById('new-item-qty').value) || 1;
     const newId='ITM-'+Math.floor(Math.random()*9000+1000);
-    catalog.push({id:newId, name, unit, brand, notes});
-    addedItems.push({idx:itemCounter++, id:newId, name, unit, brand, notes, qty:qty});
+    catalog.push({id:newId, name, unit, notes});
+    addedItems.push({idx:itemCounter++, id:newId, name, unit, notes, qty:qty});
     renderGoodsTable(); closeNewItemModal();
-    ['new-item-name','new-item-brand','new-item-notes'].forEach(id=>document.getElementById(id).value='');
+    ['new-item-name','new-item-notes'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('new-item-qty').value = '1';
 }
 function saveCurrentGoodsInputValuesToState() {
@@ -435,7 +438,6 @@ function renderGoodsTable(){
         <td><input class="form-control" name="items[${it.idx}][item_name]" value="${it.name}" required></td>
         <td><input type="number" class="form-control" name="items[${it.idx}][quantity]" value="${it.qty}" min="1" required></td>
         <td><select class="form-control" name="items[${it.idx}][unit]" required>${unitOptionsHtml}</select></td>
-        <td><input class="form-control" name="items[${it.idx}][brand]" value="${it.brand||''}"></td>
         <td><input class="form-control" name="items[${it.idx}][item_notes]" value="${it.notes||''}"></td>
         <td style="text-align:center;"><button type="button" onclick="removeGoods(${it.idx})" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:18px;">&times;</button></td>
     </tr>`).join('');
