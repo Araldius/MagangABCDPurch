@@ -127,9 +127,9 @@
                     </td>
                     <td style="padding:13px 14px;">
                         @if($prCategory === 'service')
-                        <span style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;background:#e0e7ff;color:#3730a3;"> Service</span>
+                        <span style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;background:#e0e7ff;color:#3730a3;">🔧 Service</span>
                         @else
-                        <span style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;background:#f1f5f9;color:#475569;"> Goods</span>
+                        <span style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;background:#f1f5f9;color:#475569;">📦 Goods</span>
                         @endif
                     </td>
                     <td style="padding:13px 14px;color:#374151;">{{ $qtyLabel }}</td>

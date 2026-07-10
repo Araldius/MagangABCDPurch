@@ -112,11 +112,7 @@
                 </select>
             </div>
         </div>
-        <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label">Attachment (Optional)</label>
-            <input type="file" class="form-control" name="attachment" accept=".pdf,.xlsx,.xls,.jpg,.jpeg,.png">
-            <span style="font-size:11px;color:#9ca3af;margin-top:4px">Max 10MB (PDF, Excel, Images)</span>
-        </div>
+
     </div>
 </div>
 
@@ -206,6 +202,16 @@
                 </table>
             </div>
             <div id="hidden-service-inputs"></div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-body" style="padding-top:16px; padding-bottom:16px;">
+        <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Attachment (Optional)</label>
+            <input type="file" class="form-control" name="attachment" accept=".pdf,.xlsx,.xls,.jpg,.jpeg,.png">
+            <span style="font-size:11px;color:#9ca3af;margin-top:4px">Max 10MB (PDF, Excel, Images)</span>
         </div>
     </div>
 </div>

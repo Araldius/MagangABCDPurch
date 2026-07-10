@@ -681,21 +681,28 @@ function openPRDetail(id, category) {
         (pr.items||[]).forEach((it, i) => {
             const vs = itemVS[it.id];
             if (vs) grandTotal += vs.total;
+
+            let origName = [it.item_name || it.name, it.specification, it.brand].filter(x => x).join('_') || '—';
+            let dispName = origName;
+            let differsBadge = '';
+            if (vs) {
+                let vsName = [it.item_name || it.name, vs.spec || it.specification, vs.brand || it.brand].filter(x => x).join('_');
+                if (vsName.toLowerCase() !== origName.toLowerCase()) {
+                    dispName = vsName;
+                    differsBadge = `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Item: ${origName}">DIFFERS</div>`;
+                }
+            }
+
             rows += `<tr>
                 <td style="${tdS}">${i+1}</td>
                 <td style="${tdS};font-family:monospace;color:#3b5bdb;font-weight:600">${it.item_id || '—'}</td>
-                <td style="${tdS};font-weight:500;color:#111827">${it.item_name || it.name || '—'}</td>
+                <td style="${tdS};font-weight:500;color:#111827">
+                    ${dispName}
+                    ${differsBadge}
+                </td>
                 <td style="${tdS};color:#6b7280;font-size:11.5px">
                     ${it.item_notes || '—'}
                     ${vs && vs.notes && vs.notes !== 'Selected' ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px">VENDOR NOTE</div>` : ''}
-                </td>
-                <td style="${tdS};color:#6b7280;font-size:11.5px">
-                    ${vs && vs.spec ? vs.spec : (it.specification || '-')}
-                    ${vs && vs.spec && String(vs.spec).toLowerCase() !== String(it.specification||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Spec: ${it.specification || '-'}">DIFFERS</div>` : ''}
-                </td>
-                <td style="${tdS};color:#6b7280;font-size:11.5px">
-                    ${vs && vs.brand ? vs.brand : (it.brand || '—')}
-                    ${vs && vs.brand && String(vs.brand).toLowerCase() !== String(it.brand||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Brand: ${it.brand || '-'}">DIFFERS</div>` : ''}
                 </td>
                 <td style="${tdS};text-align:right;font-weight:600;color:#111827;font-family:monospace">${it.quantity || 0}</td>
                 <td style="${tdS};color:#6b7280">
@@ -722,7 +729,7 @@ function openPRDetail(id, category) {
         const purchNotesTh = isPurchasing ? `<th style="${thS};min-width:160px">PURCHASING NOTES</th>` : '';
         const gTotal = hasPriceCol && grandTotal > 0
             ? `<tr style="background:#f9fafb">
-                <td colspan="${isAdmin ? 8 : 7}" style="padding:9px 10px;text-align:right;font-size:12px;font-weight:700;color:#374151">Total Request Value</td>
+                <td colspan="6" style="padding:9px 10px;text-align:right;font-size:12px;font-weight:700;color:#374151">Total Request Value</td>
                 <td colspan="3" style="padding:9px 10px;text-align:right;font-family:monospace;font-size:13px;font-weight:800;color:#111827">${fmtRp(grandTotal)}</td>
                </tr>` : '';
 
@@ -732,17 +739,15 @@ function openPRDetail(id, category) {
                     <thead><tr>
                         <th style="${thS}">NO</th>
                         <th style="${thS}">ITEM ID</th>
-                        <th style="${thS}">ITEM NAME</th>
+                        <th style="${thS};width:100%">ITEM NAME</th>
                         <th style="${thS}">NOTES</th>
-                        <th style="${thS}">SPEC</th>
-                        <th style="${thS}">BRAND</th>
                         <th style="${thS};text-align:right">QTY</th>
                         <th style="${thS}">UNIT</th>
                         ${gTh}
                         ${isAdmin ? `<th style="${thS};width:150px">ADMIN NOTES</th>` : ''}
                         ${purchNotesTh}
                     </tr></thead>
-                    <tbody>${rows || '<tr><td colspan="${isAdmin ? 8 : 7}" style="text-align:center;padding:16px;color:#9ca3af">No items</td></tr>'}</tbody>
+                    <tbody>${rows || '<tr><td colspan="${isAdmin ? 6 : 5}" style="text-align:center;padding:16px;color:#9ca3af">No items</td></tr>'}</tbody>
                     ${gTotal ? `<tfoot>${gTotal}</tfoot>` : ''}
                 </table>
             </div>

@@ -200,7 +200,7 @@ h1 { font-size:20px;font-weight:700;color:#111827;margin:0 0 3px }
         <div style="flex:1;position:relative">
             <select id="pr-select"
                 style="width:100%;padding:9px 32px 9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;color:#374151;background:#fff;appearance:none;cursor:pointer;font-family:inherit">
-                <option value="">Select PR/SR number to view vendor offers</option>
+                <option value="" disabled selected hidden>Select PR/SR number to view vendor offers</option>
                 @foreach($prs as $pr)
                 <option value="{{ $pr->type }}_{{ $pr->id }}"
                     {{ isset($selectedKey) && $selectedKey === $pr->type.'_'.$pr->id ? 'selected' : '' }}>
@@ -645,7 +645,7 @@ function renderVendorCards(){
             <div class="vendor-card-header" style="background:${isVendorChecked ? '#eff6ff' : '#fff'}">
                 <div style="font-size:13.5px;font-weight:700;color:${isVendorChecked ? '#1d4ed8' : '#111827'};display:flex;flex-direction:column;gap:4px;">
                     <div>${vName}${prevBadge}</div>
-                    ${off && off.attachment ? `<a href="/storage/${off.attachment}" target="_blank" style="font-size:11px;color:#3b5bdb;text-decoration:none;display:inline-flex;align-items:center;gap:4px;font-weight:600;"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg> View Attachment</a>` : ''}
+                    ${off && off.attachment ? `<a href="/storage/${off.attachment}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:#3b5bdb;background:#eff6ff;padding:4px 8px;border-radius:6px;text-decoration:none;border:1px solid #bfdbfe;width:max-content;margin-top:2px;"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg> View Attachment</a>` : ''}
                 </div>
             </div>
             <div class="vendor-card-body">

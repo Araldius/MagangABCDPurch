@@ -26,6 +26,12 @@ class ItemController extends Controller
         
         $items = $query->orderBy('item_name')->get();
         
+        foreach ($items as $item) {
+            $prCount = \App\Models\PurchaseRequestItem::where('item_id', $item->item_code)->count();
+            $srCount = \App\Models\ServiceRequestItem::where('item_id', $item->item_code)->count();
+            $item->dynamic_category = $srCount > $prCount ? 'Service' : 'Goods';
+        }
+
         $lastItem = Item::where('item_code', 'like', 'ITM-%')->orderBy('item_code', 'desc')->first();
         $nextId = 'ITM-0001';
         if ($lastItem) {
