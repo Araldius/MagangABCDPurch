@@ -112,7 +112,7 @@ h1 { font-size:20px;font-weight:700;color:#111827;margin:0 0 3px }
    ============================================================ */
 
    .req-item-card {
-    min-height: 170px;   /* atur sesuai kebutuhan, makin besar makin panjang ke bawah */
+    min-height: 180px;   /* atur sesuai kebutuhan, makin besar makin panjang ke bawah */
     padding: 16px;       /* biar isi kontennya juga lebih lega, opsional */
 }
 /* Left panel header row */
@@ -510,22 +510,22 @@ function requirementCardHtml(item, label, bg, tc, dot) {
     return `<div class="vc-row-item req-item-card" style="border:1px solid ${cardBorder};border-left:4px solid ${cardBorder};background:${cardBg};">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px">
             <div>
-                <div style="font-family:monospace;font-size:10px;font-weight:600;color:#3b5bdb;margin-bottom:2px;">${item.item_id || '—'}</div>
-                <div style="font-size:13.5px;font-weight:700;color:#111827;">${item.item_name}</div>
+                <div style="font-family:monospace;font-size:13px;font-weight:700;color:#3b5bdb;margin-bottom:3px;">${item.item_id || '—'}</div>
+                <div style="font-size:14.5px;font-weight:700;color:#111827;">${item.item_name}</div>
             </div>
-            <span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;background:${isSelected ? '#fff' : bg};font-size:10px;font-weight:700;color:${tc};white-space:nowrap;flex-shrink:0;">
+            <span style="display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;background:${isSelected ? '#fff' : bg};font-size:10.5px;font-weight:700;color:${tc};white-space:nowrap;flex-shrink:0;">
                 <span style="width:5px;height:5px;border-radius:50%;background:${dot}"></span>${label}
             </span>
         </div>
-        <div style="display:grid;grid-template-columns:60px 1fr;gap:5px 8px;align-items:center;font-size:11px;">
+        <div style="display:grid;grid-template-columns:60px 1fr;gap:6px 8px;align-items:center;font-size:12.5px;">
             <div style="color:#9ca3af">Qty</div>
             <div style="font-weight:700;color:#111827">${item.quantity} ${item.unit}</div>
             <div style="color:#9ca3af">Brand</div>
-            <div style="color:#111827;font-size:13px;font-weight:800;">${item.brand || '-'}</div>
+            <div style="color:#111827;font-size:14px;font-weight:800;">${item.brand || '-'}</div>
             <div style="color:#9ca3af">Spec</div>
-            <div style="color:#111827;font-size:10.5px;">${item.specification || '-'}</div>
+            <div style="color:#111827;font-size:12px;">${item.specification || '-'}</div>
             <div style="color:#9ca3af">Notes</div>
-            <div style="color:#6b7280;font-style:italic;font-size:10.5px;">${item.item_notes || item.notes || '-'}</div>
+            <div style="color:#6b7280;font-style:italic;font-size:12px;">${item.item_notes || item.notes || '-'}</div>
         </div>
     </div>`;
 }
@@ -645,7 +645,7 @@ function renderVendorCards(){
             <div class="vendor-card-header" style="background:${isVendorChecked ? '#eff6ff' : '#fff'}">
                 <div style="font-size:13.5px;font-weight:700;color:${isVendorChecked ? '#1d4ed8' : '#111827'};display:flex;flex-direction:column;gap:4px;">
                     <div>${vName}${prevBadge}</div>
-                    ${off && off.attachment ? `<a href="/storage/${off.attachment}" target="_blank" style="font-size:11px;color:#3b5bdb;text-decoration:none;display:inline-flex;align-items:center;gap:4px;font-weight:600;"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg> View Attachment</a>` : ''}
+                    ${off && off.attachment ? `<a href="/storage/${off.attachment}" target="_blank" style="font-size:11px;color:#3b5bdb;text-decoration:underline;display:inline-flex;align-items:center;gap:4px;font-weight:600;"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg> View Attachment</a>` : ''}
                 </div>
             </div>
             <div class="vendor-card-body">
