@@ -21,9 +21,9 @@
     .btn-outline:hover { background: #f3f4f6; }
     
     /* Charts Grid */
-    .chart-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .chart-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
-    .chart-card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #f3f4f6; }
+    .chart-row-2 { display: flex; flex-wrap: wrap; gap: 16px; width: 100%; margin-bottom: 16px; }
+    .chart-row-3 { display: flex; flex-wrap: wrap; gap: 16px; width: 100%; margin-bottom: 16px; }
+    .chart-card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); border: 1px solid #f3f4f6; display: flex; flex-direction: column; width: calc(50% - 8px); box-sizing: border-box; position: relative; }
     .chart-header { font-size: 15px; font-weight: 600; color: #1e3a8a; margin-bottom: 16px; }
     
     /* Modal Base */
@@ -112,13 +112,13 @@
     <div class="chart-row-2">
         <div class="chart-card">
             <div class="chart-header">Order Records by Plant</div>
-            <div style="position: relative; height: 200px; width: 100%;">
+            <div style="position: relative; height: 250px; width: 100%;">
                 <canvas id="chartOrderRecords"></canvas>
             </div>
         </div>
         <div class="chart-card">
             <div class="chart-header">Top 10 Item Catalog</div>
-            <div style="position: relative; height: 200px; width: 100%;">
+            <div style="position: relative; height: 250px; width: 100%;">
                 <canvas id="chartItemCatalog"></canvas>
             </div>
         </div>
@@ -128,13 +128,13 @@
     <div class="chart-row-2">
         <div class="chart-card">
             <div class="chart-header">Spend by Plant</div>
-            <div style="position: relative; height: 200px; width: 100%;">
+            <div style="position: relative; height: 250px; width: 100%;">
                 <canvas id="chartPlantSpend"></canvas>
             </div>
         </div>
         <div class="chart-card">
             <div class="chart-header">Service vs Goods (Spend)</div>
-            <div style="position: relative; height: 200px; width: 100%;">
+            <div style="position: relative; height: 250px; width: 100%;">
                 <canvas id="chartServiceGoods"></canvas>
             </div>
         </div>
@@ -270,9 +270,33 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                devicePixelRatio: 1, // Force 1:1 scaling to prevent hover offsets on Windows
                 plugins: {
                     legend: { display: !isSingleDataset || type === 'doughnut', position: 'top' }, // Legends hidden for single variables
-                    tooltip: { callbacks: { label: (ctx) => ' ' + ((id !== 'chartStatus' && id !== 'chartOrderRecords') ? formatRp(ctx.raw) : ctx.raw) } }
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                
+                                let value = context.parsed;
+                                if (value !== null && typeof value === 'object') {
+                                    value = value.y !== undefined ? value.y : value.x;
+                                }
+                                
+                                if (id !== 'chartStatus' && id !== 'chartOrderRecords') {
+                                    label += formatRp(value);
+                                } else {
+                                    label += value;
+                                }
+                                return label;
+                            }
+                        }
+                    }
                 },
                 onClick: (evt, activeEls) => {
                     if(activeEls.length > 0 && clickHandler) {
@@ -510,6 +534,19 @@
     document.addEventListener('DOMContentLoaded', () => {
         toggleTimeInput();
         fetchDashboardData();
+
+        // Fix for container resize (e.g. sidebar toggles) causing Chart.js hover offsets
+        const dashContainer = document.querySelector('.dash-container');
+        if (dashContainer) {
+            const resizeObserver = new ResizeObserver(() => {
+                for (let id in charts) {
+                    if (charts[id]) {
+                        charts[id].resize();
+                    }
+                }
+            });
+            resizeObserver.observe(dashContainer);
+        }
     });
 </script>
 @endsection

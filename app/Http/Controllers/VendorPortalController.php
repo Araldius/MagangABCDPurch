@@ -200,20 +200,23 @@ class VendorPortalController extends Controller
             'action_date' => now(),
         ]);
 
-        // Send Notification to all purchasing users
+        // Send Notifications in the background (after HTTP response is sent) to prevent slow loading
         $purchasingUsers = User::where('role', 'purchasing')->get();
-        if ($purchasingUsers->count() > 0) {
-            Notification::send($purchasingUsers, new VendorQuotationSubmitted($rfq, $vendor));
-        }
+        
+        dispatch(function () use ($purchasingUsers, $rfq, $vendor, $quotation) {
+            if ($purchasingUsers->count() > 0) {
+                Notification::send($purchasingUsers, new VendorQuotationSubmitted($rfq, $vendor));
+            }
 
-        // Send Quotation Details + Attachment to Company Email (using system email)
-        $companyEmail = env('MAIL_FROM_ADDRESS', 'purchasing@duniakimiajaya.com');
-        Notification::route('mail', $companyEmail)->notify(new \App\Notifications\CompanyQuotationSubmitted($rfq, $vendor, $quotation));
+            // Send Quotation Details + Attachment to Company Email (using system email)
+            $companyEmail = env('MAIL_FROM_ADDRESS', 'purchasing@duniakimiajaya.abc');
+            Notification::route('mail', $companyEmail)->notify(new \App\Notifications\CompanyQuotationSubmitted($rfq, $vendor, $quotation));
 
-        // Send Edit Link to Vendor
-        if ($quotation->vendor_token) {
-            $vendor->notify(new \App\Notifications\VendorQuotationEditLink($rfq, $vendor, $quotation->vendor_token));
-        }
+            // Send Edit Link to Vendor
+            if ($quotation->vendor_token) {
+                $vendor->notify(new \App\Notifications\VendorQuotationEditLink($rfq, $vendor, $quotation->vendor_token));
+            }
+        })->afterResponse();
 
         return back()->with('success', 'Quotation submitted successfully. An edit link has been sent to your email address.');
     }

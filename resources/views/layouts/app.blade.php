@@ -8,7 +8,7 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        html{-webkit-font-smoothing:antialiased;font-size:13px;zoom:0.67}
+        html{-webkit-font-smoothing:antialiased;font-size:13px;}
         body{font-family:'Inter',system-ui,sans-serif;background:#f3f4f6;color:#111827;min-height:150vh;display:flex}
  
         /* SIDEBAR */

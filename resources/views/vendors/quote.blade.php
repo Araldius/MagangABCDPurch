@@ -313,7 +313,7 @@
                                                 </td>
                                                 <td style="min-width:260px;">
                                                     <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
-                                                        <input type="checkbox" class="diff-toggle" onchange="document.getElementById('brand-spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'" {{ ($defBrand || $defSpec) ? 'checked' : '' }}>
+                                                        <input type="checkbox" class="diff-toggle" onchange="const d = document.getElementById('brand-spec-diff-{{ $idx }}'); d.style.display = this.checked ? 'block' : 'none'; if(!this.checked) d.querySelector('input').value = '';" {{ ($defBrand || $defSpec) ? 'checked' : '' }}>
                                                         <span>Different Spec/Brand?</span>
                                                     </label>
                                                     <div id="brand-spec-diff-{{ $idx }}" style="display:{{ ($defBrand || $defSpec) ? 'block' : 'none' }};margin-top:8px;">
@@ -381,7 +381,7 @@
                                             </td>
                                             <td style="min-width:260px;">
                                                 <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
-                                                    <input type="checkbox" class="diff-toggle" onchange="document.getElementById('brand-spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'" {{ ($defBrand || $defSpec) ? 'checked' : '' }}>
+                                                    <input type="checkbox" class="diff-toggle" onchange="const d = document.getElementById('brand-spec-diff-{{ $idx }}'); d.style.display = this.checked ? 'block' : 'none'; if(!this.checked) d.querySelector('input').value = '';" {{ ($defBrand || $defSpec) ? 'checked' : '' }}>
                                                     <span>Different Spec/Brand?</span>
                                                 </label>
                                                 <div id="brand-spec-diff-{{ $idx }}" style="display:{{ ($defBrand || $defSpec) ? 'block' : 'none' }};margin-top:8px;">
