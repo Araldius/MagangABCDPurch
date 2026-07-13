@@ -333,7 +333,7 @@
                 // 7. Plant Spend
                 createOrUpdateChart('chartPlantSpend', 'doughnut', c.plantSpend.labels, c.plantSpend.data, (lbl) => openDrillModal('plantSpend', lbl, '', 'Spend by Plant'), true);
                 // 8. Service vs Goods
-                createOrUpdateChart('chartServiceGoods', 'doughnut', c.serviceGoods.labels, c.serviceGoods.data, null, true);
+                createOrUpdateChart('chartServiceGoods', 'doughnut', c.serviceGoods.labels, c.serviceGoods.data, (lbl) => openDrillModal('serviceGoods', lbl, '', 'Service vs Goods Details'), true);
             });
     }
 
@@ -354,7 +354,8 @@
         'deptPerf': ['Document No', 'Title', 'Status', 'Value', 'Date'],
         'orderRecords': ['Document No', 'Title', 'Department', 'Status', 'Date'],
         'itemCatalog': ['Item Name', 'Vendor', 'Qty', 'Value', 'Date'],
-        'plantSpend': ['Document No', 'Title', 'Department', 'Value', 'Date']
+        'plantSpend': ['Document No', 'Title', 'Department', 'Value', 'Date'],
+        'serviceGoods': ['Document No', 'Title', 'Department', 'Value', 'Date']
     };
 
     function openDrillModal(type, label, series, title) {

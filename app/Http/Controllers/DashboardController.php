@@ -345,7 +345,10 @@ class DashboardController extends Controller
         $label = $request->query('label');
         
         $data = $this->getFilteredRequests($request);
-        $allRequests = $data['prs']->concat($data['srs']);
+        
+        $prs = $data['prs']->map(function($req) { $req->req_type = 'Goods'; return $req; });
+        $srs = $data['srs']->map(function($req) { $req->req_type = 'Service'; return $req; });
+        $allRequests = $prs->concat($srs);
         
         $rows = [];
 
@@ -416,6 +419,12 @@ class DashboardController extends Controller
             }
             elseif ($type === 'plantSpend') {
                 if ($p === $label && $isCompleted) {
+                    $rows[] = ['col1' => $docNo, 'col2' => $req->title ?? $req->service_name ?? '-', 'col3' => $dept, 'col4' => $fmtSpend, 'col5' => $reqDate];
+                }
+            }
+            elseif ($type === 'serviceGoods') {
+                $typeLabel = $req->req_type ?? 'Goods';
+                if ($typeLabel === $label && $isCompleted) {
                     $rows[] = ['col1' => $docNo, 'col2' => $req->title ?? $req->service_name ?? '-', 'col3' => $dept, 'col4' => $fmtSpend, 'col5' => $reqDate];
                 }
             }
