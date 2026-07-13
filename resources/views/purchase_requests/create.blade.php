@@ -268,13 +268,17 @@
                     </select>
                 </div>
             </div>
-            <div class="form-group" style="margin-bottom:0;"><label class="form-label">Notes</label><textarea class="form-control" id="new-item-notes"></textarea></div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Notes <span class="req">*</span></label>
+                <textarea class="form-control" id="new-item-notes" maxlength="40" oninput="updateNotesCounter()"></textarea>
+                <span id="notes-char-count" style="font-size:11px;color:#9ca3af;margin-top:4px">0/40 characters minimum</span>
+            </div>
         </div>
         <div class="modal-footer">
             <button type="button" class="btn-back" onclick="closeNewItemModal()">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Cancel
             </button>
-            <button type="button" class="btn btn-primary" onclick="saveNewItem()">Save & Add</button>
+            <button type="button" class="btn btn-primary" id="save-new-item-btn" onclick="saveNewItem()" disabled style="opacity:.5;cursor:not-allowed;">Save & Add</button>
         </div>
     </div>
 </div>
@@ -395,13 +399,34 @@ function addSelectedItem(){
     renderGoodsTable(); closeItemModal();
 }
 function removeGoods(idx){ addedItems=addedItems.filter(i=>i.idx!==idx); renderGoodsTable(); }
-function openNewItemModal(){ closeItemModal(); document.getElementById('new-item-modal').classList.add('open'); document.body.style.overflow = 'hidden'; }
+function openNewItemModal(){ closeItemModal(); document.getElementById('new-item-modal').classList.add('open'); document.body.style.overflow = 'hidden'; updateNotesCounter(); }
 function closeNewItemModal(){ document.getElementById('new-item-modal').classList.remove('open'); document.body.style.overflow = ''; }
+function updateNotesCounter() {
+    const len = document.getElementById('new-item-notes').value.trim().length;
+    const counterEl = document.getElementById('notes-char-count');
+    const btnEl = document.getElementById('save-new-item-btn');
+    const ok = len >= 7;
+
+    counterEl.textContent = `${len}/40 characters (min 7)`;
+    if (len >= 40) {
+        counterEl.style.color = '#ef4444';
+    } else if (ok) {
+        counterEl.style.color = '#16a34a';
+    } else {
+        counterEl.style.color = '#9ca3af';
+    }
+
+    btnEl.disabled = !ok;
+    btnEl.style.opacity = ok ? '1' : '.5';
+    btnEl.style.cursor = ok ? 'pointer' : 'not-allowed';
+}
 function saveNewItem(){
     saveCurrentGoodsInputValuesToState();
     const name=document.getElementById('new-item-name').value.trim();
     if(!name){alert('Item name is required.');return;}
-    const unit=document.getElementById('new-item-unit').value, notes=document.getElementById('new-item-notes').value.trim();
+    const notes=document.getElementById('new-item-notes').value.trim();
+    if(notes.length < 7){alert('Notes must be at least 7 characters.');return;}
+    const unit=document.getElementById('new-item-unit').value;
     const qty=parseFloat(document.getElementById('new-item-qty').value) || 1;
     const newId='ITM-'+Math.floor(Math.random()*9000+1000);
     catalog.push({id:newId, name, unit, notes});
@@ -409,6 +434,7 @@ function saveNewItem(){
     renderGoodsTable(); closeNewItemModal();
     ['new-item-name','new-item-notes'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('new-item-qty').value = '1';
+    updateNotesCounter();
 }
 function saveCurrentGoodsInputValuesToState() {
     addedItems.forEach(it => {
