@@ -120,6 +120,10 @@ min-height: 180px;   /* atur sesuai kebutuhan, makin besar makin panjang ke bawa
     padding: 12px 14px;
     min-height: 90px;
     font-size: 12.5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
 }
 
 /* Left panel header row */
