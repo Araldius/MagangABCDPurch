@@ -111,10 +111,21 @@ h1 { font-size:20px;font-weight:700;color:#111827;margin:0 0 3px }
    Item row height = 52px header + 245px per item.
    ============================================================ */
 
-   .req-item-card {
-    min-height: 180px;   /* atur sesuai kebutuhan, makin besar makin panjang ke bawah */
-    padding: 16px;       /* biar isi kontennya juga lebih lega, opsional */
+.req-item-card {
+min-height: 180px;   /* atur sesuai kebutuhan, makin besar makin panjang ke bawah */
+ padding: 16px;       /* biar isi kontennya juga lebih lega, opsional */
 }
+
+.req-job-header {
+    padding: 12px 14px;
+    min-height: 90px;
+    font-size: 12.5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
 /* Left panel header row */
 .req-row-header {
     height: 52px;
@@ -174,6 +185,7 @@ h1 { font-size:20px;font-weight:700;color:#111827;margin:0 0 3px }
     box-sizing: border-box;
     transition: all 0.2s;
     flex-shrink: 0;
+    height: 180px;
 }
 .vc-row-item:hover {
     border-color: #cbd5e1;
@@ -240,7 +252,7 @@ h1 { font-size:20px;font-weight:700;color:#111827;margin:0 0 3px }
     {{-- Requirements table + Vendor cards, side by side --}}
     <div style="display:flex;align-items:stretch;gap:16px;margin-bottom:14px;width:100%;min-width:0;overflow:hidden;">
         {{-- LEFT: Requirements table (tetap di tempat, tidak ikut geser) --}}
-        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;width:400px;flex-shrink:0;display:flex;flex-direction:column;height:calc(100vh - 250px);min-height:400px;">
+        <div id="vs-left-col" style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;width:400px;flex-shrink:0;display:flex;flex-direction:column;min-height:400px;">
         <div class="vendor-card-header" style="background:#f9fafb;">
             <div>
                 <div style="font-size:13.5px;font-weight:700;color:#111827">Item / Service Requirements</div>
@@ -252,7 +264,7 @@ h1 { font-size:20px;font-weight:700;color:#111827;margin:0 0 3px }
         </div>
 
         {{-- RIGHT: Vendor cards grid (carousel, tetap bisa digeser kiri-kanan) --}}
-        <div id="vendor-cards-grid" style="display:flex;overflow-x:auto;gap:16px;padding-bottom:12px;scroll-snap-type:x mandatory;flex:1;min-width:0;height:calc(100vh - 250px);min-height:400px;"></div>
+        <div id="vendor-cards-grid" style="display:flex;overflow-x:auto;gap:16px;padding-bottom:12px;scroll-snap-type:x mandatory;flex:1;min-width:0;min-height:400px;"></div>
     </div>
  
     {{-- Footer bar --}}
@@ -405,6 +417,23 @@ function computeBestPrices() {
     }
 }
 
+function syncWorkspaceHeight() {
+    const grid = document.getElementById('vendor-cards-grid');
+    const leftCol = document.getElementById('vs-left-col');
+    if (!grid || grid.offsetParent === null) return;
+
+    const topOffset = grid.getBoundingClientRect().top;
+    const footerBar = document.querySelector('#selection-workspace > div:last-child');
+    const footerHeight = footerBar ? footerBar.offsetHeight + 24 : 90;
+
+    const availableHeight = Math.max(400, window.innerHeight - topOffset - footerHeight);
+
+    grid.style.height = availableHeight + 'px';
+    if (leftCol) leftCol.style.height = availableHeight + 'px';
+}
+
+window.addEventListener('resize', syncWorkspaceHeight);
+
 function loadPR(uniqueKey) {
     if (!uniqueKey) return;
     const [type, id] = uniqueKey.split('_');
@@ -464,6 +493,7 @@ function loadPR(uniqueKey) {
     renderRequirementsTable();
     renderVendorCards();
     updateCounts();
+    syncWorkspaceHeight();
 }
 
 function exportQuotations() {
@@ -536,7 +566,7 @@ function renderRequirementsTable(){
 
     if (currentPR.type === 'service') {
         currentPR.jobs.forEach(job => {
-            html += `<div class="vc-row-job">💼 ${job.job_description}</div>`;
+            html += `<div class="vc-row-job req-job-header">💼 ${job.job_description}</div>`;
             job.items.forEach(item => {
                 const [label,bg,tc,dot] = getItemStatus(item.id);
                 html += requirementCardHtml(item, label, bg, tc, dot);
@@ -550,6 +580,7 @@ function renderRequirementsTable(){
     }
 
     container.innerHTML = html;
+    syncWorkspaceHeight();
 }
 
 function toggleVendorService(vId, isChecked) {

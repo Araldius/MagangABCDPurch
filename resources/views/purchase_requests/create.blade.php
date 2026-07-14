@@ -112,7 +112,11 @@
                 </select>
             </div>
         </div>
-
+        <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Attachment (Optional)</label>
+            <input type="file" class="form-control" name="attachment" accept=".pdf,.xlsx,.xls,.jpg,.jpeg,.png">
+            <span style="font-size:11px;color:#9ca3af;margin-top:4px">Max 10MB (PDF, Excel, Images)</span>
+        </div>
     </div>
 </div>
 
@@ -206,16 +210,6 @@
     </div>
 </div>
 
-<div class="card mt-4">
-    <div class="card-body" style="padding-top:16px; padding-bottom:16px;">
-        <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label">Attachment (Optional)</label>
-            <input type="file" class="form-control" name="attachment" accept=".pdf,.xlsx,.xls,.jpg,.jpeg,.png">
-            <span style="font-size:11px;color:#9ca3af;margin-top:4px">Max 10MB (PDF, Excel, Images)</span>
-        </div>
-    </div>
-</div>
-
 <div class="actions" style="display:flex; justify-content:flex-end; gap:12px; margin-top:24px;">
     <a href="{{ route('dashboard') }}" class="btn-back">
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Cancel
@@ -265,8 +259,13 @@
             <button class="modal-close" onclick="closeNewItemModal()">&times;</button>
         </div>
         <div class="modal-body">
-            <div class="form-row" style="grid-template-columns: 2fr 1fr 1.5fr;">
-                <div class="form-group"><label class="form-label">Item Name <span class="req">*</span></label><input class="form-control" id="new-item-name"></div>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label class="form-label">Item Name <span class="req">*</span></label>
+                <input class="form-control" id="new-item-name" maxlength="40" oninput="updateItemNameCounter()" placeholder="ItemName_Specification_Brand">
+                <span id="name-char-count" style="font-size:11px;color:#9ca3af;margin-top:4px;display:block;">0/40 characters (min 7). Format: ItemName_Spec_Brand</span>
+                <span style="font-size:11px;color:#6b7280;margin-top:2px;display:block;">Wajib menggunakan format <b>ItemName_Specification_Brand</b> (pisahkan dengan <i>underscore</i>). Gunakan <b>nsp</b> jika tidak ada spek, dan <b>nbr</b> jika tidak ada brand. Contoh: <i>Paku_nsp_nbr</i></span>
+            </div>
+            <div class="form-row" style="grid-template-columns: 1fr 1.5fr;">
                 <div class="form-group"><label class="form-label">Qty <span class="req">*</span></label><input type="number" class="form-control" id="new-item-qty" value="1" min="1"></div>
                 <div class="form-group"><label class="form-label">Unit <span class="req">*</span></label>
                     <select class="form-control" id="new-item-unit">
@@ -274,13 +273,16 @@
                     </select>
                 </div>
             </div>
-            <div class="form-group" style="margin-bottom:0;"><label class="form-label">Notes</label><textarea class="form-control" id="new-item-notes"></textarea></div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label">Notes</label>
+                <textarea class="form-control" id="new-item-notes"></textarea>
+            </div>
         </div>
         <div class="modal-footer">
             <button type="button" class="btn-back" onclick="closeNewItemModal()">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Cancel
             </button>
-            <button type="button" class="btn btn-primary" onclick="saveNewItem()">Save & Add</button>
+            <button type="button" class="btn btn-primary" id="save-new-item-btn" onclick="saveNewItem()" disabled style="opacity:.5;cursor:not-allowed;">Save & Add</button>
         </div>
     </div>
 </div>
@@ -397,24 +399,67 @@ function closeItemModal(){ document.getElementById('item-modal').classList.remov
 function addSelectedItem(){
     if(!selectedItemId){alert('Please select an item.');return;}
     const i=catalog.find(x=>x.id===selectedItemId); if(!i)return;
-    addedItems.push({idx:itemCounter++, id:i.id, name:i.name, unit:i.unit, notes:i.notes, qty:1});
+    addedItems.push({idx:itemCounter++, id:i.id, name:i.name, unit:i.unit, notes:i.notes, qty:1, brand:i.brand||'', spec:i.specification||''});
     renderGoodsTable(); closeItemModal();
 }
 function removeGoods(idx){ addedItems=addedItems.filter(i=>i.idx!==idx); renderGoodsTable(); }
-function openNewItemModal(){ closeItemModal(); document.getElementById('new-item-modal').classList.add('open'); document.body.style.overflow = 'hidden'; }
+function openNewItemModal(){ closeItemModal(); document.getElementById('new-item-modal').classList.add('open'); document.body.style.overflow = 'hidden'; updateItemNameCounter(); }
 function closeNewItemModal(){ document.getElementById('new-item-modal').classList.remove('open'); document.body.style.overflow = ''; }
+function updateItemNameCounter() {
+    const val = document.getElementById('new-item-name').value.trim();
+    const len = val.length;
+    const counterEl = document.getElementById('name-char-count');
+    const btnEl = document.getElementById('save-new-item-btn');
+    const formatRegex = /^[^_]+_[^_]+_[^_]+$/;
+    const isValidFormat = formatRegex.test(val);
+    const ok = len >= 7 && isValidFormat;
+
+    let text = `${len}/40 characters (min 7). `;
+    if (len > 0 && !isValidFormat) {
+        text += "Format harus: Name_Spec_Brand";
+    }
+
+    counterEl.textContent = text;
+    if (len >= 40) {
+        counterEl.style.color = '#ef4444';
+    } else if (ok) {
+        counterEl.style.color = '#16a34a';
+    } else {
+        counterEl.style.color = '#ef4444';
+    }
+
+    btnEl.disabled = !ok;
+    btnEl.style.opacity = ok ? '1' : '.5';
+    btnEl.style.cursor = ok ? 'pointer' : 'not-allowed';
+}
 function saveNewItem(){
     saveCurrentGoodsInputValuesToState();
-    const name=document.getElementById('new-item-name').value.trim();
-    if(!name){alert('Item name is required.');return;}
-    const unit=document.getElementById('new-item-unit').value, notes=document.getElementById('new-item-notes').value.trim();
+    const nameStr=document.getElementById('new-item-name').value.trim();
+    if(!nameStr){alert('Item name is required.');return;}
+    if(nameStr.length < 7){alert('Item name must be at least 7 characters.');return;}
+    const formatRegex = /^[^_]+_[^_]+_[^_]+$/;
+    if(!formatRegex.test(nameStr)){alert('Item name must be in format: ItemName_Specification_Brand');return;}
+    
+    // Parse format: ItemName_Specification_Brand
+    const parts = nameStr.split('_');
+    const finalName = parts[0].trim();
+    let finalSpec = parts[1].trim();
+    let finalBrand = parts[2].trim();
+    
+    if (finalSpec.toLowerCase() === 'nsp') finalSpec = '';
+    if (finalBrand.toLowerCase() === 'nbr') finalBrand = '';
+
+    const notes=document.getElementById('new-item-notes').value.trim();
+    const unit=document.getElementById('new-item-unit').value;
     const qty=parseFloat(document.getElementById('new-item-qty').value) || 1;
     const newId='ITM-'+Math.floor(Math.random()*9000+1000);
-    catalog.push({id:newId, name, unit, notes});
-    addedItems.push({idx:itemCounter++, id:newId, name, unit, notes, qty:qty});
+    
+    catalog.push({id:newId, name: finalName, unit, notes, brand: finalBrand, specification: finalSpec});
+    addedItems.push({idx:itemCounter++, id:newId, name: finalName, unit, notes, qty:qty, brand: finalBrand, spec: finalSpec});
     renderGoodsTable(); closeNewItemModal();
     ['new-item-name','new-item-notes'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('new-item-qty').value = '1';
+    updateItemNameCounter();
 }
 function saveCurrentGoodsInputValuesToState() {
     addedItems.forEach(it => {
@@ -425,6 +470,8 @@ function saveCurrentGoodsInputValuesToState() {
             if (nameInput) it.name = nameInput.value;
             const brandInput = document.querySelector(`input[name="items[${it.idx}][brand]"]`);
             if (brandInput) it.brand = brandInput.value;
+            const specInput = document.querySelector(`input[name="items[${it.idx}][specification]"]`);
+            if (specInput) it.spec = specInput.value;
             const notesInput = document.querySelector(`input[name="items[${it.idx}][item_notes]"]`);
             if (notesInput) it.notes = notesInput.value;
             const unitSelect = document.querySelector(`select[name="items[${it.idx}][unit]"]`);
@@ -440,7 +487,11 @@ function renderGoodsTable(){
     if(!addedItems.length){t.innerHTML='<tr><td colspan="8" style="text-align:center;padding:28px 16px;color:#9ca3af;">No items added yet.</td></tr>';return;}
     t.innerHTML=addedItems.map((it,i)=>`<tr>
         <td>${i+1}</td>
-        <td style="font-family: monospace; font-weight: 600; color: var(--primary);">${it.id}<input type="hidden" name="items[${it.idx}][item_id]" value="${it.id}"></td>
+        <td style="font-family: monospace; font-weight: 600; color: var(--primary);">${it.id}
+            <input type="hidden" name="items[${it.idx}][item_id]" value="${it.id}">
+            <input type="hidden" name="items[${it.idx}][brand]" value="${it.brand||''}">
+            <input type="hidden" name="items[${it.idx}][specification]" value="${it.spec||''}">
+        </td>
         <td><input class="form-control" name="items[${it.idx}][item_name]" value="${it.name}" required></td>
         <td><input type="number" class="form-control" name="items[${it.idx}][quantity]" value="${it.qty}" min="1" required></td>
         <td><select class="form-control" name="items[${it.idx}][unit]" required>${unitOptionsHtml}</select></td>
