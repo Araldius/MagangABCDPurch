@@ -73,6 +73,9 @@ class PurchaseRequestController extends Controller
                 return [
                     'id'    => $item->item_code ?? 'ITM-' . $item->id,
                     'name'  => $item->full_name,
+                    'base_name' => $item->item_name,
+                    'brand' => $item->brand ?? '',
+                    'specification' => $item->specification ?? '',
                     'unit'  => $item->unit,
                     'notes' => $item->item_notes ?? '',
                 ];
@@ -112,7 +115,12 @@ class PurchaseRequestController extends Controller
         $srYearCount  = ServiceRequest::whereYear('created_at', now()->year)->count() + 1;
         $nextSrDocNum = 'SR-' . now()->format('Y') . '-' . str_pad($srYearCount, 4, '0', STR_PAD_LEFT);
 
-        return view('purchase_requests.create', compact('existingItems', 'existingServiceTemplates', 'nextPrDocNum', 'nextSrDocNum'));
+        // Fetch all unique brands for autocomplete
+        $prBrands = \App\Models\PurchaseRequestItem::whereNotNull('brand')->where('brand', '!=', '')->distinct()->pluck('brand');
+        $itemBrands = \App\Models\Item::whereNotNull('brand')->where('brand', '!=', '')->distinct()->pluck('brand');
+        $allBrands = $prBrands->concat($itemBrands)->unique()->sort()->values();
+
+        return view('purchase_requests.create', compact('existingItems', 'existingServiceTemplates', 'nextPrDocNum', 'nextSrDocNum', 'allBrands'));
     }
 
     public function store(Request $request)
@@ -255,6 +263,35 @@ class PurchaseRequestController extends Controller
 
         $req->status = 'vendor_search';
         $req->save();
+
+        // Add any new items to the Master Item catalog
+        if (!$isService) {
+            foreach ($req->items as $item) {
+                // Check if the item already exists in the master catalog
+                $existing = \App\Models\Item::where('item_code', $item->item_id)->first();
+                
+                if (!$existing && str_starts_with($item->item_id, 'ITM-')) {
+                    // Check if it's an existing item that was passed with ITM-{id} but has null item_code in DB
+                    $idNum = (int) str_replace('ITM-', '', $item->item_id);
+                    if ($idNum > 0) {
+                        $existing = \App\Models\Item::find($idNum);
+                    }
+                }
+
+                if (!$existing) {
+                    \App\Models\Item::create([
+                        'item_code'     => $item->item_id,
+                        'item_name'     => $item->item_name,
+                        'unit'          => $item->unit,
+                        'specification' => $item->specification,
+                        'brand'         => $item->brand,
+                        'item_notes'    => $item->item_notes,
+                        'type'          => 'goods',
+                        'is_archived'   => false,
+                    ]);
+                }
+            }
+        }
 
         // Create an RFQ if none exists so Admin can immediately add Quotations
         $rfq = $req->rfqs()->first();
@@ -499,4 +536,4 @@ class PurchaseRequestController extends Controller
 
         return back()->with('success', 'Items/Services berhasil diperbarui.');
     }
-}
+}s
