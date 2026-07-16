@@ -259,8 +259,32 @@
             <button class="modal-close" onclick="closeNewItemModal()">&times;</button>
         </div>
         <div class="modal-body">
-            <div class="form-row" style="grid-template-columns: 2fr 1fr 1.5fr;">
-                <div class="form-group"><label class="form-label">Item Name <span class="req">*</span></label><input class="form-control" id="new-item-name"></div>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label class="form-label">Item Name <span class="req">*</span></label>
+                <input class="form-control" id="new-item-name" maxlength="60" placeholder="e.g. Laptop" oninput="updatePreviewCounter()">
+            </div>
+            <div class="form-group" style="margin-bottom:12px;">
+                <label class="form-label">Specification</label>
+                <input class="form-control" id="new-item-spec" placeholder="e.g. Core i7 16GB" oninput="updatePreviewCounter()">
+                <span style="font-size:11px;color:#9ca3af;margin-top:4px;display:block;">* Leave blank if none</span>
+            </div>
+            <div class="form-group" style="margin-bottom:12px; position: relative;">
+                <label class="form-label">Brand</label>
+                <input type="text" class="form-control" id="new-item-brand" placeholder="e.g. Asus" autocomplete="off" onfocus="showBrandDropdown()" oninput="filterBrandDropdown(); updatePreviewCounter();" onblur="hideBrandDropdown()">
+                <div id="brand-dropdown" style="display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid #d1d5db; border-radius:6px; max-height:200px; overflow-y:auto; z-index:1000; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1); margin-top: 4px;">
+                    @foreach($allBrands ?? [] as $b)
+                        <div class="brand-option" style="padding:8px 12px; cursor:pointer; font-size:13px; color:#374151; border-bottom:1px solid #f3f4f6;" onmousedown="selectBrand('{{ addslashes($b) }}')" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='#fff'">{{ $b }}</div>
+                    @endforeach
+                </div>
+                <span style="font-size:11px;color:#9ca3af;margin-top:4px;display:block;">* Leave blank if none</span>
+            </div>
+
+            <div style="background:#f3f4f6; border:1px dashed #d1d5db; padding:10px 12px; border-radius:6px; margin-bottom:16px;">
+                <span style="font-size:11px; font-weight:600; color:#6b7280; display:block; margin-bottom:4px;">Item Name (Formatted)</span>
+                <div id="preview-text" style="font-family:monospace; font-weight:600; color:var(--primary); font-size:13.5px; word-break:break-all;">_nsp_nbr</div>
+                <div id="preview-counter" style="font-size:11px; color:#ef4444; margin-top:4px;">8/40 characters (min 7)</div>
+            </div>
+            <div class="form-row" style="grid-template-columns: 1fr 1.5fr;">
                 <div class="form-group"><label class="form-label">Qty <span class="req">*</span></label><input type="number" class="form-control" id="new-item-qty" value="1" min="1"></div>
                 <div class="form-group"><label class="form-label">Unit <span class="req">*</span></label>
                     <select class="form-control" id="new-item-unit">
@@ -269,9 +293,8 @@
                 </div>
             </div>
             <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label">Notes <span class="req">*</span></label>
-                <textarea class="form-control" id="new-item-notes" maxlength="40" oninput="updateNotesCounter()"></textarea>
-                <span id="notes-char-count" style="font-size:11px;color:#9ca3af;margin-top:4px">0/40 characters minimum</span>
+                <label class="form-label">Notes</label>
+                <textarea class="form-control" id="new-item-notes"></textarea>
             </div>
         </div>
         <div class="modal-footer">
@@ -395,56 +418,144 @@ function closeItemModal(){ document.getElementById('item-modal').classList.remov
 function addSelectedItem(){
     if(!selectedItemId){alert('Please select an item.');return;}
     const i=catalog.find(x=>x.id===selectedItemId); if(!i)return;
-    addedItems.push({idx:itemCounter++, id:i.id, name:i.name, unit:i.unit, notes:i.notes, qty:1});
+    addedItems.push({idx:itemCounter++, id:i.id, name:i.base_name || i.name, fullName: i.name, unit:i.unit, notes:i.notes, qty:1, brand:i.brand||'', spec:i.specification||''});
     renderGoodsTable(); closeItemModal();
 }
 function removeGoods(idx){ addedItems=addedItems.filter(i=>i.idx!==idx); renderGoodsTable(); }
-function openNewItemModal(){ closeItemModal(); document.getElementById('new-item-modal').classList.add('open'); document.body.style.overflow = 'hidden'; updateNotesCounter(); }
-function closeNewItemModal(){ document.getElementById('new-item-modal').classList.remove('open'); document.body.style.overflow = ''; }
-function updateNotesCounter() {
-    const len = document.getElementById('new-item-notes').value.trim().length;
-    const counterEl = document.getElementById('notes-char-count');
-    const btnEl = document.getElementById('save-new-item-btn');
-    const ok = len >= 7;
+let globalNewItemCounter = {{ $lastItemId ?? 0 }} + 1;
 
+function openNewItemModal(){ closeItemModal(); document.getElementById('new-item-modal').classList.add('open'); document.body.style.overflow = 'hidden'; updatePreviewCounter(); }
+function closeNewItemModal(){ document.getElementById('new-item-modal').classList.remove('open'); document.body.style.overflow = ''; }
+
+function updatePreviewCounter() {
+    const finalName = document.getElementById('new-item-name').value.trim();
+    const finalSpec = document.getElementById('new-item-spec').value.trim();
+    const finalBrand = document.getElementById('new-item-brand').value.trim();
+    
+    let displaySpec = finalSpec || 'nsp';
+    let displayBrand = finalBrand || 'nbr';
+    let fullName = `${finalName}_${displaySpec}_${displayBrand}`;
+    if (!finalName) fullName = `_nsp_nbr`;
+    
+    const len = fullName.length;
+    const counterEl = document.getElementById('preview-counter');
+    const textEl = document.getElementById('preview-text');
+    const btnEl = document.getElementById('save-new-item-btn');
+    
+    textEl.textContent = fullName;
     counterEl.textContent = `${len}/40 characters (min 7)`;
+    
+    const ok = len >= 7 && len <= 40 && finalName.length > 0;
+    
     if (len >= 40) {
         counterEl.style.color = '#ef4444';
+        textEl.style.color = '#ef4444';
     } else if (ok) {
         counterEl.style.color = '#16a34a';
+        textEl.style.color = '#16a34a';
     } else {
-        counterEl.style.color = '#9ca3af';
+        counterEl.style.color = '#ef4444';
+        textEl.style.color = 'var(--primary)';
     }
 
     btnEl.disabled = !ok;
     btnEl.style.opacity = ok ? '1' : '.5';
     btnEl.style.cursor = ok ? 'pointer' : 'not-allowed';
 }
+
+function showBrandDropdown() {
+    document.getElementById('brand-dropdown').style.display = 'block';
+    filterBrandDropdown();
+}
+function hideBrandDropdown() {
+    setTimeout(() => { document.getElementById('brand-dropdown').style.display = 'none'; }, 200);
+}
+function filterBrandDropdown() {
+    const val = document.getElementById('new-item-brand').value.toLowerCase();
+    const options = document.querySelectorAll('#brand-dropdown .brand-option');
+    let hasVisible = false;
+    options.forEach(opt => {
+        if (opt.textContent.toLowerCase().includes(val)) {
+            opt.style.display = 'block';
+            hasVisible = true;
+        } else {
+            opt.style.display = 'none';
+        }
+    });
+    document.getElementById('brand-dropdown').style.display = hasVisible ? 'block' : 'none';
+}
+function selectBrand(val) {
+    document.getElementById('new-item-brand').value = val;
+    document.getElementById('brand-dropdown').style.display = 'none';
+    updatePreviewCounter();
+}
+
 function saveNewItem(){
     saveCurrentGoodsInputValuesToState();
-    const name=document.getElementById('new-item-name').value.trim();
-    if(!name){alert('Item name is required.');return;}
+    const finalName=document.getElementById('new-item-name').value.trim();
+    if(!finalName){alert('Item name is required.');return;}
+    
+    let finalSpec=document.getElementById('new-item-spec').value.trim();
+    let finalBrand=document.getElementById('new-item-brand').value.trim();
+
+    let displaySpec = finalSpec || 'nsp';
+    let displayBrand = finalBrand || 'nbr';
+    let fullName = `${finalName}_${displaySpec}_${displayBrand}`;
+
     const notes=document.getElementById('new-item-notes').value.trim();
-    if(notes.length < 7){alert('Notes must be at least 7 characters.');return;}
     const unit=document.getElementById('new-item-unit').value;
     const qty=parseFloat(document.getElementById('new-item-qty').value) || 1;
-    const newId='ITM-'+Math.floor(Math.random()*9000+1000);
-    catalog.push({id:newId, name, unit, notes});
-    addedItems.push({idx:itemCounter++, id:newId, name, unit, notes, qty:qty});
+    const newId='ITM-' + globalNewItemCounter++;
+    
+    catalog.push({id:newId, name: fullName, base_name: finalName, unit, notes, brand: finalBrand, specification: finalSpec});
+    addedItems.push({idx:itemCounter++, id:newId, name: finalName, fullName: fullName, unit, notes, qty:qty, brand: finalBrand, spec: finalSpec});
     renderGoodsTable(); closeNewItemModal();
-    ['new-item-name','new-item-notes'].forEach(id=>document.getElementById(id).value='');
+    ['new-item-name','new-item-spec','new-item-brand','new-item-notes'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('new-item-qty').value = '1';
-    updateNotesCounter();
+    updatePreviewCounter();
 }
+
+function handleTableNameChange(event, idx) {
+    const val = event.target.value;
+    const parts = val.split('_');
+    const item = addedItems.find(x => x.idx === idx);
+    if (!item) return;
+
+    if (parts.length >= 3) {
+        item.name = parts[0].trim();
+        let s = parts[1].trim();
+        let b = parts[2].trim();
+        item.spec = (s.toLowerCase() === 'nsp') ? '' : s;
+        item.brand = (b.toLowerCase() === 'nbr') ? '' : b;
+        item.fullName = val;
+    } else {
+        item.name = val.trim();
+        item.spec = '';
+        item.brand = '';
+        item.fullName = `${item.name}_nsp_nbr`;
+    }
+
+    document.getElementById(`hidden-name-${idx}`).value = item.name;
+    document.getElementById(`hidden-spec-${idx}`).value = item.spec;
+    document.getElementById(`hidden-brand-${idx}`).value = item.brand;
+    event.target.value = item.fullName;
+}
+
 function saveCurrentGoodsInputValuesToState() {
     addedItems.forEach(it => {
         const qtyInput = document.querySelector(`input[name="items[${it.idx}][quantity]"]`);
         if (qtyInput) {
             it.qty = parseFloat(qtyInput.value) || 1;
-            const nameInput = document.querySelector(`input[name="items[${it.idx}][item_name]"]`);
+            const nameInput = document.getElementById(`hidden-name-${it.idx}`);
             if (nameInput) it.name = nameInput.value;
-            const brandInput = document.querySelector(`input[name="items[${it.idx}][brand]"]`);
+            const brandInput = document.getElementById(`hidden-brand-${it.idx}`);
             if (brandInput) it.brand = brandInput.value;
+            const specInput = document.getElementById(`hidden-spec-${it.idx}`);
+            if (specInput) it.spec = specInput.value;
+            
+            const visibleInput = document.querySelector(`input[name="items[${it.idx}][visible_name]"]`);
+            if (visibleInput) it.fullName = visibleInput.value;
+            
             const notesInput = document.querySelector(`input[name="items[${it.idx}][item_notes]"]`);
             if (notesInput) it.notes = notesInput.value;
             const unitSelect = document.querySelector(`select[name="items[${it.idx}][unit]"]`);
@@ -460,8 +571,13 @@ function renderGoodsTable(){
     if(!addedItems.length){t.innerHTML='<tr><td colspan="8" style="text-align:center;padding:28px 16px;color:#9ca3af;">No items added yet.</td></tr>';return;}
     t.innerHTML=addedItems.map((it,i)=>`<tr>
         <td>${i+1}</td>
-        <td style="font-family: monospace; font-weight: 600; color: var(--primary);">${it.id}<input type="hidden" name="items[${it.idx}][item_id]" value="${it.id}"></td>
-        <td><input class="form-control" name="items[${it.idx}][item_name]" value="${it.name}" required></td>
+        <td style="font-family: monospace; font-weight: 600; color: var(--primary);">${it.id}
+            <input type="hidden" name="items[${it.idx}][item_id]" value="${it.id}">
+            <input type="hidden" id="hidden-name-${it.idx}" name="items[${it.idx}][item_name]" value="${it.name}">
+            <input type="hidden" id="hidden-brand-${it.idx}" name="items[${it.idx}][brand]" value="${it.brand||''}">
+            <input type="hidden" id="hidden-spec-${it.idx}" name="items[${it.idx}][specification]" value="${it.spec||''}">
+        </td>
+        <td><input class="form-control" name="items[${it.idx}][visible_name]" value="${it.fullName}" required onchange="handleTableNameChange(event, ${it.idx})" placeholder="Name_Spec_Brand"></td>
         <td><input type="number" class="form-control" name="items[${it.idx}][quantity]" value="${it.qty}" min="1" required></td>
         <td><select class="form-control" name="items[${it.idx}][unit]" required>${unitOptionsHtml}</select></td>
         <td><input class="form-control" name="items[${it.idx}][item_notes]" value="${it.notes||''}"></td>

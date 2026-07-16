@@ -268,7 +268,7 @@ class VendorController extends Controller
         }
 
         // 3. Build headers
-        $headerTop = ['<b>NO.</b>', '<b>ITEM ID</b>', '<b>NAMA_SPEK_BRAND</b>', '<b>QTY</b>', '<b>UNIT</b>', '<b>NOTES</b>'];
+        $headerTop = ['<b>NO.</b>', '<b>ITEM ID</b>', '<b>ITEM NAME</b>', '<b>QTY</b>', '<b>UNIT</b>', '<b>NOTES</b>'];
         $headerBottom = ['', '', '', '', '', ''];
         
         foreach ($participatingVendors as $vName) {
@@ -280,9 +280,9 @@ class VendorController extends Controller
             
             $headerBottom[] = '<b>QTY</b>';
             $headerBottom[] = '<b>UNIT</b>';
-            $headerBottom[] = '<b>NOTES</b>';
             $headerBottom[] = '<b>PRICE</b>';
             $headerBottom[] = '<b>TOTAL PRICE</b>';
+            $headerBottom[] = '<b>NOTES</b>';
         }
         $data = [$headerTop, $headerBottom];
 
@@ -302,6 +302,8 @@ class VendorController extends Controller
                 $item->item_notes ?? $item->admin_notes ?? '-'
             ];
 
+            $vendorCells = [];
+
             foreach ($vendorQuotations as $qId => $quotation) {
                 $detail = $quotation->details->first(function($d) use ($item, $type) {
                     if ($type === 'service') {
@@ -311,6 +313,8 @@ class VendorController extends Controller
                 });
 
                 if ($detail) {
+                    $vendorDiffSpec = (!empty($detail->offered_brand) || !empty($detail->offered_specification));
+
                     $qQty = $detail->offered_quantity ?? $item->quantity;
                     $qUnit = $detail->offered_unit ?? $item->unit;
                     $qPrice = $detail->offered_price_per_item ?? 0;
@@ -319,21 +323,45 @@ class VendorController extends Controller
                     $qtyFmt = ($qQty != $item->quantity) ? '<style bgcolor="#fcd34d">' . $qQty . '</style>' : $qQty;
                     $unitFmt = (strtolower(trim($qUnit)) != strtolower(trim($item->unit))) ? '<style bgcolor="#fcd34d">' . $qUnit . '</style>' : $qUnit;
 
-                    $row[] = $qtyFmt;
-                    $row[] = $unitFmt;
-                    $row[] = $detail->item_notes ?? '-';
-                    $row[] = $qPrice;
-                    $row[] = $qTotal;
+                    $vendorCells[] = [
+                        'diff' => $vendorDiffSpec,
+                        'qty' => $qtyFmt,
+                        'unit' => $unitFmt,
+                        'price' => $qPrice,
+                        'total' => $qTotal,
+                        'notes' => $detail->item_notes ?? '-',
+                    ];
                     
                     $vendorTotals[$qId] += $qTotal;
                 } else {
-                    $row[] = '-';
-                    $row[] = '-';
-                    $row[] = '-';
-                    $row[] = '-';
-                    $row[] = '-';
+                    $vendorCells[] = [
+                        'diff' => false,
+                        'qty' => '-',
+                        'unit' => '-',
+                        'price' => '-',
+                        'total' => '-',
+                        'notes' => '-',
+                    ];
                 }
             }
+
+            // Append each vendor's cells to the row. Highlight only their specific cells if they offered a different spec.
+            foreach ($vendorCells as $vCell) {
+                if ($vCell['diff']) {
+                    $row[] = '<style bgcolor="#fef08a">' . strip_tags($vCell['qty']) . '</style>';
+                    $row[] = '<style bgcolor="#fef08a">' . strip_tags($vCell['unit']) . '</style>';
+                    $row[] = '<style bgcolor="#fef08a">' . $vCell['price'] . '</style>';
+                    $row[] = '<style bgcolor="#fef08a">' . $vCell['total'] . '</style>';
+                    $row[] = '<style bgcolor="#fef08a">' . $vCell['notes'] . '</style>';
+                } else {
+                    $row[] = $vCell['qty'];
+                    $row[] = $vCell['unit'];
+                    $row[] = $vCell['price'];
+                    $row[] = $vCell['total'];
+                    $row[] = $vCell['notes'];
+                }
+            }
+
             $data[] = $row;
         }
         

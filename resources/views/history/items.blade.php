@@ -102,8 +102,9 @@ else $rangeText = 'All Time';
                 <tr style="background:#f9fafb">
                     <th onclick="histSort(0)" style="padding:9px 20px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;">ITEM ID <span id="hs0" style="font-size:9px;">↕</span></th>
                     <th onclick="histSort(1)" style="padding:9px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;">ITEM NAME <span id="hs1" style="font-size:9px;">↕</span></th>
-                    <th onclick="histSort(2)" style="padding:9px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;">LAST PURCHASE <span id="hs2" style="font-size:9px;">↕</span></th>
-                    <th onclick="histSort(3)" style="padding:9px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;">LAST VALUE (RP) <span id="hs3" style="font-size:9px;">↕</span></th>
+                    <th onclick="histSort(2)" style="padding:9px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;">CATEGORY <span id="hs2" style="font-size:9px;">↕</span></th>
+                    <th onclick="histSort(3)" style="padding:9px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;">LAST PURCHASE <span id="hs3" style="font-size:9px;">↕</span></th>
+                    <th onclick="histSort(4)" style="padding:9px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;">LAST VALUE (RP) <span id="hs4" style="font-size:9px;">↕</span></th>
                     <th style="padding:9px 20px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;">ACTION</th>
                 </tr>
             </thead>
@@ -117,12 +118,19 @@ else $rangeText = 'All Time';
                     onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background='transparent'">
                     <td style="padding:13px 20px"><span style="font-family:'Courier New',monospace;font-size:12px;font-weight:600;color:#111827">{{ $item['item_id'] }}</span></td>
                     <td style="padding:13px 14px;font-size:12.5px;font-weight:600;color:#111827">{{ $item['item_name'] }}</td>
+                    <td style="padding:13px 14px;font-size:12.5px;color:#374151">
+                        @if(strtolower($item['category']) === 'service')
+                        <span style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;background:#e0e7ff;color:#3730a3">🔧 Service</span>
+                        @else
+                        <span style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;background:#f1f5f9;color:#475569">📦 Goods</span>
+                        @endif
+                    </td>
                     <td style="padding:13px 14px;font-size:12.5px;color:#374151">{{ $item['last_purchase'] }}</td>
                     <td style="padding:13px 14px;font-size:12.5px;font-weight:600;color:#111827">{{ number_format($item['last_value'],0,',','.') }}</td>
                     <td style="padding:13px 20px"><button onclick="openItemDetail({{ $idx }})" style="padding:4px 10px;font-size:11.5px;font-weight:600;color:#374151;background:#fff;border:1px solid #e5e7eb;border-radius:6px;cursor:pointer">Detail</button></td>
                 </tr>
                 @empty
-                <tr id="hist-empty"><td colspan="5" style="text-align:center;padding:36px 20px;color:#9ca3af;font-size:12.5px">No item records found.</td></tr>
+                <tr id="hist-empty"><td colspan="6" style="text-align:center;padding:36px 20px;color:#9ca3af;font-size:12.5px">No item records found.</td></tr>
                 @endforelse
             </tbody>
         </table>

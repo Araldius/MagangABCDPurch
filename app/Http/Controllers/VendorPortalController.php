@@ -15,8 +15,12 @@ use App\Notifications\VendorQuotationSubmitted;
 
 class VendorPortalController extends Controller
 {
-    public function show($token)
+    public function show(Request $request, $token)
     {
+        if ($request->query('new')) {
+            session()->forget('last_vendor_id');
+        }
+
         $rfq = Rfq::where('vendor_token', $token)->firstOrFail();
         $pr = $rfq->purchaseRequest ?? $rfq->serviceRequest;
 
@@ -38,9 +42,15 @@ class VendorPortalController extends Controller
 
         $vendors = Vendor::select('id', 'vendor_name', 'email', 'location')->get();
 
-        $vendorId = session('last_vendor_id') ?: $rfq->vendor_id;
-        $quotation = Quotation::with('details')->where('rfq_id', $rfq->id)->where('vendor_id', $vendorId)->first();
-        $currentVendor = $vendorId ? Vendor::find($vendorId) : null;
+        if ($request->query('new')) {
+            $vendorId = null;
+            $quotation = null;
+            $currentVendor = null;
+        } else {
+            $vendorId = session('last_vendor_id') ?: $rfq->vendor_id;
+            $quotation = Quotation::with('details')->where('rfq_id', $rfq->id)->where('vendor_id', $vendorId)->first();
+            $currentVendor = $vendorId ? Vendor::find($vendorId) : null;
+        }
 
         $existingItems = [];
         if ($quotation) {
@@ -190,25 +200,28 @@ class VendorPortalController extends Controller
             'action_date' => now(),
         ]);
 
-        // Send Notification to all purchasing users
+        // Send Notifications in the background (after HTTP response is sent) to prevent slow loading
         $purchasingUsers = User::where('role', 'purchasing')->get();
-        if ($purchasingUsers->count() > 0) {
-            Notification::send($purchasingUsers, new VendorQuotationSubmitted($rfq, $vendor));
-        }
+        
+        dispatch(function () use ($purchasingUsers, $rfq, $vendor, $quotation) {
+            if ($purchasingUsers->count() > 0) {
+                Notification::send($purchasingUsers, new VendorQuotationSubmitted($rfq, $vendor));
+            }
 
-        // Send Quotation Details + Attachment to Company Email (using system email)
-        $companyEmail = env('MAIL_FROM_ADDRESS', 'purchasing@duniakimiajaya.com');
-        Notification::route('mail', $companyEmail)->notify(new \App\Notifications\CompanyQuotationSubmitted($rfq, $vendor, $quotation));
+            // Send Quotation Details + Attachment to Company Email (using system email)
+            $companyEmail = env('MAIL_FROM_ADDRESS', 'purchasing@duniakimiajaya.abc');
+            Notification::route('mail', $companyEmail)->notify(new \App\Notifications\CompanyQuotationSubmitted($rfq, $vendor, $quotation));
 
-        // Send Edit Link to Vendor
-        if ($quotation->vendor_token) {
-            $vendor->notify(new \App\Notifications\VendorQuotationEditLink($rfq, $vendor, $quotation->vendor_token));
-        }
+            // Send Edit Link to Vendor
+            if ($quotation->vendor_token) {
+                $vendor->notify(new \App\Notifications\VendorQuotationEditLink($rfq, $vendor, $quotation->vendor_token));
+            }
+        })->afterResponse();
 
         return back()->with('success', 'Quotation submitted successfully. An edit link has been sent to your email address.');
     }
 
-    public function showEdit($token)
+    public function showEdit(Request $request, $token)
     {
         $quotation = Quotation::where('vendor_token', $token)->firstOrFail();
         $rfq = $quotation->rfq;
@@ -216,7 +229,7 @@ class VendorPortalController extends Controller
         // Temporarily set session to remember who is editing
         session(['last_vendor_id' => $quotation->vendor_id]);
         
-        return $this->show($rfq->vendor_token);
+        return $this->show($request, $rfq->vendor_token);
     }
 
     public function submitEdit(Request $request, $token)

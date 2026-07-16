@@ -8,11 +8,11 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        html{-webkit-font-smoothing:antialiased;font-size:13px}
-        body{font-family:'Inter',system-ui,sans-serif;background:#f3f4f6;color:#111827;min-height:100vh;display:flex}
+        html{-webkit-font-smoothing:antialiased;font-size:13px;}
+        body{font-family:'Inter',system-ui,sans-serif;background:#f3f4f6;color:#111827;min-height:150vh;display:flex}
  
         /* SIDEBAR */
-        .sidebar{width:200px;min-height:100vh;background:#111827;display:flex;flex-direction:column;padding:20px 0;flex-shrink:0;position:fixed;top:0;left:0;bottom:0;z-index:100}
+        .sidebar{width:200px;min-height:150vh;background:#111827;display:flex;flex-direction:column;padding:20px 0;flex-shrink:0;position:fixed;top:0;left:0;bottom:0;z-index:100}
         .sidebar-brand{padding:0 16px 20px;display:flex;align-items:center;gap:9px;border-bottom:1px solid rgba(255,255,255,.07)}
         .sidebar-logo{width:32px;height:32px;background:#3b5bdb;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0}
         .sidebar-brand-name{font-size:13px;font-weight:700;color:#f9fafb;line-height:1.2}
@@ -30,7 +30,7 @@
         .sidebar-logout:hover{background:rgba(239,68,68,.08)}
  
         /* MAIN */
-        .main-wrap{margin-left:200px;flex:1;display:flex;flex-direction:column;min-height:100vh;min-width:0}
+        .main-wrap{margin-left:200px;flex:1;display:flex;flex-direction:column;min-height:150vh;min-width:0}
  
         /* TOPBAR */
         .topbar{background:#fff;border-bottom:1px solid #e5e7eb;padding:0 28px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}

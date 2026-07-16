@@ -198,8 +198,16 @@ class HistoryController extends Controller
                                 'item_name' => $pri->full_name ?? $pri->item_name ?? $pri->name ?? '-',
                                 'last_purchase' => null,
                                 'last_value' => 0,
+                                'pr_count' => 0,
+                                'sr_count' => 0,
                                 'history' => []
                             ];
+                        }
+
+                        if ($pr->type === 'service' || method_exists($pr, 'jobs')) {
+                            $itemMap[$itemId]['sr_count']++;
+                        } else {
+                            $itemMap[$itemId]['pr_count']++;
                         }
 
                         $dateStr = $sel->decided_at ? \Carbon\Carbon::parse($sel->decided_at)->format('Y-m-d') : '';
@@ -240,7 +248,10 @@ class HistoryController extends Controller
             }
         }
 
-        $items = collect(array_values($itemMap))->sortByDesc('last_purchase')->values();
+        $items = collect(array_values($itemMap))->map(function($item) {
+            $item['category'] = $item['pr_count'] >= $item['sr_count'] ? 'Goods' : 'Service';
+            return $item;
+        })->sortByDesc('last_purchase')->values();
 
         $vendorsUsed = 0; $totalValue = 0;
         foreach ($prs as $p) {

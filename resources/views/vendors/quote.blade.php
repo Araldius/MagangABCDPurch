@@ -62,7 +62,7 @@
     </style>
 </head>
 <body>
-    @if(!isset($closedReason) && !request()->routeIs('vendors.quote.edit') && !session('success'))
+    @if(!isset($closedReason) && !request()->routeIs('vendors.quote.edit') && !session('success') && !request()->query('new'))
     <!-- Token Initial Page Overlay -->
     <div id="initialTokenModal" style="position: fixed; inset: 0; background: #f3f6f9; z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;">
         <script>document.body.style.overflow = 'hidden';</script>
@@ -93,8 +93,7 @@
     </div>
     <script>
         function closeInitialModal() {
-            document.getElementById('initialTokenModal').style.display = 'none';
-            document.body.style.overflow = '';
+            window.location.href = window.location.pathname + '?new=1';
         }
         function submitEditToken() {
             const token = document.getElementById('initial_edit_token').value.trim();
@@ -314,7 +313,7 @@
                                                 </td>
                                                 <td style="min-width:260px;">
                                                     <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
-                                                        <input type="checkbox" class="diff-toggle" onchange="document.getElementById('brand-spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'" {{ ($defBrand || $defSpec) ? 'checked' : '' }}>
+                                                        <input type="checkbox" class="diff-toggle" onchange="const d = document.getElementById('brand-spec-diff-{{ $idx }}'); d.style.display = this.checked ? 'block' : 'none'; if(!this.checked) d.querySelector('input').value = '';" {{ ($defBrand || $defSpec) ? 'checked' : '' }}>
                                                         <span>Different Spec/Brand?</span>
                                                     </label>
                                                     <div id="brand-spec-diff-{{ $idx }}" style="display:{{ ($defBrand || $defSpec) ? 'block' : 'none' }};margin-top:8px;">
@@ -382,7 +381,7 @@
                                             </td>
                                             <td style="min-width:260px;">
                                                 <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
-                                                    <input type="checkbox" class="diff-toggle" onchange="document.getElementById('brand-spec-diff-{{ $idx }}').style.display = this.checked ? 'block' : 'none'" {{ ($defBrand || $defSpec) ? 'checked' : '' }}>
+                                                    <input type="checkbox" class="diff-toggle" onchange="const d = document.getElementById('brand-spec-diff-{{ $idx }}'); d.style.display = this.checked ? 'block' : 'none'; if(!this.checked) d.querySelector('input').value = '';" {{ ($defBrand || $defSpec) ? 'checked' : '' }}>
                                                     <span>Different Spec/Brand?</span>
                                                 </label>
                                                 <div id="brand-spec-diff-{{ $idx }}" style="display:{{ ($defBrand || $defSpec) ? 'block' : 'none' }};margin-top:8px;">

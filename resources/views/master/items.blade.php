@@ -40,7 +40,7 @@
                     <th onclick="itemSort(0)" style="padding:9px 20px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;">CODE <span id="is0" style="font-size:9px;">↕</span></th>
                     <th onclick="itemSort(1)" style="padding:9px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;">ITEM NAME <span id="is1" style="font-size:9px;">↕</span></th>
                     <th onclick="itemSort(2)" style="padding:9px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;">UNIT <span id="is2" style="font-size:9px;">↕</span></th>
-                    <th onclick="itemSort(3)" style="padding:9px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;">TYPE <span id="is3" style="font-size:9px;">+ </span></th>
+                    <th onclick="itemSort(3)" style="padding:9px 14px;text-align:left;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;">CATEGORY <span id="is3" style="font-size:9px;">+ </span></th>
                     <th onclick="itemSort(4)" style="padding:9px 14px;text-align:center;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;">STATUS <span id="is4" style="font-size:9px;">+ </span></th>
                     <th style="padding:9px 20px;text-align:center;font-size:10.5px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;">ACTIONS</th>
                 </tr>
@@ -53,7 +53,13 @@
                     <td style="padding:13px 20px;font-family:monospace;color:#374151;opacity:{{ $item->is_archived ? '0.55' : '1' }}">{{ $item->item_code ?: '-' }}</td>
                     <td style="padding:13px 14px;font-weight:600;color:#111827;opacity:{{ $item->is_archived ? '0.55' : '1' }}">{{ $item->full_name }}</td>
                     <td style="padding:13px 14px;color:#374151;opacity:{{ $item->is_archived ? '0.55' : '1' }}">{{ $item->unit }}</td>
-                    <td style="padding:13px 14px;color:#374151;opacity:{{ $item->is_archived ? '0.55' : '1' }}">{{ ucfirst($item->type) }}</td>
+                    <td style="padding:13px 14px;opacity:{{ $item->is_archived ? '0.55' : '1' }}">
+                        @if(strtolower($item->dynamic_category ?? $item->type) === 'service')
+                        <span style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;background:#e0e7ff;color:#3730a3">🔧 Service</span>
+                        @else
+                        <span style="padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;background:#f1f5f9;color:#475569">📦 Goods</span>
+                        @endif
+                    </td>
                     <td style="padding:13px 14px;text-align:center;">
                         @if($item->is_archived)
                             <span style="background:#fef2f2;color:#dc2626;padding:4px 8px;border-radius:6px;font-size:11px;font-weight:600;">Archived</span>
@@ -138,7 +144,7 @@ textarea.form-control { height:auto; padding:8px 10px; resize:vertical; }
                     </select>
                 </div>
                 <div>
-                    <label class="form-label">Type <span style="color:#ef4444">*</span></label>
+                    <label class="form-label">Category <span style="color:#ef4444">*</span></label>
                     <select name="type" id="input_type" class="form-control" required>
                         <option value="goods">Goods</option>
                         <option value="service">Service</option>
