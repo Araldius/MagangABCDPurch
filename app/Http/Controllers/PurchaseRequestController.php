@@ -120,7 +120,10 @@ class PurchaseRequestController extends Controller
         $itemBrands = \App\Models\Item::whereNotNull('brand')->where('brand', '!=', '')->distinct()->pluck('brand');
         $allBrands = $prBrands->concat($itemBrands)->unique()->sort()->values();
 
-        return view('purchase_requests.create', compact('existingItems', 'existingServiceTemplates', 'nextPrDocNum', 'nextSrDocNum', 'allBrands'));
+        // Get the latest Item ID to use for the next new item
+        $lastItemId = \App\Models\Item::max('id') ?? 0;
+
+        return view('purchase_requests.create', compact('existingItems', 'existingServiceTemplates', 'nextPrDocNum', 'nextSrDocNum', 'allBrands', 'lastItemId'));
     }
 
     public function store(Request $request)

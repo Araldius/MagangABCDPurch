@@ -261,22 +261,28 @@
         <div class="modal-body">
             <div class="form-group" style="margin-bottom:12px;">
                 <label class="form-label">Item Name <span class="req">*</span></label>
-                <input class="form-control" id="new-item-name" maxlength="60" placeholder="e.g. Laptop">
+                <input class="form-control" id="new-item-name" maxlength="60" placeholder="e.g. Laptop" oninput="updatePreviewCounter()">
             </div>
             <div class="form-group" style="margin-bottom:12px;">
                 <label class="form-label">Specification</label>
-                <input class="form-control" id="new-item-spec" placeholder="e.g. Core i7 16GB">
+                <input class="form-control" id="new-item-spec" placeholder="e.g. Core i7 16GB" oninput="updatePreviewCounter()">
                 <span style="font-size:11px;color:#9ca3af;margin-top:4px;display:block;">* Leave blank if none</span>
             </div>
             <div class="form-group" style="margin-bottom:12px; position: relative;">
                 <label class="form-label">Brand</label>
-                <input type="text" class="form-control" id="new-item-brand" placeholder="e.g. Asus" autocomplete="off" onfocus="showBrandDropdown()" oninput="filterBrandDropdown()" onblur="hideBrandDropdown()">
+                <input type="text" class="form-control" id="new-item-brand" placeholder="e.g. Asus" autocomplete="off" onfocus="showBrandDropdown()" oninput="filterBrandDropdown(); updatePreviewCounter();" onblur="hideBrandDropdown()">
                 <div id="brand-dropdown" style="display:none; position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid #d1d5db; border-radius:6px; max-height:200px; overflow-y:auto; z-index:1000; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1); margin-top: 4px;">
                     @foreach($allBrands ?? [] as $b)
                         <div class="brand-option" style="padding:8px 12px; cursor:pointer; font-size:13px; color:#374151; border-bottom:1px solid #f3f4f6;" onmousedown="selectBrand('{{ addslashes($b) }}')" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background='#fff'">{{ $b }}</div>
                     @endforeach
                 </div>
                 <span style="font-size:11px;color:#9ca3af;margin-top:4px;display:block;">* Leave blank if none</span>
+            </div>
+
+            <div style="background:#f3f4f6; border:1px dashed #d1d5db; padding:10px 12px; border-radius:6px; margin-bottom:16px;">
+                <span style="font-size:11px; font-weight:600; color:#6b7280; display:block; margin-bottom:4px;">Item Name (Formatted)</span>
+                <div id="preview-text" style="font-family:monospace; font-weight:600; color:var(--primary); font-size:13.5px; word-break:break-all;">_nsp_nbr</div>
+                <div id="preview-counter" style="font-size:11px; color:#ef4444; margin-top:4px;">8/40 characters (min 7)</div>
             </div>
             <div class="form-row" style="grid-template-columns: 1fr 1.5fr;">
                 <div class="form-group"><label class="form-label">Qty <span class="req">*</span></label><input type="number" class="form-control" id="new-item-qty" value="1" min="1"></div>
@@ -295,7 +301,7 @@
             <button type="button" class="btn-back" onclick="closeNewItemModal()">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Cancel
             </button>
-            <button type="button" class="btn btn-primary" id="save-new-item-btn" onclick="saveNewItem()">Save & Add</button>
+            <button type="button" class="btn btn-primary" id="save-new-item-btn" onclick="saveNewItem()" disabled style="opacity:.5;cursor:not-allowed;">Save & Add</button>
         </div>
     </div>
 </div>
@@ -416,8 +422,46 @@ function addSelectedItem(){
     renderGoodsTable(); closeItemModal();
 }
 function removeGoods(idx){ addedItems=addedItems.filter(i=>i.idx!==idx); renderGoodsTable(); }
-function openNewItemModal(){ closeItemModal(); document.getElementById('new-item-modal').classList.add('open'); document.body.style.overflow = 'hidden'; }
+let globalNewItemCounter = {{ $lastItemId ?? 0 }} + 1;
+
+function openNewItemModal(){ closeItemModal(); document.getElementById('new-item-modal').classList.add('open'); document.body.style.overflow = 'hidden'; updatePreviewCounter(); }
 function closeNewItemModal(){ document.getElementById('new-item-modal').classList.remove('open'); document.body.style.overflow = ''; }
+
+function updatePreviewCounter() {
+    const finalName = document.getElementById('new-item-name').value.trim();
+    const finalSpec = document.getElementById('new-item-spec').value.trim();
+    const finalBrand = document.getElementById('new-item-brand').value.trim();
+    
+    let displaySpec = finalSpec || 'nsp';
+    let displayBrand = finalBrand || 'nbr';
+    let fullName = `${finalName}_${displaySpec}_${displayBrand}`;
+    if (!finalName) fullName = `_nsp_nbr`;
+    
+    const len = fullName.length;
+    const counterEl = document.getElementById('preview-counter');
+    const textEl = document.getElementById('preview-text');
+    const btnEl = document.getElementById('save-new-item-btn');
+    
+    textEl.textContent = fullName;
+    counterEl.textContent = `${len}/40 characters (min 7)`;
+    
+    const ok = len >= 7 && len <= 40 && finalName.length > 0;
+    
+    if (len >= 40) {
+        counterEl.style.color = '#ef4444';
+        textEl.style.color = '#ef4444';
+    } else if (ok) {
+        counterEl.style.color = '#16a34a';
+        textEl.style.color = '#16a34a';
+    } else {
+        counterEl.style.color = '#ef4444';
+        textEl.style.color = 'var(--primary)';
+    }
+
+    btnEl.disabled = !ok;
+    btnEl.style.opacity = ok ? '1' : '.5';
+    btnEl.style.cursor = ok ? 'pointer' : 'not-allowed';
+}
 
 function showBrandDropdown() {
     document.getElementById('brand-dropdown').style.display = 'block';
@@ -443,6 +487,7 @@ function filterBrandDropdown() {
 function selectBrand(val) {
     document.getElementById('new-item-brand').value = val;
     document.getElementById('brand-dropdown').style.display = 'none';
+    updatePreviewCounter();
 }
 
 function saveNewItem(){
@@ -460,13 +505,14 @@ function saveNewItem(){
     const notes=document.getElementById('new-item-notes').value.trim();
     const unit=document.getElementById('new-item-unit').value;
     const qty=parseFloat(document.getElementById('new-item-qty').value) || 1;
-    const newId='NEW-'+Math.floor(Math.random()*9000+1000);
+    const newId='ITM-' + globalNewItemCounter++;
     
     catalog.push({id:newId, name: fullName, base_name: finalName, unit, notes, brand: finalBrand, specification: finalSpec});
     addedItems.push({idx:itemCounter++, id:newId, name: finalName, fullName: fullName, unit, notes, qty:qty, brand: finalBrand, spec: finalSpec});
     renderGoodsTable(); closeNewItemModal();
     ['new-item-name','new-item-spec','new-item-brand','new-item-notes'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('new-item-qty').value = '1';
+    updatePreviewCounter();
 }
 
 function handleTableNameChange(event, idx) {
