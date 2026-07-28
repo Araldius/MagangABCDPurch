@@ -12,12 +12,12 @@
         body{font-family:'Inter',system-ui,sans-serif;background:#f3f4f6;color:#111827;min-height:150vh;display:flex}
  
         /* SIDEBAR */
-        .sidebar{width:200px;min-height:150vh;background:#111827;display:flex;flex-direction:column;padding:20px 0;flex-shrink:0;position:fixed;top:0;left:0;bottom:0;z-index:100}
+        .sidebar{width:200px;height:100vh;background:#111827;display:flex;flex-direction:column;padding:20px 0;flex-shrink:0;position:fixed;top:0;left:0;bottom:0;z-index:100}
         .sidebar-brand{padding:0 16px 20px;display:flex;align-items:center;gap:9px;border-bottom:1px solid rgba(255,255,255,.07)}
         .sidebar-logo{width:32px;height:32px;background:#3b5bdb;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0}
         .sidebar-brand-name{font-size:13px;font-weight:700;color:#f9fafb;line-height:1.2}
         .sidebar-brand-sub{font-size:10px;color:#6b7280;margin-top:1px}
-        .sidebar-nav{padding:12px 10px;display:flex;flex-direction:column;gap:2px;flex:1}
+        .sidebar-nav{padding:12px 10px;display:flex;flex-direction:column;gap:2px;flex:1;overflow-y:auto;}
         .sidebar-label{font-size:10px;font-weight:600;color:#6b7280;letter-spacing:.08em;text-transform:uppercase;padding:8px 8px 4px;margin-top:6px}
         .sidebar-link{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:7px;color:#9ca3af;text-decoration:none;font-size:12.5px;font-weight:500;transition:background .15s,color .15s}
         .sidebar-link svg{flex-shrink:0;opacity:.7}
@@ -170,14 +170,14 @@
             <span class="current">{{ $pageTitle ?? 'Dashboard' }}</span>
         </div>
         @auth
-        <div class="topbar-user" style="position:relative;">
+        <div class="topbar-user" style="position:relative; cursor:pointer;" onclick="toggleUserDropdown()">
             <!-- Bell Icon -->
-            <div id="notif-bell" class="notif-bell" onclick="toggleNotifDropdown()">
+            <div id="notif-bell" class="notif-bell" onclick="toggleNotifDropdown(); event.stopPropagation();">
                 <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
                 <span id="notif-badge" class="notif-badge" style="display:none;">0</span>
             </div>
             <!-- Dropdown -->
-            <div id="notif-dropdown" class="notif-dropdown">
+            <div id="notif-dropdown" class="notif-dropdown" onclick="event.stopPropagation();">
                 <div class="notif-header">
                     <span>Notifications</span>
                     <button onclick="markAllNotifAsRead()">Mark all as read</button>
@@ -190,9 +190,22 @@
             <div style="width:1px;height:24px;background:#e5e7eb;margin:0 4px;"></div>
 
             <div class="topbar-avatar">{{ strtoupper(substr(Auth::user()->name,0,2)) }}</div>
-            <div>
-                <div class="topbar-name">{{ Auth::user()->name }}</div>
-                <div class="topbar-role">{{ Auth::user()->role === 'purchasing' ? 'Purchasing' : 'IT Staff' }}</div>
+            <div style="display:flex; align-items:center; gap:6px;">
+                <div>
+                    <div class="topbar-name">{{ Auth::user()->name }}</div>
+                    <div class="topbar-role">{{ Auth::user()->role === 'purchasing' ? 'Purchasing' : 'IT Staff' }}</div>
+                </div>
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="color:#9ca3af;"><path d="M6 9l6 6 6-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+
+            <div id="user-dropdown" style="display:none; position:absolute; top:100%; right:0; background:#fff; border:1px solid #e5e7eb; border-radius:8px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1); margin-top:12px; width:160px; z-index:100; overflow:hidden;">
+                <form action="{{ route('logout') }}" method="post" style="margin:0;">
+                    @csrf
+                    <button type="submit" style="width:100%; text-align:left; background:none; border:none; padding:12px 16px; font-size:13px; font-weight:500; color:#ef4444; cursor:pointer; display:flex; align-items:center; gap:8px;">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        Logout
+                    </button>
+                </form>
             </div>
         </div>
         @endauth
@@ -220,7 +233,24 @@
     function toggleNotifDropdown() {
         const dd = document.getElementById('notif-dropdown');
         dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
+        document.getElementById('user-dropdown').style.display = 'none';
     }
+
+    function toggleUserDropdown() {
+        const dd = document.getElementById('user-dropdown');
+        dd.style.display = dd.style.display === 'block' ? 'none' : 'block';
+        document.getElementById('notif-dropdown').style.display = 'none';
+    }
+
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.topbar-user')) {
+            const ud = document.getElementById('user-dropdown');
+            if (ud) ud.style.display = 'none';
+            
+            const nd = document.getElementById('notif-dropdown');
+            if (nd && !e.target.closest('#notif-bell')) nd.style.display = 'none';
+        }
+    });
 
     function showToast(title, message, link = null, icon = 'success') {
         const Toast = Swal.mixin({
