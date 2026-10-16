@@ -284,7 +284,7 @@
             showToast('Gagal', "{!! addslashes(session('error')) !!}", null, 'error');
         @endif
         @if($errors->any())
-            showToast('Validation Error', 'Terdapat error pada input Anda. Silakan periksa kembali.', null, 'warning');
+            showToast('Validation Error', '{!! implode('\n', $errors->all()) !!}', null, 'warning');
         @endif
     });
 

@@ -103,12 +103,13 @@
             <div class="form-group" style="margin-bottom:0;"><label class="form-label">Requested Date <span class="req">*</span></label><input class="form-control" type="date" name="requested_date" value="{{ date('Y-m-d') }}" readonly required style="background:#f9fafb;color:#6b7280;cursor:not-allowed;" title="Auto-filled"></div>
             <div class="form-group" style="margin-bottom:0;"><label class="form-label">Need Date <span class="req">*</span></label><input class="form-control" type="date" name="need_date" min="{{ date('Y-m-d') }}" required></div>
             <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label">Plant <span class="req">*</span></label>
+                <label class="form-label">Business Area <span class="req">*</span></label>
                 <select class="form-control" name="plant" required>
-                    <option value="">Select Plant</option>
+                    <option value="">Select Business Area</option>
                     <option value="Cikarang">Cikarang</option>
                     <option value="Cibitung">Cibitung</option>
                     <option value="Gresik">Gresik</option>
+                    <option value="Medan">Medan</option>
                 </select>
             </div>
         </div>
@@ -147,7 +148,7 @@
                 </div>
                 <div class="form-group"><label class="form-label">Title / Project Name <span class="req">*</span></label><input class="form-control" name="title" id="goods-title" placeholder="e.g. Pengadaan ATK Bulanan" required></div>
             </div>
-            <div class="form-group"><label class="form-label">Department</label><input class="form-control" name="department" value="{{ Auth::user()->department ?? '' }}"></div>
+            <div class="form-group"><label class="form-label">Department</label><input class="form-control" name="department" value="{{ Auth::user()->department ?? '' }}" readonly style="background-color: #f3f4f6; cursor: not-allowed;"></div>
             
             <div class="flex-between mb-2 mt-4">
                 <label class="form-label mb-0" id="goods-count-label">0 item(s) added</label>
@@ -163,6 +164,8 @@
                             <th style="width:70px;">QTY</th>
                             <th style="width:100px;">UNIT</th>
                             <th>NOTES</th>
+                            <th style="width:80px;text-align:center;">IS ASSET</th>
+                            <th style="width:130px;">PURPOSE</th>
                             <th style="width:40px;"></th>
                         </tr>
                     </thead>
@@ -418,11 +421,11 @@ function closeItemModal(){ document.getElementById('item-modal').classList.remov
 function addSelectedItem(){
     if(!selectedItemId){alert('Please select an item.');return;}
     const i=catalog.find(x=>x.id===selectedItemId); if(!i)return;
-    addedItems.push({idx:itemCounter++, id:i.id, name:i.base_name || i.name, fullName: i.name, unit:i.unit, notes:i.notes, qty:1, brand:i.brand||'', spec:i.specification||''});
+    addedItems.push({idx:itemCounter++, id:i.id, name:i.base_name || i.name, fullName: i.name, unit:i.unit, notes:i.notes, qty:1, brand:i.brand||'', spec:i.specification||'', is_new: 0});
     renderGoodsTable(); closeItemModal();
 }
 function removeGoods(idx){ addedItems=addedItems.filter(i=>i.idx!==idx); renderGoodsTable(); }
-let globalNewItemCounter = {{ $lastItemId ?? 0 }} + 1;
+let globalNewItemCounter = {{ $maxCodeId ?? 0 }} + 1;
 
 function openNewItemModal(){ closeItemModal(); document.getElementById('new-item-modal').classList.add('open'); document.body.style.overflow = 'hidden'; updatePreviewCounter(); }
 function closeNewItemModal(){ document.getElementById('new-item-modal').classList.remove('open'); document.body.style.overflow = ''; }
@@ -505,10 +508,11 @@ function saveNewItem(){
     const notes=document.getElementById('new-item-notes').value.trim();
     const unit=document.getElementById('new-item-unit').value;
     const qty=parseFloat(document.getElementById('new-item-qty').value) || 1;
-    const newId='ITM-' + globalNewItemCounter++;
+    const paddedNum = String(globalNewItemCounter++).padStart(4, '0');
+  const newId='ITM-' + paddedNum;
     
     catalog.push({id:newId, name: fullName, base_name: finalName, unit, notes, brand: finalBrand, specification: finalSpec});
-    addedItems.push({idx:itemCounter++, id:newId, name: finalName, fullName: fullName, unit, notes, qty:qty, brand: finalBrand, spec: finalSpec});
+    addedItems.push({idx:itemCounter++, id:newId, name: finalName, fullName: fullName, unit, notes, qty:qty, brand: finalBrand, spec: finalSpec, is_new: 1});
     renderGoodsTable(); closeNewItemModal();
     ['new-item-name','new-item-spec','new-item-brand','new-item-notes'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('new-item-qty').value = '1';
@@ -560,31 +564,72 @@ function saveCurrentGoodsInputValuesToState() {
             if (notesInput) it.notes = notesInput.value;
             const unitSelect = document.querySelector(`select[name="items[${it.idx}][unit]"]`);
             if (unitSelect) it.unit = unitSelect.value;
+            
+            const assetCheckbox = document.querySelector(`input[name="items[${it.idx}][is_asset]"]`);
+            if (assetCheckbox) it.is_asset = assetCheckbox.checked;
+            const purposeInput = document.querySelector(`input[name="items[${it.idx}][purpose]"]`);
+            if (purposeInput) it.purpose = purposeInput.value;
         }
     });
 }
 
+function escapeHtml(unsafe) { return (unsafe||"").toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;"); }
 function renderGoodsTable(){
     saveCurrentGoodsInputValuesToState();
     const t=document.getElementById('goods-tbody');
     document.getElementById('goods-count-label').textContent=`${addedItems.length} item(s) added`;
-    if(!addedItems.length){t.innerHTML='<tr><td colspan="8" style="text-align:center;padding:28px 16px;color:#9ca3af;">No items added yet.</td></tr>';return;}
+    if(!addedItems.length){t.innerHTML='<tr><td colspan="9" style="text-align:center;padding:28px 16px;color:#9ca3af;">No items added yet. Click "+ Add Item" to begin.</td></tr>';return;}
     t.innerHTML=addedItems.map((it,i)=>`<tr>
         <td>${i+1}</td>
         <td style="font-family: monospace; font-weight: 600; color: var(--primary);">${it.id}
             <input type="hidden" name="items[${it.idx}][item_id]" value="${it.id}">
-            <input type="hidden" id="hidden-name-${it.idx}" name="items[${it.idx}][item_name]" value="${it.name}">
-            <input type="hidden" id="hidden-brand-${it.idx}" name="items[${it.idx}][brand]" value="${it.brand||''}">
-            <input type="hidden" id="hidden-spec-${it.idx}" name="items[${it.idx}][specification]" value="${it.spec||''}">
+            <input type="hidden" name="items[${it.idx}][is_new]" value="${it.is_new ? 1 : 0}">
+            <input type="hidden" id="hidden-name-${it.idx}" name="items[${it.idx}][item_name]" value="${escapeHtml(it.name)}">
+            <input type="hidden" id="hidden-brand-${it.idx}" name="items[${it.idx}][brand]" value="${escapeHtml(it.brand)}">
+            <input type="hidden" id="hidden-spec-${it.idx}" name="items[${it.idx}][specification]" value="${escapeHtml(it.spec)}">
         </td>
-        <td><input class="form-control" name="items[${it.idx}][visible_name]" value="${it.fullName}" required onchange="handleTableNameChange(event, ${it.idx})" placeholder="Name_Spec_Brand"></td>
+        <td><input class="form-control" name="items[${it.idx}][visible_name]" value="${escapeHtml(it.fullName)}" required onchange="handleTableNameChange(event, ${it.idx})" placeholder="Name_Spec_Brand"></td>
         <td><input type="number" class="form-control" name="items[${it.idx}][quantity]" value="${it.qty}" min="1" required></td>
         <td><select class="form-control" name="items[${it.idx}][unit]" required>${unitOptionsHtml}</select></td>
-        <td><input class="form-control" name="items[${it.idx}][item_notes]" value="${it.notes||''}"></td>
+        <td><input class="form-control" name="items[${it.idx}][item_notes]" value="${escapeHtml(it.notes)}"></td>
+        <td style="text-align:center;">
+            <input type="checkbox" name="items[${it.idx}][is_asset]" value="1"
+                ${it.is_asset ? 'checked' : ''}
+                onchange="togglePurpose(this, ${it.idx})"
+                style="width:18px;height:18px;cursor:pointer;">
+        </td>
+        <td>
+            <input class="form-control" name="items[${it.idx}][purpose]"
+                value="${escapeHtml(it.purpose)}"
+                placeholder="Tujuan aset"
+                id="purpose-${it.idx}"
+                ${it.is_asset ? '' : 'disabled style="background:#f3f4f6;color:#9ca3af;"'}>
+        </td>
         <td style="text-align:center;"><button type="button" onclick="removeGoods(${it.idx})" style="background:none;border:none;color:#ef4444;cursor:pointer;font-size:18px;">&times;</button></td>
     </tr>`).join('');
-    addedItems.forEach((it) => { document.querySelector(`select[name="items[${it.idx}][unit]"]`).value = it.unit; });
+    addedItems.forEach((it) => {
+        document.querySelector(`select[name="items[${it.idx}][unit]"]`).value = it.unit;
+    });
 }
+
+function togglePurpose(checkbox, idx) {
+    const purposeInput = document.getElementById(`purpose-${idx}`);
+    if (!purposeInput) return;
+    if (checkbox.checked) {
+        purposeInput.disabled = false;
+        purposeInput.style.background = '';
+        purposeInput.style.color = '';
+    } else {
+        purposeInput.disabled = true;
+        purposeInput.style.background = '#f3f4f6';
+        purposeInput.style.color = '#9ca3af';
+        purposeInput.value = '';
+    }
+    // Update state
+    const item = addedItems.find(x => x.idx === idx);
+    if (item) { item.is_asset = checkbox.checked; item.purpose = ''; }
+}
+
 
 /* SERVICE LOGIC */
 const existingServices = @json($existingServiceTemplates ?? []);
@@ -688,7 +733,7 @@ function renderModalJobsDOM() {
                     <tbody>
                         ${job.items.length === 0 ? `<tr><td colspan="5" style="text-align:center; padding:12px; color:#9ca3af;">No rows added.</td></tr>` : 
                         job.items.map(it => `<tr>
-                                <td><input class="form-control" id="modal-i-name-${it.id}" value="${it.name}"></td>
+                                <td><input class="form-control" id="modal-i-name-${it.id}" value="${escapeHtml(it.name)}"></td>
                                 <td><input type="number" step="0.01" class="form-control" id="modal-i-qty-${it.id}" value="${it.qty}"></td>
                                 <td><select class="form-control" id="modal-i-unit-${it.id}">${unitOptionsHtml}</select></td>
                                 <td><input class="form-control" id="modal-i-spec-${it.id}" value="${it.spec}"></td>
@@ -764,7 +809,7 @@ function renderMainServicesTable() {
             hiddenHtml += `<input type="hidden" name="services[${sIdx}][jobs][${jIdx}][description]" value="${job.description}">`;
             job.items.forEach((it, iIdx) => {
                 hiddenHtml += `
-                    <input type="hidden" name="services[${sIdx}][jobs][${jIdx}][items][${iIdx}][item_name]" value="${it.name}">
+                    <input type="hidden" name="services[${sIdx}][jobs][${jIdx}][items][${iIdx}][item_name]" value="${escapeHtml(it.name)}">
                     <input type="hidden" name="services[${sIdx}][jobs][${jIdx}][items][${iIdx}][quantity]" value="${it.qty}">
                     <input type="hidden" name="services[${sIdx}][jobs][${jIdx}][items][${iIdx}][unit]" value="${it.unit}">
                     <input type="hidden" name="services[${sIdx}][jobs][${jIdx}][items][${iIdx}][specification]" value="${it.spec}">
@@ -794,3 +839,5 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 @endsection
+
+

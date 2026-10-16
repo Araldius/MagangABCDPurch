@@ -44,10 +44,11 @@
         </select>
         @endif
         <select id="plant-filter" onchange="applyFilters()" style="height:32px;padding:0 28px 0 10px;border:1px solid #e5e7eb;border-radius:7px;font-size:12.5px;background:#fff;cursor:pointer">
-            <option value="">All Plant</option>
+            <option value="">All Business Area</option>
             <option value="Cikarang">Cikarang</option>
             <option value="Cibitung">Cibitung</option>
             <option value="Gresik">Gresik</option>
+            <option value="Medan">Medan</option>
         </select>
         @if($isPurchasing)
         <select id="vendor-filter" onchange="applyFilters()" style="height:32px;padding:0 28px 0 10px;border:1px solid #e5e7eb;border-radius:7px;font-size:12.5px;background:#fff;cursor:pointer">
@@ -110,7 +111,7 @@
                     $displayTitle = $pr->display_title ?? $pr->title ?? $pr->service_name ?? '—';
                     $displayDoc   = $pr->display_doc ?? $pr->document_number
                         ?? (($prCategory === 'service' ? 'SR-' : 'PR-') . str_pad($pr->id, 4, '0', STR_PAD_LEFT));
-                    $plantVal     = $pr->plant ?? '—';
+                    $plantVal     = $pr->business_area ?? '—';
 
                     if ($prCategory === 'service') {
                         $itemCount = $pr->item_count ?? 0;
@@ -482,7 +483,7 @@ function openPRDetail(id, category) {
             (isService ? 'SR-' : 'PR-') + String(pr.id).padStart(4, '0')
     ];
     if (pr.department) subParts.push(pr.department);
-    if (pr.plant)      subParts.push(pr.plant);
+    if (pr.business_area)      subParts.push(pr.business_area);
     document.getElementById('detail-sub').textContent = subParts.join(' | ');
 
     // ── Meta bar ──
@@ -496,8 +497,8 @@ function openPRDetail(id, category) {
     document.getElementById('detail-meta').innerHTML = `
         <div><span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em">Priority</span>
              <div style="font-weight:600;font-size:12.5px;margin-top:2px">${priorityLabel}</div></div>
-        <div><span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em">Plant</span>
-             <div style="font-weight:600;font-size:12.5px;margin-top:2px">${pr.plant || '—'}</div></div>
+        <div><span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em">Business Area</span>
+             <div style="font-weight:600;font-size:12.5px;margin-top:2px">${pr.business_area || '—'}</div></div>
         <div><span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em">Status</span>
              <div style="font-weight:600;font-size:12.5px;margin-top:2px">${statusLabel}</div></div>
         ${isService ? '' : `<div><span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em">Department</span>
@@ -827,8 +828,8 @@ function openPRDetail(id, category) {
                          <div style="font-weight:500;font-size:12.5px">${isService ? (pr.service_name || pr.display_title || '—') : (pr.department || '—')}</div></div>
                     <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Need Date</div>
                          <div style="font-weight:500;font-size:12.5px">${reqDate} ${isOverdue ? '<span style="background:#fee2e2;color:#991b1b;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-left:4px">OVERDUE</span>' : ''}</div></div>
-                    <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Plant</div>
-                         <div style="font-weight:500;font-size:12.5px">${pr.plant || '—'}</div></div>
+                    <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Business Area</div>
+                         <div style="font-weight:500;font-size:12.5px">${pr.business_area || '—'}</div></div>
                     ${!isService ? `<div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Priority</div>
                          <div style="font-weight:500;font-size:12.5px">${pr.priority ? pr.priority.charAt(0).toUpperCase()+pr.priority.slice(1) : 'Normal'}</div></div>` : ''}
                 </div>

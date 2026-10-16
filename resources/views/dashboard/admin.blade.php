@@ -111,7 +111,7 @@
     <!-- Charts Row 3 -->
     <div class="chart-row-2">
         <div class="chart-card">
-            <div class="chart-header">Order Records by Plant</div>
+            <div class="chart-header">Order Records by Business Area</div>
             <div style="position: relative; height: 250px; width: 100%;">
                 <canvas id="chartOrderRecords"></canvas>
             </div>
@@ -127,7 +127,7 @@
     <!-- Charts Row 4 -->
     <div class="chart-row-2">
         <div class="chart-card">
-            <div class="chart-header">Spend by Plant</div>
+            <div class="chart-header">Spend by Business Area</div>
             <div style="position: relative; height: 250px; width: 100%;">
                 <canvas id="chartPlantSpend"></canvas>
             </div>
@@ -327,11 +327,11 @@
                 // 4. Dept Perf
                 createOrUpdateChart('chartDeptPerf', 'bar', c.deptPerf.labels, c.deptPerf.data, (lbl) => openDrillModal('deptPerf', lbl, '', 'Department Details'), true);
                 // 5. Order Records
-                createOrUpdateChart('chartOrderRecords', 'bar', c.orderRecords.labels, c.orderRecords.data, (lbl) => openDrillModal('orderRecords', lbl, '', 'Order Records by Plant'), true);
+                createOrUpdateChart('chartOrderRecords', 'bar', c.orderRecords.labels, c.orderRecords.data, (lbl) => openDrillModal('orderRecords', lbl, '', 'Order Records by Business Area'), true);
                 // 6. Item Catalog
                 createOrUpdateChart('chartItemCatalog', 'bar', c.itemCatalog.labels, c.itemCatalog.data, (lbl) => openDrillModal('itemCatalog', lbl, '', 'Item Catalog Details'), true);
                 // 7. Plant Spend
-                createOrUpdateChart('chartPlantSpend', 'doughnut', c.plantSpend.labels, c.plantSpend.data, (lbl) => openDrillModal('plantSpend', lbl, '', 'Spend by Plant'), true);
+                createOrUpdateChart('chartPlantSpend', 'doughnut', c.plantSpend.labels, c.plantSpend.data, (lbl) => openDrillModal('plantSpend', lbl, '', 'Spend by Business Area'), true);
                 // 8. Service vs Goods
                 createOrUpdateChart('chartServiceGoods', 'doughnut', c.serviceGoods.labels, c.serviceGoods.data, (lbl) => openDrillModal('serviceGoods', lbl, '', 'Service vs Goods Details'), true);
             });
@@ -349,7 +349,7 @@
 
     const headersMap = {
         'status': ['Document No', 'Title', 'Department', 'Status', 'Date'],
-        'monthlySpend': ['Document No', 'Department', 'Plant', 'Value', 'Date'],
+        'monthlySpend': ['Document No', 'Department', 'Business Area', 'Value', 'Date'],
         'topVendors': ['Vendor Name', 'Location', 'Document No', 'Value', 'Date'],
         'deptPerf': ['Document No', 'Title', 'Status', 'Value', 'Date'],
         'orderRecords': ['Document No', 'Title', 'Department', 'Status', 'Date'],

@@ -18,7 +18,7 @@ class ServiceRequest extends Model
         'service_name',
         'submission_date',
         'requested_date',
-        'plant',
+        'business_area',
         'status',
     ];
 

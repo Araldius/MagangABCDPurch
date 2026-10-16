@@ -123,7 +123,7 @@
                     <td style="padding:13px 14px;color:#6b7280;white-space:nowrap">{{ $reqDate->format('d M Y') }}</td>
                     <td style="padding:13px 14px;">
                         <div style="font-weight:500;">{{ $displayTitle }}</div>
-                        <div style="font-size:11px;color:#9ca3af;">{{ $pr->plant }}</div>
+                        <div style="font-size:11px;color:#9ca3af;">{{ $pr->business_area }}</div>
                     </td>
                     <td style="padding:13px 14px;">
                         @if($prCategory === 'service')
@@ -254,27 +254,30 @@
 </div>
 {{-- MODAL --}}
 <div id="detail-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center;padding:20px">
-    <div style="background:#fff;border-radius:14px;width:100%;max-width:700px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.12)">
-        <div style="padding:18px 22px;border-bottom:1px solid #f3f4f6;display:flex;justify-content:space-between;align-items:center">
+    <div style="background:#fff;border-radius:14px;width:100%;max-width:1080px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.12)">
+        {{-- Header --}}
+        <div style="padding:18px 22px;border-bottom:1px solid #f3f4f6;display:flex;justify-content:space-between;align-items:flex-start">
             <div>
-                <div id="modal-pr-title" style="font-size:15px;font-weight:700;"></div>
-                <div id="modal-pr-sub" style="font-size:12px;color:#3b5bdb;margin-top:2px"></div>
+                <div id="detail-title" style="font-size:15px;font-weight:700;color:#111827"></div>
+                <div id="detail-sub"   style="font-size:12px;color:#3b5bdb;margin-top:2px"></div>
             </div>
-            <button onclick="closeDetailModal()" style="background:none;border:none;cursor:pointer;font-size:20px;color:#9ca3af;">&times;</button>
+            <button onclick="closeDetailModal()" style="background:none;border:none;cursor:pointer;font-size:20px;color:#9ca3af;line-height:1">&times;</button>
         </div>
-        <div id="modal-pr-body" style="padding:18px 22px;overflow-y:auto;flex:1;"></div>
+        {{-- Meta bar --}}
+        <div id="detail-meta" style="display:flex;gap:32px;padding:10px 22px;background:#f9fafb;border-bottom:1px solid #f3f4f6;font-size:12px;flex-wrap:wrap"></div>
+        {{-- Body --}}
+        <div id="detail-body" style="padding:18px 22px;overflow-y:auto;flex:1"></div>
+        {{-- Footer --}}
+        <div style="padding:14px 22px;border-top:1px solid #f3f4f6;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <button onclick="closeDetailModal()" style="padding:7px 18px;border:1px solid #d1d5db;border-radius:7px;background:#fff;font-size:13px;cursor:pointer;color:#374151">Close</button>
+                {{-- Attachment Upload removed --}}
+            </div>
+            <div style="display:flex; gap:8px" id="detail-actions"></div>
+        </div>
     </div>
 </div>
-{{-- VENDOR CHART DETAIL MODAL --}}
-<div id="vendor-detail-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:210;align-items:center;justify-content:center;padding:20px">
-    <div style="background:#fff;border-radius:14px;width:100%;max-width:640px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.12)">
-        <div style="padding:16px 20px;border-bottom:1px solid #f3f4f6;display:flex;justify-content:space-between;align-items:center">
-            <div id="vendor-detail-name" style="font-size:14.5px;font-weight:700;color:#111827"></div>
-            <button onclick="closeVendorDetailModal()" style="background:none;border:none;cursor:pointer;font-size:20px;color:#9ca3af;">&times;</button>
-        </div>
-        <div id="vendor-detail-body" style="padding:16px 20px;overflow-y:auto;flex:1;"></div>
-    </div>
-</div>
+
 <script>
 @php
     foreach($requests as $req) {
@@ -283,7 +286,9 @@
         if (method_exists($req, 'items')) { $req->loadMissing('items'); }
     }
 @endphp
-const prData = @json($requests->keyBy('id')->toArray());
+const prData = @json($requests->keyBy(fn($r) => ($r->type ?? 'goods') . '_' . $r->id)->toArray());
+const isAdmin = false;
+const isPurchasing = {{ $isPurchasing ? 'true' : 'false' }};
 const prEng = { page:1, pageSize:5, sortCol:null, sortDir:'asc', gotoFn:'dashPRGoto', sizeFn:'dashPRPageSz' };
 const hEng  = { page:1, pageSize:5, sortCol:null, sortDir:'asc', gotoFn:'dashHGoto',  sizeFn:'dashHPageSz'  };
 // Auto-detects number → date → string and applies direction
@@ -453,209 +458,548 @@ function dashPRPageSz(s){ prEng.pageSize = parseInt(s); prEng.page = 1; applyDas
 function dashHGoto(p)   { hEng.page  = p;            applyDashH(); }
 function dashHPageSz(s) { hEng.pageSize  = parseInt(s); hEng.page  = 1; applyDashH(); }
 function openDetailModal(id, category) {
-    const pr = prData[id];
+    try { const pr = prData[category + '_' + id];
     if (!pr) return;
 
-    // === Gather vendor selection data ===
-    const rfq = (pr.rfqs || [])[0];
-    const rfqId = rfq ? rfq.id : null;
+    const isService = (category === 'service' || pr.type === 'service');
+    const rfq  = (pr.rfqs || [])[0];
+    const rfqId= rfq ? rfq.id : null;
+
+    // ── Vendor selection data ──
     const vendorSelections = rfq ? (rfq.vendor_selections || []) : [];
     const hasVS = vendorSelections.length > 0;
 
+    // Build itemVS map: item_id → { vendor, unit_price, qty, total }
     const itemVS = {};
     vendorSelections.forEach(vs => {
         const vName = (vs.vendor && (vs.vendor.vendor_name || vs.vendor.name)) || '—';
         (vs.selection_items || []).forEach(si => {
             const key = si.purchase_request_item_id || si.service_request_item_id;
-            if (key) {
-                itemVS[key] = {
-                    vendor:     vName,
-                    vendor_id:  vs.vendor_id,
-                    unit_price: parseFloat(si.final_price_per_item) || 0,
-                    qty:        parseInt(si.final_quantity) || 0,
-                    total:      (parseFloat(si.final_price_per_item)||0) * (parseInt(si.final_quantity)||0),
-                    unit:       si.final_unit || null,
-                    spec:       si.final_specification || null,
-                    notes:      si.notes || null,
-                };
-            }
+            if (key) itemVS[key] = {
+                vendor:     vName,
+                unit_price: parseFloat(si.final_price_per_item) || 0,
+                qty:        parseInt(si.final_quantity) || 0,
+                total:      (parseFloat(si.final_price_per_item)||0) * (parseInt(si.final_quantity)||0),
+                unit:       si.final_unit || null,
+                brand:      si.final_brand || null,
+                spec:       si.final_specification || null,
+                notes:      si.notes || null,
+            };
         });
     });
 
+    // Build vendorTotals map for summary cards
     const vendorTotals = {};
+    const quotations = rfq ? (rfq.quotations || []) : [];
     vendorSelections.forEach(vs => {
         const vName = (vs.vendor && (vs.vendor.vendor_name || vs.vendor.name)) || '—';
-        const vid = vs.vendor_id;
-        if (!vendorTotals[vid]) vendorTotals[vid] = { name: vName, items: [], total: 0 };
+        const vid   = vs.vendor_id;
+        const q = quotations.find(qq => qq.vendor_id === vid);
+        const qNote = q && q.note ? q.note : null;
+        if (!vendorTotals[vid]) vendorTotals[vid] = { name: vName, items: [], total: 0, note: qNote };
         (vs.selection_items || []).forEach(si => {
-            const subtotal = (parseFloat(si.final_price_per_item)||0) * (parseInt(si.final_quantity)||0);
-            vendorTotals[vid].total += subtotal;
-            const key = si.purchase_request_item_id || si.service_request_item_id;
-            const pool = (category === 'service' || pr.type === 'service')
+            const sub = (parseFloat(si.final_price_per_item)||0) * (parseInt(si.final_quantity)||0);
+            vendorTotals[vid].total += sub;
+            const key  = si.purchase_request_item_id || si.service_request_item_id;
+            const pool = isService
                 ? (pr.jobs||[]).flatMap(j => j.items || [])
                 : (pr.items || []);
-            const prItem = pool.find(it => it.id == key);
+            const found = pool.find(it => it.id == key);
             vendorTotals[vid].items.push({
-                item_id:    prItem?.item_id || '—',
-                item_name:  prItem?.item_name || prItem?.name || '—',
-                qty:        si.final_quantity,
-                unit_price: si.final_price_per_item,
-                subtotal,
+                item_name: found ? (found.item_name || found.name || '—') : '(Item #' + key + ')',
+                qty:       si.final_quantity,
+                unit_price:si.final_price_per_item,
+                subtotal:  sub,
             });
         });
     });
 
-    // Header
-    document.getElementById('modal-pr-title').textContent = pr.display_title || pr.title || pr.service_name || 'Request Detail';
-    document.getElementById('modal-pr-sub').textContent   =
-        (pr.display_doc || pr.document_number || (category==='service'?'SR-':'PR-')+String(pr.id).padStart(4,'0'))
-        + ' | ' + (pr.department || '') + (pr.plant ? ' | Kebutuhan ' + pr.plant : '');
+    // ── Store reference for Edit Items modal ──
+    _editPR = pr;
 
-    // Meta bar
-    document.getElementById('modal-pr-meta').innerHTML =
-        `<div><span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em">Priority</span><div style="font-weight:600;font-size:12.5px;margin-top:2px">${pr.priority || 'Normal'}</div></div>
-         <div><span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em">Plant</span><div style="font-weight:600;font-size:12.5px;margin-top:2px">${pr.plant || '—'}</div></div>
-         <div><span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em">Status</span><div style="font-weight:600;font-size:12.5px;margin-top:2px">${pr.status ? pr.status.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase()) : '—'}</div></div>`;
+    // ── Header ──
+    document.getElementById('detail-title').textContent =
+        pr.display_title || pr.title || pr.service_name || 'Request Detail';
 
-    // Select Vendor btn
-    document.getElementById('modal-select-vendor-btn').href =
-        `/vendor-selection?key=${category}_${id}`;
+    // Build sub-header without dangling separators
+    const subParts = [
+        pr.display_doc || pr.document_number ||
+            (isService ? 'SR-' : 'PR-') + String(pr.id).padStart(4, '0')
+    ];
+    if (pr.department) subParts.push(pr.department);
+    if (pr.business_area)      subParts.push(pr.business_area);
+    document.getElementById('detail-sub').textContent = subParts.join(' | ');
 
-    // === Build item rows ===
-    const thStyle = 'padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#9ca3af;white-space:nowrap;';
-    const tdStyle = 'padding:8px 10px;border-bottom:1px solid #f9fafb;font-size:12px;';
+    // ── Meta bar ──
+    const priorityLabel = pr.priority
+        ? pr.priority.charAt(0).toUpperCase() + pr.priority.slice(1)
+        : 'Normal';
+    const statusLabel = pr.status
+        ? pr.status.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+        : '—';
 
-    let itemRows = '';
-    if (category === 'service' || pr.type === 'service' || pr.jobs) {
-        (pr.jobs||[]).forEach(job => {
-            itemRows += `<tr><td colspan="6" style="background:#f3f4f6;padding:6px 12px;font-weight:700;font-size:11.5px;">💼 JOB: ${job.job_description}</td></tr>`;
-            (job.items||[]).forEach((it,i) => {
-                itemRows += `<tr>
-                    <td style="${tdStyle}">${i+1}</td>
-                    <td style="${tdStyle}font-family:monospace;color:#3b5bdb;font-weight:600;">${it.item_id||'—'}</td>
-                    <td style="${tdStyle}font-weight:500;">${it.item_name||it.name||'—'}</td>
-                    <td style="${tdStyle}color:#6b7280;font-size:11.5px;">
-                        ${it.item_notes||it.description||'—'}
-                        ${vs && vs.notes && vs.notes !== 'Selected' ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px">VENDOR NOTE</div>` : ''}
-                    </td>
-                    <td style="${tdStyle}color:#6b7280;font-size:11.5px;">
-                        ${vs && vs.spec ? vs.spec : (it.specification || '—')}
-                        ${vs && vs.spec && vs.spec.toLowerCase() !== (it.specification||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Spec: ${it.specification || '-'}">DIFFERS</div>` : ''}
-                    </td>
-                    <td style="${tdStyle}text-align:right;font-weight:600;">${it.quantity}</td>
-                    <td style="${tdStyle}color:#6b7280;">
-                        ${vs && vs.unit ? vs.unit : (it.unit || '—')}
-                        ${vs && vs.unit && vs.unit.toLowerCase() !== (it.unit||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Unit: ${it.unit || '-'}">DIFFERS</div>` : ''}
-                    </td>
-                    ${hasVS ? `
-                    <td style="${tdStyle}font-family:monospace;font-weight:600;color:#111827;">${vs ? fmtRp(vs.unit_price) : '—'}</td>
-                    <td style="${tdStyle}font-family:monospace;font-weight:700;color:#111827;">${vs ? fmtRp(vs.total) : '—'}</td>
-                    <td style="${tdStyle}">
-                        ${vs ? `<span style="padding:2px 8px;background:#e0f2fe;border-radius:4px;font-size:11px;font-weight:600;color:#0369a1;white-space:nowrap;">${vs.vendor}</span>` : '—'}
-                    </td>` : ''}
-                </tr>`;
-            });
-        });
-    } else {
-        (pr.items||[]).forEach((it, i) => {
-            const vs = itemVS[it.id];
-            if (vs) grandTotal += vs.total;
-            itemRows += `<tr>
-                <td style="${tdStyle}">${i+1}</td>
-                <td style="${tdStyle}font-family:monospace;color:#3b5bdb;font-weight:600;">${it.item_id||it.item_code||'—'}</td>
-                <td style="${tdStyle}font-weight:500;">${it.item_name||it.name||'—'}</td>
-                <td style="${tdStyle}color:#6b7280;font-size:11.5px;">
-                    ${it.item_notes||it.description||'—'}
-                    ${vs && vs.notes && vs.notes !== 'Selected' ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px">VENDOR NOTE</div>` : ''}
-                </td>
-                <td style="${tdStyle}color:#6b7280;font-size:11.5px;">
-                    ${vs && vs.spec ? vs.spec : (it.specification || '—')}
-                    ${vs && vs.spec && vs.spec.toLowerCase() !== (it.specification||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Spec: ${it.specification || '-'}">DIFFERS</div>` : ''}
-                </td>
-                <td style="${tdStyle}text-align:right;font-weight:600;">${it.quantity}</td>
-                <td style="${tdStyle}color:#6b7280;">
-                    ${vs && vs.unit ? vs.unit : (it.unit || '—')}
-                    ${vs && vs.unit && vs.unit.toLowerCase() !== (it.unit||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Unit: ${it.unit || '-'}">DIFFERS</div>` : ''}
-                </td>
-                ${hasVS ? `
-                <td style="${tdStyle}font-family:monospace;font-weight:600;color:#111827;">${vs ? fmtRp(vs.unit_price) : '—'}</td>
-                <td style="${tdStyle}font-family:monospace;font-weight:700;color:#111827;">${vs ? fmtRp(vs.total) : '—'}</td>
-                <td style="${tdStyle}">
-                    ${vs ? `<span style="padding:2px 8px;background:#e0f2fe;border-radius:4px;font-size:11px;font-weight:600;color:#0369a1;white-space:nowrap;">${vs.vendor}</span>` : '—'}
-                </td>` : ''}
-            </tr>`;
-        });
+    document.getElementById('detail-meta').innerHTML = `
+        <div><span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em">Priority</span>
+             <div style="font-weight:600;font-size:12.5px;margin-top:2px">${priorityLabel}</div></div>
+        <div><span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em">Business Area</span>
+             <div style="font-weight:600;font-size:12.5px;margin-top:2px">${pr.business_area || '—'}</div></div>
+        <div><span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em">Status</span>
+             <div style="font-weight:600;font-size:12.5px;margin-top:2px">${statusLabel}</div></div>
+        ${isService ? '' : `<div><span style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em">Department</span>
+             <div style="font-weight:600;font-size:12.5px;margin-top:2px">${pr.department || '—'}</div></div>`}`;
+
+    if(document.getElementById('detail-select-vendor-btn')) document.getElementById('detail-select-vendor-btn').style.display = 'none';
+    if(document.getElementById('detail-add-quotation-btn')) document.getElementById('detail-add-quotation-btn').style.display = 'none';
+    if(document.getElementById('detail-generate-link-btn')) document.getElementById('detail-generate-link-btn').style.display = 'none';
+    const approveForm = document.getElementById('detail-approve-form');
+    const rejectForm = document.getElementById('detail-reject-form');
+    const cancelForm = document.getElementById('detail-cancel-form');
+    const reopenForm = document.getElementById('detail-reopen-form');
+    if (reopenForm) reopenForm.style.display = 'none';
+    if (approveForm) approveForm.style.display = 'none';
+    if (rejectForm) rejectForm.style.display = 'none';
+    if (cancelForm) cancelForm.style.display = 'none';
+
+    if (pr.status === 'vendor_selection' || pr.status === 'vendor_search') {
+        if(document.getElementById('detail-select-vendor-btn')) document.getElementById('detail-select-vendor-btn').style.display = 'inline-flex';
+        if(document.getElementById('detail-select-vendor-btn')) document.getElementById('detail-select-vendor-btn').href = `/vendor-selection?key=${category}_${id}`;
     }
+
+    const editItemsBtn = document.getElementById('detail-edit-items-btn');
+    if (editItemsBtn) editItemsBtn.style.display = 'none';
+    // User can edit items only when status = quotation_reopen. Admin can always edit active PRs.
+    if (editItemsBtn) {
+        if (isAdmin && pr.status !== 'completed' && pr.status !== 'rejected') {
+            editItemsBtn.style.display = 'inline-flex';
+        } else if (!isPurchasing && pr.status === 'quotation_reopen') {
+            editItemsBtn.style.display = 'inline-flex';
+        }
+    }
+
+    if (isPurchasing) {
+        if (pr.status === 'submitted') {
+            if (approveForm) {
+                approveForm.style.display = 'block';
+                document.getElementById('approve-id').value = pr.id;
+                document.getElementById('approve-type').value = category;
+            }
+            if (rejectForm) {
+                rejectForm.style.display = 'block';
+                document.getElementById('reject-id').value = pr.id;
+                document.getElementById('reject-type').value = category;
+            }
+        } else if (pr.status === 'vendor_selection' || pr.status === 'vendor_search') {
+            if (rfqId) {
+                if(document.getElementById('detail-add-quotation-btn')) document.getElementById('detail-add-quotation-btn').style.display = 'inline-flex';
+                if(document.getElementById('detail-add-quotation-btn')) document.getElementById('detail-add-quotation-btn').href = `/rfq/${rfqId}/quotations/create`;
+                if(document.getElementById('detail-generate-link-btn')) document.getElementById('detail-generate-link-btn').style.display = 'inline-flex';
+                if(document.getElementById('detail-generate-link-btn')) document.getElementById('detail-generate-link-btn').dataset.rfq = rfqId;
+            }
+            if (cancelForm) {
+                cancelForm.style.display = 'block';
+                document.getElementById('cancel-id').value = pr.id;
+                document.getElementById('cancel-type').value = category;
+            }
+        } else if (pr.status === 'completed') {
+            if (reopenForm) {
+                reopenForm.style.display = 'block';
+                document.getElementById('reopen-id').value = pr.id;
+                document.getElementById('reopen-type').value = category;
+            }
+        }
+    }
+
+    // ── Progress bar ──
+    const _steps = [{label:'PR\nSubmitted'},{label:'Vendor\nSearch'},{label:'Vendor\nSelection'},{label:'Completed'}];
+    function _step(s) { return s==='completed'?4:s==='vendor_selection'?3:s==='vendor_search'?2:1; }
+    function buildProgressBar(status) {
+        const cur = _step(status), isFail = (status==='rejected'||status==='cancelled');
+        return '<div style="display:flex;align-items:flex-start;margin-bottom:20px">'
+            + _steps.map((s, i) => {
+                const n = i+1; let done = n<cur, active = n===cur;
+                if (status==='completed' && n===4) { done=true; active=false; }
+                let cb = done?'#22c55e':active?'#3b5bdb':'#e5e7eb';
+                let cc = done||active?'#fff':'#9ca3af';
+                let lc = active?'#3b5bdb':done?'#22c55e':'#9ca3af';
+                let ct = done?'✓':n;
+                if (isFail&&active) { cb=status==='rejected'?'#ef4444':'#9ca3af'; lc=cb; ct='✕'; }
+                const line = n<=cur&&!isFail?'#22c55e':'#e5e7eb';
+                return `<div style="display:flex;flex-direction:column;align-items:center;flex:1;position:relative">
+                    ${i>0?`<div style="position:absolute;top:14px;right:50%;width:100%;height:2px;background:${line};z-index:0"></div>`:''}
+                    <div style="width:28px;height:28px;border-radius:50%;background:${cb};color:${cc};font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;position:relative;z-index:1">${ct}</div>
+                    <div style="font-size:10.5px;font-weight:600;color:${lc};text-align:center;margin-top:5px;white-space:pre-line">${s.label}</div>
+                </div>`;
+            }).join('') + '</div>';
+    }
+
+    // ── Request info grid ──
     const subDate = new Date(pr.submission_date||pr.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
     const rawReqDate = new Date(pr.requested_date||pr.need_date||pr.created_at);
     const reqDate = rawReqDate.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
     const isOverdue = pr.status !== 'completed' && pr.status !== 'cancelled' && pr.status !== 'rejected' && rawReqDate < new Date(new Date().setHours(0,0,0,0));
 
-    let logItems = '';
+    // ── Item table ──
+    const thS = 'padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#9ca3af;white-space:nowrap;background:#f9fafb;border-bottom:1px solid #e5e7eb';
+    const tdS = 'padding:8px 10px;border-bottom:1px solid #f3f4f6;font-size:12px;vertical-align:middle';
+    let rows = '', grandTotal = 0, tableHtml = '';
+
+    if (isService) {
+        // ── SR Table: NO, ITEM NAME, SPEC, QTY, UNIT (no per-item price — shown in vendor summary below) ──
+        (pr.jobs||[]).forEach(job => {
+            const jCodeBadge = job.job_code
+                ? `<span style="font-family:monospace;font-size:10px;background:#e0e7ff;color:#3730a3;padding:1px 6px;border-radius:4px;margin-right:7px;font-weight:700">${job.job_code}</span>`
+                : '';
+            rows += `<tr>
+                <td colspan="${hasVS ? (isAdmin ? 11 : 10) : (isAdmin ? 8 : 7)}" style="background:#f0f4f8;padding:8px 12px;font-weight:700;font-size:11.5px;color:#374151;border-bottom:1px solid #e5e7eb">
+                    💼 ${jCodeBadge}${job.job_description || '-'}
+                </td>
+            </tr>`;
+            (job.items||[]).forEach((it, i) => {
+                const vs = itemVS[it.id];
+                if (vs) grandTotal += vs.total;
+                rows += `<tr>
+                    <td style="${tdS};color:#9ca3af">${i+1}</td>
+                    <td style="${tdS};font-weight:600;color:#111827;font-family:monospace">${it.item_id || '—'}</td>
+                    <td style="${tdS};font-weight:600;color:#111827">${it.item_name || it.name || '-'}</td>
+                    <td style="${tdS};color:#6b7280;font-size:11.5px">
+                        ${it.item_notes || it.description || '-'}
+                        ${vs && vs.notes && vs.notes !== 'Selected' ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px">VENDOR NOTE</div>` : ''}
+                    </td>
+                    <td style="${tdS};color:#6b7280;font-size:11.5px">
+                        ${vs && vs.spec ? vs.spec : (it.specification || '-')}
+                        ${vs && vs.spec && String(vs.spec).toLowerCase() !== String(it.specification||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Spec: ${it.specification || '-'}">DIFFERS</div>` : ''}
+                    </td>
+                    <td style="${tdS};text-align:right;font-weight:600;color:#111827;font-family:monospace">${it.quantity || 0}</td>
+                    <td style="${tdS};color:#6b7280">
+                        ${vs && vs.unit ? vs.unit : (it.unit || '-')}
+                        ${vs && vs.unit && String(vs.unit).toLowerCase() !== String(it.unit||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Unit: ${it.unit || '-'}">DIFFERS</div>` : ''}
+                    </td>
+                    ${hasVS ? `
+                    <td style="${tdS};font-family:monospace;font-weight:600;color:#111827;text-align:right;">${vs ? fmtRp(vs.unit_price) : '-'}</td>
+                    <td style="${tdS};font-family:monospace;font-weight:700;color:#111827;text-align:right;">${vs ? fmtRp(vs.total) : '-'}</td>
+                    <td style="${tdS}">
+                        ${vs ? `<span style="padding:2px 8px;background:#e0f2fe;border-radius:4px;font-size:11px;font-weight:600;color:#0369a1;white-space:nowrap;">${vs.vendor}</span>` : '-'}
+                    </td>` : ''}
+                    ${isAdmin ? `
+                    <td style="${tdS}">
+                        <input type="text" class="form-control" style="font-size:11px;padding:4px;border:1px solid #e5e7eb;border-radius:4px;width:100%" placeholder="Add note..." value="${it.admin_notes || ''}" onchange="saveAdminNote(${it.id}, 'service', this.value)">
+                    </td>
+                    ` : ''}
+                </tr>`;
+            });
+        });
+
+        const extraTh = hasVS ? `
+                        <th style="${thS};text-align:right;">UNIT PRICE (RP)</th>
+                        <th style="${thS};text-align:right;">TOTAL (RP)</th>
+                        <th style="${thS}">VENDOR</th>` : '';
+
+        const totalRow = hasVS && grandTotal > 0 ? `
+            <tr style="background:#f9fafb;">
+                <td colspan="${isAdmin ? 8 : 7}" style="padding:9px 10px;text-align:right;font-size:12px;font-weight:700;color:#374151;">Total Request Value</td>
+                <td colspan="3" style="padding:9px 10px;text-align:right;font-family:monospace;font-size:13px;font-weight:800;color:#111827;">${fmtRp(grandTotal)}</td>
+            </tr>` : '';
+
+        tableHtml = `<div style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-bottom:4px">
+            <div style="overflow-x:auto">
+                <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:${hasVS?'780px':'460px'}">
+                    <thead><tr>
+                        <th style="${thS};width:36px">NO</th>
+                        <th style="${thS}">ITEM ID</th>
+                        <th style="${thS}">ITEM NAME</th>
+                        <th style="${thS}">NOTES</th>
+                        <th style="${thS}">SPEC</th>
+                        <th style="${thS};text-align:right;width:60px">QTY</th>
+                        <th style="${thS};width:55px">UNIT</th>
+                        ${extraTh}
+                        ${isAdmin ? `<th style="${thS};width:150px">ADMIN NOTES</th>` : ''}
+                    </tr></thead>
+                    <tbody>${rows || `<tr><td colspan="${hasVS ? (isAdmin ? 11 : 10) : (isAdmin ? 8 : 7)}" style="text-align:center;padding:16px;color:#9ca3af">No items</td></tr>`}</tbody>
+                    ${totalRow ? `<tfoot>${totalRow}</tfoot>` : ''}
+                </table>
+            </div>
+        </div>`;
+
+    } else {
+        // ── Goods Table: NO, ITEM ID, ITEM NAME, NOTES, SPEC, QTY, UNIT [+ UNIT PRICE, TOTAL, VENDOR if VS] ──
+        const hasPriceCol = hasVS;
+        (pr.items||[]).forEach((it, i) => {
+            const vs = itemVS[it.id];
+            if (vs) grandTotal += vs.total;
+
+            let origName = [it.item_name || it.name, it.specification, it.brand].filter(x => x).join('_') || '—';
+            let dispName = origName;
+            let differsBadge = '';
+            if (vs) {
+                let vsName = [it.item_name || it.name, vs.spec || it.specification, vs.brand || it.brand].filter(x => x).join('_');
+                if (vsName.toLowerCase() !== origName.toLowerCase()) {
+                    dispName = vsName;
+                    differsBadge = `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Item: ${origName}">DIFFERS</div>`;
+                }
+            }
+
+            rows += `<tr>
+                <td style="${tdS}">${i+1}</td>
+                <td style="${tdS};font-family:monospace;color:#3b5bdb;font-weight:600">${it.item_id || '—'}</td>
+                <td style="${tdS};font-weight:500;color:#111827">
+                    ${dispName}
+                    ${differsBadge}
+                </td>
+                <td style="${tdS};color:#6b7280;font-size:11.5px">
+                    ${it.item_notes || '—'}
+                    ${vs && vs.notes && vs.notes !== 'Selected' ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px">VENDOR NOTE</div>` : ''}
+                </td>
+                <td style="${tdS};text-align:right;font-weight:600;color:#111827;font-family:monospace">${it.quantity || 0}</td>
+                <td style="${tdS};color:#6b7280">
+                    ${vs && vs.unit ? vs.unit : (it.unit || '—')}
+                    ${vs && vs.unit && String(vs.unit).toLowerCase() !== String(it.unit||'').toLowerCase() ? `<div style="background:#fef3c7;color:#b45309;padding:1px 4px;border-radius:3px;font-size:8.5px;font-weight:800;display:inline-block;margin-top:2px" title="Original PR Unit: ${it.unit || '-'}">DIFFERS</div>` : ''}
+                </td>
+                ${hasPriceCol ? `
+                <td style="${tdS};font-family:monospace;font-weight:600">${vs ? fmtRp(vs.unit_price) : '—'}</td>
+                <td style="${tdS};font-family:monospace;font-weight:700;color:#111827">${vs ? fmtRp(vs.total) : '—'}</td>
+                <td style="${tdS}">${vs ? `<span style="padding:2px 8px;background:#e0f2fe;border-radius:4px;font-size:11px;font-weight:600;color:#0369a1;white-space:nowrap">${vs.vendor}</span>` : '—'}</td>` : ''}
+                ${isAdmin ? `
+                <td style="${tdS}">
+                    <input type="text" class="form-control" style="font-size:11px;padding:4px;border:1px solid #e5e7eb;border-radius:4px;width:100%" placeholder="Add note..." value="${it.admin_notes || ''}" onchange="saveAdminNote(${it.id}, 'goods', this.value)">
+                </td>
+                ` : ''}
+                ${isPurchasing ? `
+                <td style="${tdS}">
+                    <textarea rows="2" style="font-size:11px;padding:4px;border:1px solid #e5e7eb;border-radius:4px;width:100%;resize:vertical;min-width:140px" placeholder="Catatan purchasing..." onchange="savePurchasingNote(${pr.id}, '${category}', this.value)">${it.purchasing_notes || ''}</textarea>
+                </td>` : ''}
+            </tr>`;
+        });
+
+        const gTh    = hasPriceCol ? `<th style="${thS};text-align:right">UNIT PRICE (RP)</th><th style="${thS};text-align:right">TOTAL (RP)</th><th style="${thS}">VENDOR</th>` : '';
+        const purchNotesTh = isPurchasing ? `<th style="${thS};min-width:160px">PURCHASING NOTES</th>` : '';
+        const gTotal = hasPriceCol && grandTotal > 0
+            ? `<tr style="background:#f9fafb">
+                <td colspan="6" style="padding:9px 10px;text-align:right;font-size:12px;font-weight:700;color:#374151">Total Request Value</td>
+                <td colspan="3" style="padding:9px 10px;text-align:right;font-family:monospace;font-size:13px;font-weight:800;color:#111827">${fmtRp(grandTotal)}</td>
+               </tr>` : '';
+
+        tableHtml = `<div style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-bottom:4px">
+            <div style="overflow-x:auto">
+                <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:${hasPriceCol?'800px':'460px'}">
+                    <thead><tr>
+                        <th style="${thS}">NO</th>
+                        <th style="${thS}">ITEM ID</th>
+                        <th style="${thS};width:100%">ITEM NAME</th>
+                        <th style="${thS}">NOTES</th>
+                        <th style="${thS};text-align:right">QTY</th>
+                        <th style="${thS}">UNIT</th>
+                        ${gTh}
+                        ${isAdmin ? `<th style="${thS};width:150px">ADMIN NOTES</th>` : ''}
+                        ${purchNotesTh}
+                    </tr></thead>
+                    <tbody>${rows || '<tr><td colspan="${isAdmin ? 6 : 5}" style="text-align:center;padding:16px;color:#9ca3af">No items</td></tr>'}</tbody>
+                    ${gTotal ? `<tfoot>${gTotal}</tfoot>` : ''}
+                </table>
+            </div>
+        </div>`;
+    }
+
+    // ── Vendor Purchase Summary (for both PR and SR with VS) ──
+    let vSumHtml = '';
+    if (hasVS && Object.keys(vendorTotals).length > 0) {
+        const isServiceSummary = isService;
+        vSumHtml = `<div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-top:18px;margin-bottom:8px;padding-bottom:5px;border-bottom:2px solid #e5e7eb">
+            ${isServiceSummary ? '🔧 Selected Service Vendor' : '📦 Vendor Purchase Summary'}
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">` +
+            Object.values(vendorTotals).map(v => `
+            <div style="flex:1;min-width:200px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">
+                <div style="padding:10px 12px;background:#f8fafc;border-bottom:1px solid #e5e7eb">
+                    <div style="font-size:13px;font-weight:700;color:#1e3a5f">${v.name}</div>
+                    <div style="font-size:13px;font-weight:800;color:#111827;margin-top:3px;font-family:monospace">${fmtRp(v.total)}</div>
+                    ${v.note ? `<div style="font-size:11px;color:#6b7280;margin-top:4px;font-style:italic">"${v.note}"</div>` : ''}
+                </div>
+                <div style="padding:8px 12px;display:flex;flex-direction:column;gap:5px">
+                    ${v.items.map(si => `<div style="display:flex;justify-content:space-between;font-size:11.5px">
+                        <span style="color:#6b7280">${si.item_name} — ${si.qty} × ${fmtRp(si.unit_price)}</span>
+                        <span style="font-family:monospace;font-weight:600">${fmtRp(si.subtotal)}</span>
+                    </div>`).join('')}
+                </div>
+            </div>`).join('')
+        + '</div>';
+    }
+
+    // ── Activity Log ──
+    const histories = rfq ? (rfq.histories || []) : [];
+    let activityHtml = '';
     if (histories.length > 0) {
-        logItems = histories.slice(-6).reverse().map(h => {
+        activityHtml = histories.slice().reverse().map(h => {
             const actor = h.user?.name || 'System';
-            const time  = h.action_date ? new Date(h.action_date).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
-            return `<div style="display:flex;gap:8px;font-size:12px;margin-bottom:8px;">
-                <span style="width:6px;height:6px;border-radius:50%;background:#3b5bdb;margin-top:5px;flex-shrink:0;"></span>
+            const time  = h.action_date
+                ? new Date(h.action_date).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})
+                : '';
+            return `<div style="display:flex;gap:10px;padding:10px;background:#f9fafb;border-radius:8px;margin-bottom:8px;">
+                <span style="width:7px;height:7px;border-radius:50%;background:#3b5bdb;margin-top:6px;flex-shrink:0"></span>
                 <div>
-                    <span style="font-weight:600;color:#111827;">${h.action||'Action'}</span>
-                    ${h.notes?`<span style="color:#6b7280;"> — Notes: ${h.notes}</span>`:''}
-                    <div style="font-size:11px;color:#9ca3af;margin-top:1px;">${time} — ${actor}</div>
+                    <div style="font-size:12.5px;font-weight:600;color:#111827;line-height:1.4;">${h.action || 'Action'}</div>
+                    ${h.notes ? `<div style="font-size:12px;color:#6b7280;margin-top:1px;line-height:1.4;">${h.notes}</div>` : ''}
+                    <div style="font-size:11.5px;color:#9ca3af;margin-top:3px;">${time} — ${actor}</div>
                 </div>
             </div>`;
         }).join('');
     } else {
-        logItems = `<div style="display:flex;gap:8px;font-size:12px;">
-            <span style="width:6px;height:6px;border-radius:50%;background:#22c55e;margin-top:5px;flex-shrink:0;"></span>
-            <div><span style="font-weight:600;color:#111827;">PR created and submitted to supervisor</span>
-            <div style="font-size:11px;color:#9ca3af;margin-top:1px;">${subDate} — ${pr.user?.name||'You'}</div></div>
+        const subDate2 = new Date(pr.submission_date||pr.created_at).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+        activityHtml = `<div style="display:flex;gap:10px;padding:10px;background:#f9fafb;border-radius:8px;">
+            <span style="width:7px;height:7px;border-radius:50%;background:#22c55e;margin-top:6px;flex-shrink:0"></span>
+            <div>
+                <div style="font-size:12.5px;font-weight:600;color:#111827;line-height:1.4;">${isService?'SR':'PR'} created and submitted</div>
+                <div style="font-size:11.5px;color:#9ca3af;margin-top:3px;">${subDate2} — ${pr.user?.name || 'User'}</div>
+            </div>
         </div>`;
     }
 
-    // === Assemble body ===
-    document.getElementById('modal-pr-body').innerHTML = `
+    // ── Assemble body ──
+    document.getElementById('detail-body').innerHTML = `
         <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:10px">Progress Status</div>
         ${buildProgressBar(pr.status)}
-        <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:10px">Request Information</div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;background:#f9fafb;border-radius:8px;padding:12px 14px">
-            <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Submission Date</div><div style="font-weight:500;font-size:12.5px">${subDate}</div></div>
-            <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Department</div><div style="font-weight:500;font-size:12.5px">${pr.department||'—'}</div></div>
-            <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Need Date</div><div style="font-weight:500;font-size:12.5px">${reqDate} ${isOverdue ? '<span style="background:#fee2e2;color:#991b1b;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-left:4px">OVERDUE</span>' : ''}</div></div>
-            <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Plant</div><div style="font-weight:500;font-size:12.5px">${pr.plant||'—'}</div></div>
-        </div>
-        <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-bottom:8px">Scope Details</div>
-        <div style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-bottom:16px">
-            <table style="width:100%;border-collapse:collapse;font-size:12px">
-                <thead><tr style="background:#f9fafb">
-                    <th style="padding:8px 12px;text-align:left;">NO</th>
-                    <th style="padding:8px 12px;text-align:left;">ITEM ID</th>
-                    <th style="padding:8px 12px;text-align:left;">ITEM NAME</th>
-                    <th style="padding:8px 12px;text-align:left;">SPEC</th>
-                    <th style="padding:8px 12px;text-align:left;">QTY</th>
-                    <th style="padding:8px 12px;text-align:left;">UNIT</th>
-                </tr></thead>
-                <tbody>${itemRows||'<tr><td colspan="6" style="text-align:center;padding:16px;">No items</td></tr>'}</tbody>
-            </table>
-        </div>
-        ${vendorSummaryHtml}
 
-        <div style="font-size:10px;font-weight:700;color:#9ca3af;text-transform:uppercase;margin-top:18px;margin-bottom:8px;padding-bottom:5px;border-bottom:2px solid #e5e7eb;">Activity Log</div>
-        ${logItems}`;
+        <div style="margin-top:16px;">
+            <div style="font-size:10.5px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;padding-bottom:5px;border-bottom:2px solid #e5e7eb">
+                📋 Request Information
+            </div>
+            <div style="background:#f9fafb;border-radius:8px;padding:12px 14px;">
+                <div style="display:grid;grid-template-columns:repeat(${isService ? 4 : 5},1fr);gap:10px;">
+                    <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Submission Date</div>
+                         <div style="font-weight:500;font-size:12.5px">${subDate}</div></div>
+                    <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">
+                             ${isService ? 'Service Name' : 'Department'}
+                         </div>
+                         <div style="font-weight:500;font-size:12.5px">${isService ? (pr.service_name || pr.display_title || '—') : (pr.department || '—')}</div></div>
+                    <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Need Date</div>
+                         <div style="font-weight:500;font-size:12.5px">${reqDate} ${isOverdue ? '<span style="background:#fee2e2;color:#991b1b;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:700;margin-left:4px">OVERDUE</span>' : ''}</div></div>
+                    <div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Business Area</div>
+                         <div style="font-weight:500;font-size:12.5px">${pr.business_area || '—'}</div></div>
+                    ${!isService ? `<div><div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;margin-bottom:3px">Priority</div>
+                         <div style="font-weight:500;font-size:12.5px">${pr.priority ? pr.priority.charAt(0).toUpperCase()+pr.priority.slice(1) : 'Normal'}</div></div>` : ''}
+                </div>
+                    ${pr.attachment_path ? `
+                <div style="display:flex;align-items:center;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;">
+                    <div style="width:28px;height:28px;background:#dcfce7;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;">📎</div>
+                    <div style="min-width:0;flex:1">
+                        <div style="font-size:10px;color:#9ca3af;text-transform:uppercase;font-weight:600;">Attached File</div>
+                        <a href="/storage/${pr.attachment_path}" target="_blank" style="font-size:12.5px;font-weight:600;color:#16a34a;text-decoration:underline;">View the Document</a>
+                    </div>
+                </div>` : ''}
+            </div>
+        </div>
 
-    const selectBtn = document.getElementById('modal-select-vendor-btn');
-    if (pr.status === 'vendor_selection') {
-        selectBtn.style.display = 'inline-flex';
-    } else {
-        selectBtn.style.display = 'none';
-    }
+        </div>
+
+        ${isPurchasing ? `
+        <div style="margin-top:16px;padding:14px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;">
+            <div style="font-size:10.5px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">✏️ Purchasing Notes</div>
+            <textarea id="general-purchasing-notes" rows="3" style="width:100%;border:1px solid #cbd5e1;border-radius:6px;padding:8px;font-size:12px;font-family:inherit;outline:none;resize:vertical;" placeholder="Add notes for this PR..." onchange="savePurchasingNote(${pr.id}, '${category}', this.value)">${pr.purchasing_notes || ''}</textarea>
+        </div>` : (pr.purchasing_notes ? `
+        <div style="margin-top:16px;padding:14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;">
+            <div style="font-size:10.5px;font-weight:700;color:#1d4ed8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">✏️ Purchasing Notes</div>
+            <div style="font-size:12.5px;color:#374151;white-space:pre-wrap;">${pr.purchasing_notes}</div>
+        </div>` : '')}
+
+        <div style="display:flex;gap:20px;margin-top:16px;align-items:flex-start;">
+            <!-- Left Column (Items Table) -->
+            <div style="flex:2;min-width:0;display:flex;flex-direction:column;gap:16px;">
+                <div>
+                    <div style="font-size:10.5px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;padding-bottom:5px;border-bottom:2px solid #e5e7eb">
+                        ${isService ? '🛠️ Scope of Work & Items' : '📦 Item List'}
+                    </div>
+                    ${tableHtml}
+                </div>
+                ${vSumHtml}
+            </div>
+
+            <!-- Right Column (Activity Log) -->
+            <div style="flex:1;min-width:260px;display:flex;flex-direction:column;gap:16px;">
+                <div>
+                    <div style="font-size:10.5px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;padding-bottom:5px;border-bottom:2px solid #e5e7eb">🕒 Activity Log</div>
+                    ${activityHtml}
+                </div>
+            </div>
+        </div>`;
 
     document.body.style.overflow = 'hidden';
-    document.getElementById('detail-modal').style.display = 'flex';
+    document.getElementById('detail-modal').style.display = 'flex'; } catch (err) { console.error(err); alert('Gagal: ' + err.message); }
 }
 
 function closeDetailModal() { document.body.style.overflow = ''; document.getElementById('detail-modal').style.display = 'none'; }
 
+async function generateVendorLink() {
+    const btn = document.getElementById('detail-generate-link-btn');
+    const rfqId = btn.dataset.rfq;
+    if(!rfqId) return;
+    
+    btn.innerText = 'Generating...';
+    try {
+        const res = await fetch(`/api/rfq/${rfqId}/generate-link`, {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
+        });
+        const data = await res.json();
+        if(data.link) {
+            document.getElementById('vendor-link-input').value = data.link;
+            document.getElementById('vendor-link-modal').style.display = 'flex';
+            document.getElementById('copy-link-btn').innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"/></svg> Copy`;
+        } else {
+            alert('Error generating link');
+        }
+    } catch(e) {
+        alert('Error generating link');
+    }
+    btn.innerHTML = '🔗 Generate Vendor Link';
+}
+
+function copyVendorLink() {
+    const input = document.getElementById('vendor-link-input');
+    input.select();
+    document.execCommand('copy');
+    
+    const btn = document.getElementById('copy-link-btn');
+    btn.innerHTML = `✓ Copied!`;
+    setTimeout(() => {
+        btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"/></svg> Copy`;
+    }, 2000);
+}
+
+function triggerCancel(btn) {
+    const form = btn.closest('form');
+    showConfirmModal('Batalkan Request', 'Apakah Anda yakin ingin membatalkan Request ini?', 'Batalkan', '#f59e0b', function() {
+        form.submit();
+    });
+}
+
+function triggerReopen(btn) {
+    const form = btn.closest('form');
+    showConfirmModal('Kembalikan Status', 'Kembalikan status ke Vendor Selection untuk memperpanjang waktu pengadaan (Link Vendor akan otomatis aktif kembali)?', 'Lanjutkan', '#3b82f6', function() {
+        form.submit();
+    });
+}
+
+// ── Purchasing Notes Save (inline) ──
+let _purchasingNoteTimeout = null;
+function savePurchasingNote(prId, prType, value) {
+    clearTimeout(_purchasingNoteTimeout);
+    _purchasingNoteTimeout = setTimeout(() => {
+        fetch('{{ route("pr.save_purchasing_notes") }}', {
+            method: 'POST',
+            headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ id: prId, type: prType, notes: value })
+        }).then(r => r.json()).then(data => {
+            if (data.success) {
+                const allPRKey = prType + '_' + prId;
+                if (prData[allPRKey]) prData[allPRKey].purchasing_notes = value;
+            }
+        });
+    }, 800);
+}
+
+// ── Edit Items Modal ──
+let _editPR = null;
+
+function fmtRp(num) { return new Intl.NumberFormat('id-ID', {style: 'currency', currency: 'IDR', minimumFractionDigits:0}).format(num); }
 function formatRupiahShort(num) {
     if (num >= 1e9) return 'Rp ' + (num / 1e9).toFixed(1) + 'B';
     if (num >= 1e6) return 'Rp ' + (num / 1e6).toFixed(1) + 'Jt';
@@ -757,3 +1101,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 @endsection
+

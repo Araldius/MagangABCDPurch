@@ -112,7 +112,7 @@ class DashboardController extends Controller
                 return $req;
             });
 
-        $srQuery = ServiceRequest::with(['jobs.items', 'user'])
+        $srQuery = ServiceRequest::with(['jobs.items', 'user', 'rfqs.vendorSelections.vendor', 'rfqs.vendorSelections.selectionItems', 'rfqs.histories.user'])
             ->where(function ($q) use ($userId) {
                 $q->where('user_id', $userId)
                   ->orWhereHas('user', fn($u) => $u->where('role', 'purchasing'));
@@ -159,9 +159,15 @@ class DashboardController extends Controller
             ->latest('decided_at')
             ->limit(5)
             ->get();
+
+        $vendorSummary = [];
+
+        $isPurchasing = auth()->user()->role === 'purchasing';
+        $isAdmin = false;
+
         return view('dashboard.user', compact(
             'requests', 'activePrs', 'awaitingApproval', 'inProcess',
-            'completedMonth', 'recentHistory', 'startDate', 'endDate'
+            'completedMonth', 'recentHistory', 'startDate', 'endDate', 'isPurchasing', 'isAdmin'
         ));
     }
 
@@ -222,7 +228,7 @@ class DashboardController extends Controller
             $isCompleted = ($req->status === 'completed' || $req->status === 'approved');
             $isPending = in_array($req->status, ['pending', 'submitted', 'vendor_search', 'vendor_selection']);
             $dept = $req->department ?? 'Unknown';
-            $p = $req->plant ?? 'Unknown';
+            $p = $req->business_area ?? 'Unknown';
             $monthLabel = \Carbon\Carbon::parse($req->created_at)->format('M');
             
             if (!isset($orderRecords[$p])) $orderRecords[$p] = 0;
@@ -355,7 +361,7 @@ class DashboardController extends Controller
         foreach ($allRequests as $req) {
             $isCompleted = ($req->status === 'completed' || $req->status === 'approved');
             $dept = $req->department ?? 'Unknown';
-            $p = $req->plant ?? 'Unknown';
+            $p = $req->business_area ?? 'Unknown';
             $monthLabel = \Carbon\Carbon::parse($req->created_at)->format('M');
             
             $needDate = $req->need_date ?? $req->requested_date;
@@ -507,3 +513,4 @@ class DashboardController extends Controller
         ]);
     }
 }
+

@@ -13,6 +13,8 @@ use App\Models\VendorSelection;
 use App\Models\QuotationDetail;
 use App\Models\QuotationSummary;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class VendorController extends Controller
 {
@@ -195,6 +197,51 @@ class VendorController extends Controller
             }
 
             $pr->update(['status' => 'completed']);
+
+            // ── ASSET PUSH ──────────────────────────────────────────────────
+            if (!$isService) {
+                $pr->load('items');
+                $assetItems = [];
+
+                // Build a price map from SelectionItems just saved: keyed by purchase_request_item_id
+                $priceMap = collect($request->selections)
+                    ->keyBy('item_id')
+                    ->map(fn($s) => $s['unit_price']);
+
+                foreach ($pr->items as $item) {
+                    if (!$item->is_asset) continue;
+
+                    $hargaPenawaran = $priceMap->get($item->id);
+
+                    $qty = $item->quantity > 0 ? $item->quantity : 1;
+
+                    for ($i = 0; $i < $qty; $i++) {
+                        $assetItems[] = [
+                        'description'        => $item->item_name,
+                        'business_area'      => $pr->business_area,
+                        'tujuan'             => $item->purpose,
+                        'harga_penawaran'    => $hargaPenawaran,
+                        'department'         => $pr->department,
+                        'requester'          => optional($pr->user)->email,
+                        'lampiran_penawaran' => $pr->attachment_path,
+                        ];
+                    }
+                }
+
+                if (!empty($assetItems)) {
+                    try {
+                        $apiUrl = 'http://10.22.5.50:8287/public/api/receive_asset.php'; 
+                        Http::timeout(10)->post($apiUrl, [
+                            'api_key' => 'DICT_PURCH_SECRET_2026',
+                            'assets'  => $assetItems,
+                        ]);
+                    } catch (\Exception $e) {
+                        Log::warning('Asset push to Accounting failed: ' . $e->getMessage());
+                    }
+                }
+            }
+            // ────────────────────────────────────────────────────────────────
+
             $userId = $pr->user_id ?? null;
             if ($userId) {
                 $userCreator = \App\Models\User::find($userId);

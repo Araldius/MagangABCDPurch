@@ -321,6 +321,8 @@ input:focus, select:focus { border-color: var(--border-focus); box-shadow: 0 0 0
               <option value="">Select Plant</option>
               <option {{ old('plant')=='Cikarang'?'selected':'' }}>Cikarang</option>
               <option {{ old('plant')=='Cibitung'?'selected':'' }}>Cibitung</option>
+              <option {{ old('plant')=='Gresik'?'selected':'' }}>Gresik</option>
+              <option {{ old('plant')=='Medan'?'selected':'' }}>Medan</option>
               <option {{ old('plant')=='Slipi'?'selected':'' }}>Slipi</option>
             </select>
           </div>
