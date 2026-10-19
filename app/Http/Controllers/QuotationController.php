@@ -36,24 +36,43 @@ class QuotationController extends Controller
             'new_vendor_email' => ['nullable', 'email', 'max:255'],
             'items' => ['required', 'array'],
             'items.*.item_id' => ['required'], // PR item or SR item ID
-            'items.*.price' => ['required', 'numeric', 'min:0'],
-            'items.*.quantity' => ['required', 'numeric', 'min:0'],
+            'items.*.price' => ['nullable', 'numeric', 'min:0'],
+            'items.*.quantity' => ['nullable', 'numeric', 'min:0'],
             'items.*.unit' => ['nullable', 'string'],
             'items.*.specification' => ['nullable', 'string'],
             'items.*.notes' => ['nullable', 'string'],
             'note' => ['nullable', 'string'],
         ]);
 
+        $quotedItems = collect($data['items'])->filter(function ($it) {
+            return isset($it['price']) && $it['price'] !== '' && $it['price'] !== null && (float) $it['price'] > 0;
+        });
+
+        if ($quotedItems->isEmpty()) {
+            return back()->withErrors(['items' => 'Mohon isi harga penawaran minimal pada 1 item.'])->withInput();
+        }
+
         // Resolve vendor
         $vendorId = $data['vendor_id'];
+        if ($vendorId && !empty($data['new_vendor_name'])) {
+            $existingV = \App\Models\Vendor::find($vendorId);
+            if ($existingV && strtolower(trim($existingV->vendor_name)) !== strtolower(trim($data['new_vendor_name']))) {
+                $vendorId = null;
+            }
+        }
         if (!$vendorId && !empty($data['new_vendor_name'])) {
-            $vendor = \App\Models\Vendor::create([
-                'vendor_name' => $data['new_vendor_name'],
-                'location' => $data['new_vendor_location'],
-                'email' => $data['new_vendor_email'],
-                'status' => 'active',
-            ]);
-            $vendorId = $vendor->id;
+            $existingByName = \App\Models\Vendor::whereRaw('LOWER(TRIM(vendor_name)) = ?', [strtolower(trim($data['new_vendor_name']))])->first();
+            if ($existingByName) {
+                $vendorId = $existingByName->id;
+            } else {
+                $vendor = \App\Models\Vendor::create([
+                    'vendor_name' => trim($data['new_vendor_name']),
+                    'location' => $data['new_vendor_location'] ?: '-',
+                    'email' => $data['new_vendor_email'],
+                    'status' => 'active',
+                ]);
+                $vendorId = $vendor->id;
+            }
         }
 
         if (!$vendorId) {
@@ -66,24 +85,36 @@ class QuotationController extends Controller
             $rfq->save();
         }
 
-        // Create Quotation
-        $quotation = Quotation::create([
-            'rfq_id' => $rfq->id,
-            'vendor_id' => $vendorId,
-            'total_price' => collect($data['items'])->sum(fn($it) => $it['price'] * $it['quantity']),
-            'note' => $data['note'] ?? null,
-            'status' => 'submitted',
-        ]);
+        $totalPrice = $quotedItems->sum(fn($it) => (float) $it['price'] * (float) ($it['quantity'] ?? 1));
 
-        // Create details
+        // Create or Update Quotation for this RFQ + Vendor
+        $quotation = Quotation::where('rfq_id', $rfq->id)->where('vendor_id', $vendorId)->first();
+        if ($quotation) {
+            $quotation->update([
+                'total_price' => $totalPrice,
+                'note' => $data['note'] ?? null,
+                'status' => 'submitted',
+            ]);
+            QuotationDetail::where('quotation_id', $quotation->id)->delete();
+        } else {
+            $quotation = Quotation::create([
+                'rfq_id' => $rfq->id,
+                'vendor_id' => $vendorId,
+                'total_price' => $totalPrice,
+                'note' => $data['note'] ?? null,
+                'status' => 'submitted',
+            ]);
+        }
+
+        // Create details for quoted items
         $isService = (bool) $rfq->service_request_id;
-        foreach ($data['items'] as $it) {
+        foreach ($quotedItems as $it) {
             QuotationDetail::create([
                 'quotation_id' => $quotation->id,
                 'purchase_request_item_id' => $isService ? null : $it['item_id'],
                 'service_request_item_id' => $isService ? $it['item_id'] : null,
                 'offered_price_per_item' => $it['price'],
-                'offered_quantity' => $it['quantity'],
+                'offered_quantity' => $it['quantity'] ?? 1,
                 'offered_unit' => $it['unit'] ?? null,
                 'offered_brand' => $it['brand'] ?? null,
                 'offered_specification' => $it['specification'] ?? null,
@@ -108,25 +139,42 @@ class QuotationController extends Controller
             'action_date' => now(),
         ]);
 
-                // Mulai: Kirim Notifikasi
+                // Mulai: Kirim Notifikasi & Email
         $vendorModel = \App\Models\Vendor::find($vendorId);
         if ($vendorModel) {
-            
-            // 1. Kirim ke User Pembuat PR/SR (Peminta Barang)
-            if ($pr && $pr->user_id) {
-                $userCreator = \App\Models\User::find($pr->user_id);
-                if ($userCreator) {
-                    $userCreator->notify(new \App\Notifications\VendorQuotationSubmitted($rfq, $vendorModel));
-                }
-            }
-            
-            // 2. Kirim juga ke Seluruh Tim Purchasing (termasuk Anda)
             $purchasingUsers = \App\Models\User::where('role', 'purchasing')->get();
-            if ($purchasingUsers->count() > 0) {
-                \Illuminate\Support\Facades\Notification::send($purchasingUsers, new \App\Notifications\VendorQuotationSubmitted($rfq, $vendorModel));
-            }
+            
+            dispatch(function () use ($pr, $rfq, $vendorModel, $quotation, $purchasingUsers) {
+                try {
+                    // 1. Kirim ke User Pembuat PR/SR (Peminta Barang)
+                    if ($pr && $pr->user_id) {
+                        $userCreator = \App\Models\User::find($pr->user_id);
+                        if ($userCreator) {
+                            $userCreator->notify(new \App\Notifications\VendorQuotationSubmitted($rfq, $vendorModel));
+                        }
+                    }
+                    
+                    // 2. Kirim ke Seluruh Tim Purchasing (Database Notification)
+                    if ($purchasingUsers->count() > 0) {
+                        \Illuminate\Support\Facades\Notification::send($purchasingUsers, new \App\Notifications\VendorQuotationSubmitted($rfq, $vendorModel));
+                    }
+
+                    // 3. Kirim Email Quotation ke Seluruh Tim Purchasing
+                    if ($purchasingUsers->count() > 0 && $quotation) {
+                        \Illuminate\Support\Facades\Notification::send($purchasingUsers, new \App\Notifications\CompanyQuotationSubmitted($rfq, $vendorModel, $quotation));
+                    }
+
+                    // 4. Kirim Email ke Alamat Sistem jika dikonfigurasi
+                    $companyEmail = config('mail.from.address') ?: env('MAIL_FROM_ADDRESS');
+                    if ($companyEmail && $quotation && !in_array($companyEmail, $purchasingUsers->pluck('email')->toArray())) {
+                        \Illuminate\Support\Facades\Notification::route('mail', $companyEmail)->notify(new \App\Notifications\CompanyQuotationSubmitted($rfq, $vendorModel, $quotation));
+                    }
+                } catch (\Throwable $e) {
+                    \Log::error('Error sending manual quotation notification: ' . $e->getMessage());
+                }
+            })->afterResponse();
         }
-        // Selesai: Kirim Notifikasi
+        // Selesai: Kirim Notifikasi & Email
 
         return redirect()->route('dashboard')->with('success', 'Manual quotation saved successfully.');
     }
@@ -387,7 +435,7 @@ class QuotationController extends Controller
             $rfq->save();
         }
 
-        $link = url('/vendors/quote/' . $rfq->vendor_token);
+        $link = $request->getSchemeAndHttpHost() . '/vendors/quote/' . $rfq->vendor_token;
         return response()->json(['link' => $link]);
     }
 }

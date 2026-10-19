@@ -281,8 +281,14 @@
             vendors = data;
         });
 
+    let autoFilledFromMatch = false;
     function resetVendorId() {
         document.getElementById('hidden_vendor_id').value = '';
+        if (autoFilledFromMatch) {
+            document.getElementById('vendor_location').value = '';
+            document.getElementById('vendor_contact').value = '';
+            autoFilledFromMatch = false;
+        }
     }
 
     // Auto-caps and Autofill logic
@@ -332,6 +338,7 @@
             document.getElementById('hidden_vendor_id').value = match.id;
             document.getElementById('vendor_location').value = match.location || '';
             document.getElementById('vendor_contact').value = match.email || '';
+            autoFilledFromMatch = true;
         } else {
             resetVendorId();
         }

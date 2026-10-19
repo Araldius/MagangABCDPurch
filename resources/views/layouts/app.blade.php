@@ -335,7 +335,7 @@
                     const d = typeof n.data === 'string' ? JSON.parse(n.data) : n.data;
                     let link = `/vendor-selection?key=${d.category}_${d.pr_id || d.rfq_id}`;
                     
-                    if (n.type && n.type.includes('VendorSelectedNotification')) {
+                    if (n.type && (n.type.includes('VendorSelectedNotification') || n.type.includes('NewPurchaseRequest') || n.type.includes('PurchaseRequestStatus'))) {
                         const baseUrl = "{{ route('pr.list') }}";
                         link = `${baseUrl}?open_pr=${d.pr_id}&category=${d.category}`;
                     }

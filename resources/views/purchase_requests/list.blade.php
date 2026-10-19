@@ -267,7 +267,10 @@
             <button onclick="document.getElementById('vendor-link-modal').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:20px;color:#9ca3af;line-height:1">&times;</button>
         </div>
         <div style="padding:24px 20px">
-            <div style="font-size:13px;color:#4b5563;margin-bottom:12px">Tautan ini valid selama 7 hari. Bagikan ke vendor agar mereka dapat memasukkan penawaran secara mandiri.</div>
+            <div style="font-size:13px;color:#4b5563;margin-bottom:12px">Tautan ini dapat digunakan berulang kali oleh vendor selama proses pengadaan masih terbuka. Klik tautan di bawah untuk membuka langsung atau klik Copy untuk membagikan tautan aktif:</div>
+            <div style="margin-bottom:12px;padding:10px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;word-break:break-all;font-size:13px;">
+                <a id="vendor-link-anchor" href="#" target="_blank" rel="noopener noreferrer" style="color:#2563eb;font-weight:600;text-decoration:underline;"></a>
+            </div>
             <div style="display:flex;gap:8px">
                 <input type="text" id="vendor-link-input" readonly style="flex:1;padding:10px 14px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;color:#374151;background:#f9fafb;outline:none" value="">
                 <button onclick="copyVendorLink()" id="copy-link-btn" style="padding:10px 16px;background:#1e3a5f;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:0.2s">
@@ -896,7 +899,13 @@ async function generateVendorLink() {
         });
         const data = await res.json();
         if(data.link) {
-            document.getElementById('vendor-link-input').value = data.link;
+            const fullLink = data.link.startsWith('http') ? data.link : (window.location.origin + (data.link.startsWith('/') ? '' : '/') + data.link);
+            document.getElementById('vendor-link-input').value = fullLink;
+            const anchor = document.getElementById('vendor-link-anchor');
+            if (anchor) {
+                anchor.href = fullLink;
+                anchor.textContent = fullLink;
+            }
             document.getElementById('vendor-link-modal').style.display = 'flex';
             document.getElementById('copy-link-btn').innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" stroke-linecap="round" stroke-linejoin="round"/></svg> Copy`;
         } else {
@@ -908,10 +917,41 @@ async function generateVendorLink() {
     btn.innerHTML = '🔗 Generate Vendor Link';
 }
 
-function copyVendorLink() {
+async function copyVendorLink() {
     const input = document.getElementById('vendor-link-input');
-    input.select();
-    document.execCommand('copy');
+    const fullLink = input.value;
+    const anchor = document.getElementById('vendor-link-anchor');
+
+    let copied = false;
+    if (navigator.clipboard && window.ClipboardItem) {
+        try {
+            const htmlBlob = new Blob([`<a href="${fullLink}">${fullLink}</a>`], { type: 'text/html' });
+            const textBlob = new Blob([fullLink], { type: 'text/plain' });
+            await navigator.clipboard.write([new ClipboardItem({ 'text/html': htmlBlob, 'text/plain': textBlob })]);
+            copied = true;
+        } catch (err) {
+            copied = false;
+        }
+    }
+
+    if (!copied && anchor) {
+        try {
+            const range = document.createRange();
+            range.selectNode(anchor);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+            copied = document.execCommand('copy');
+            sel.removeAllRanges();
+        } catch (err) {
+            copied = false;
+        }
+    }
+
+    if (!copied) {
+        input.select();
+        document.execCommand('copy');
+    }
     
     const btn = document.getElementById('copy-link-btn');
     btn.innerHTML = `✓ Copied!`;

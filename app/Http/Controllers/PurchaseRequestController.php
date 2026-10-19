@@ -196,6 +196,22 @@ class PurchaseRequestController extends Controller
                 'action_date'        => now(),
             ]);
 
+            $purchasingUsers = \App\Models\User::where('role', 'purchasing')->get();
+            dispatch(function () use ($sr, $purchasingUsers) {
+                try {
+                    $notif = new \App\Notifications\NewPurchaseRequestNotification($sr, 'service');
+                    if ($purchasingUsers->count() > 0) {
+                        \Illuminate\Support\Facades\Notification::send($purchasingUsers, $notif);
+                    }
+                    $companyEmail = config('mail.from.address') ?: env('MAIL_FROM_ADDRESS');
+                    if ($companyEmail && !in_array($companyEmail, $purchasingUsers->pluck('email')->toArray())) {
+                        \Illuminate\Support\Facades\Notification::route('mail', $companyEmail)->notify($notif);
+                    }
+                } catch (\Throwable $e) {
+                    \Log::error('Error sending new SR notification: ' . $e->getMessage());
+                }
+            })->afterResponse();
+
             return redirect()->route('pr.list')->with('success', "Request $docInfo berhasil dibuat.");
 
         } else {
@@ -279,6 +295,22 @@ class PurchaseRequestController extends Controller
                 'action_date'        => now(),
             ]);
 
+            $purchasingUsers = \App\Models\User::where('role', 'purchasing')->get();
+            dispatch(function () use ($pr, $purchasingUsers) {
+                try {
+                    $notif = new \App\Notifications\NewPurchaseRequestNotification($pr, 'goods');
+                    if ($purchasingUsers->count() > 0) {
+                        \Illuminate\Support\Facades\Notification::send($purchasingUsers, $notif);
+                    }
+                    $companyEmail = config('mail.from.address') ?: env('MAIL_FROM_ADDRESS');
+                    if ($companyEmail && !in_array($companyEmail, $purchasingUsers->pluck('email')->toArray())) {
+                        \Illuminate\Support\Facades\Notification::route('mail', $companyEmail)->notify($notif);
+                    }
+                } catch (\Throwable $e) {
+                    \Log::error('Error sending new PR notification: ' . $e->getMessage());
+                }
+            })->afterResponse();
+
             return redirect()->route('pr.list')->with('success', "Request $docInfo berhasil dibuat.");
         }
     }
@@ -358,6 +390,17 @@ class PurchaseRequestController extends Controller
             'action_date'        => now(),
         ]);
 
+        if ($req->user) {
+            $userTarget = $req->user;
+            dispatch(function () use ($userTarget, $req, $isService) {
+                try {
+                    $userTarget->notify(new \App\Notifications\PurchaseRequestStatusNotification($req, 'approved', 'Dokumen disetujui dan masuk ke tahap Vendor Search.', $isService ? 'service' : 'goods'));
+                } catch (\Throwable $e) {
+                    \Log::error('Error sending PR approved notification: ' . $e->getMessage());
+                }
+            })->afterResponse();
+        }
+
         return back()->with('success', "Request $docNum berhasil di-approve. Silakan tambahkan Quotation.");
     }
 
@@ -392,6 +435,17 @@ class PurchaseRequestController extends Controller
             'notes'              => "Dokumen $docNum ditolak oleh Admin.",
             'action_date'        => now(),
         ]);
+
+        if ($req->user) {
+            $userTarget = $req->user;
+            dispatch(function () use ($userTarget, $req, $isService) {
+                try {
+                    $userTarget->notify(new \App\Notifications\PurchaseRequestStatusNotification($req, 'rejected', 'Dokumen ditolak oleh Admin Purchasing.', $isService ? 'service' : 'goods'));
+                } catch (\Throwable $e) {
+                    \Log::error('Error sending PR rejected notification: ' . $e->getMessage());
+                }
+            })->afterResponse();
+        }
 
         return back()->with('success', "Request $docNum berhasil ditolak.");
     }
@@ -474,6 +528,22 @@ class PurchaseRequestController extends Controller
             'notes'              => "Dokumen $docNum dikembalikan ke Vendor Selection oleh Admin untuk diperpanjang waktunya.",
             'action_date'        => now(),
         ]);
+
+        $purchasingUsers = \App\Models\User::where('role', 'purchasing')->get();
+        $userTarget = $req->user;
+        dispatch(function () use ($req, $userTarget, $purchasingUsers, $isService, $docNum) {
+            try {
+                $notif = new \App\Notifications\PurchaseRequestStatusNotification($req, 'reopened', "Dokumen $docNum dibuka kembali ke tahap Vendor Selection.", $isService ? 'service' : 'goods');
+                if ($userTarget) {
+                    $userTarget->notify($notif);
+                }
+                if ($purchasingUsers->count() > 0) {
+                    \Illuminate\Support\Facades\Notification::send($purchasingUsers, $notif);
+                }
+            } catch (\Throwable $e) {
+                \Log::error('Error sending PR reopened notification: ' . $e->getMessage());
+            }
+        })->afterResponse();
 
         return back()->with('success', "Request $docNum berhasil dikembalikan ke tahap Vendor Selection.");
     }

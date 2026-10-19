@@ -243,18 +243,32 @@ class VendorController extends Controller
             // ────────────────────────────────────────────────────────────────
 
             $userId = $pr->user_id ?? null;
-            if ($userId) {
-                $userCreator = \App\Models\User::find($userId);
-                if ($userCreator) {
-                    $userCreator->notify(new \App\Notifications\VendorSelectedNotification($pr, $isService ? 'service' : 'goods'));
-                }
-            }
-            
-            // Notify all purchasing users as well
+            $userCreator = $userId ? \App\Models\User::find($userId) : null;
             $purchasingUsers = \App\Models\User::where('role', 'purchasing')->get();
-            if ($purchasingUsers->count() > 0) {
-                \Illuminate\Support\Facades\Notification::send($purchasingUsers, new \App\Notifications\VendorSelectedNotification($pr, $isService ? 'service' : 'goods'));
-            }
+
+            dispatch(function () use ($pr, $userCreator, $purchasingUsers, $isService) {
+                try {
+                    $notif = new \App\Notifications\VendorSelectedNotification($pr, $isService ? 'service' : 'goods');
+
+                    // 1. Notifikasi database & email ke Pemohon
+                    if ($userCreator) {
+                        $userCreator->notify($notif);
+                    }
+
+                    // 2. Notifikasi database & email ke Seluruh Tim Purchasing
+                    if ($purchasingUsers->count() > 0) {
+                        \Illuminate\Support\Facades\Notification::send($purchasingUsers, $notif);
+                    }
+
+                    // 3. Kirim ke email sistem purchasing jika ada
+                    $companyEmail = config('mail.from.address') ?: env('MAIL_FROM_ADDRESS');
+                    if ($companyEmail && !in_array($companyEmail, $purchasingUsers->pluck('email')->toArray())) {
+                        \Illuminate\Support\Facades\Notification::route('mail', $companyEmail)->notify($notif);
+                    }
+                } catch (\Throwable $e) {
+                    \Log::error('Error sending vendor selected notifications: ' . $e->getMessage());
+                }
+            })->afterResponse();
 
             return response()->json([
                 'success'   => true,
@@ -424,6 +438,145 @@ class VendorController extends Controller
         $data[] = $totalRow;
 
         $xlsFileName = "quotations_{$doc->document_number}_" . date('Ymd_His') . '.xlsx';
+        $xlsx = \Shuchkin\SimpleXLSXGen::fromArray($data);
+
+        return response((string) $xlsx, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="' . $xlsFileName . '"',
+            'Cache-Control' => 'max-age=0',
+        ]);
+    }
+
+    public function exportSummaryPo(Request $request)
+    {
+        $id = $request->input('purchase_request_id');
+        $type = $request->input('item_type', 'goods');
+        $selectionsRaw = json_decode($request->input('selections_json', '[]'), true) ?: [];
+
+        $doc = $type === 'service' ? ServiceRequest::with('jobs.items')->findOrFail($id) : PurchaseRequest::with('items')->findOrFail($id);
+        $vendors = Vendor::pluck('vendor_name', 'id')->toArray();
+
+        $itemMap = [];
+        $jobScopeMap = [];
+        if ($type === 'service') {
+            foreach ($doc->jobs as $job) {
+                foreach ($job->items as $it) {
+                    $itemMap[$it->id] = $it;
+                    $jobScopeMap[$it->id] = $job->job_description ?? $job->description ?? '-';
+                }
+            }
+        } else {
+            foreach ($doc->items as $it) {
+                $itemMap[$it->id] = $it;
+            }
+        }
+
+        $docTitle = $type === 'service' ? ($doc->service_name ?? $doc->title ?? '-') : ($doc->title ?? '-');
+
+        $data = [
+            ['<b>SUMMARY PO UNTUK ' . $doc->document_number . '</b>'],
+            ['<b>Deskripsi:</b>', $docTitle],
+            ['<b>Tanggal Export:</b>', now()->format('d M Y H:i')],
+            [],
+            ['<b>SELECTED ITEMS</b>'],
+        ];
+
+        if ($type === 'service') {
+            $data[] = ['<b>NO.</b>', '<b>SCOPE PEKERJAAN</b>', '<b>ITEM NAME</b>', '<b>VENDOR</b>', '<b>BUY QTY</b>', '<b>UNIT</b>', '<b>PRICE (RP)</b>', '<b>SUBTOTAL (RP)</b>'];
+        } else {
+            $data[] = ['<b>NO.</b>', '<b>ITEM ID</b>', '<b>ITEM NAME</b>', '<b>VENDOR</b>', '<b>BUY QTY</b>', '<b>UNIT</b>', '<b>PRICE (RP)</b>', '<b>SUBTOTAL (RP)</b>'];
+        }
+
+        $no = 1;
+        $grandTotal = 0;
+        $perVendor = [];
+
+        foreach ($selectionsRaw as $sel) {
+            $vId = $sel['vendor_id'] ?? null;
+            $vName = $vendors[$vId] ?? ($sel['vendor_name'] ?? 'Unknown Vendor');
+            $itId = $sel['item_id'] ?? null;
+            $origItem = $itemMap[$itId] ?? null;
+
+            $itemName = $sel['item_name'] ?? ($origItem->item_name ?? $origItem->name ?? '-');
+            $qty = (float) ($sel['quantity'] ?? 0);
+            $unit = $sel['unit'] ?? ($origItem->unit ?? '-');
+            $price = (float) ($sel['unit_price'] ?? 0);
+            $subtotal = $qty * $price;
+            $grandTotal += $subtotal;
+
+            if ($type === 'service') {
+                $scope = $jobScopeMap[$itId] ?? '-';
+                $data[] = [
+                    $no++,
+                    $scope,
+                    $itemName,
+                    $vName,
+                    $qty,
+                    $unit,
+                    $price,
+                    $subtotal,
+                ];
+            } else {
+                $itemCode = $origItem->item_id ?? '-';
+                $data[] = [
+                    $no++,
+                    $itemCode,
+                    $itemName,
+                    $vName,
+                    $qty,
+                    $unit,
+                    $price,
+                    $subtotal,
+                ];
+            }
+
+            if (!isset($perVendor[$vId])) {
+                $perVendor[$vId] = [
+                    'vendor_name' => $vName,
+                    'total' => 0,
+                    'items' => [],
+                ];
+            }
+            $perVendor[$vId]['total'] += $subtotal;
+            $perVendor[$vId]['items'][] = [
+                'scope' => $type === 'service' ? ($jobScopeMap[$itId] ?? '-') : null,
+                'item_name' => $itemName,
+                'qty' => $qty,
+                'unit' => $unit,
+                'price' => $price,
+                'subtotal' => $subtotal,
+            ];
+        }
+
+        $data[] = ['', '', '', '', '', '', '<b>GRAND TOTAL</b>', '<b>' . $grandTotal . '</b>'];
+        $data[] = [];
+        $data[] = ['<b>TOTAL PER VENDOR</b>'];
+        $data[] = ['<b>VENDOR</b>', '<b>ITEM / PEKERJAAN</b>', '<b>BUY QTY</b>', '<b>UNIT</b>', '<b>PRICE (RP)</b>', '<b>SUBTOTAL (RP)</b>'];
+
+        foreach ($perVendor as $vGroup) {
+            foreach ($vGroup['items'] as $idx => $vIt) {
+                $label = $vIt['scope'] ? ('[' . $vIt['scope'] . '] ' . $vIt['item_name']) : $vIt['item_name'];
+                $data[] = [
+                    $idx === 0 ? '<b>' . $vGroup['vendor_name'] . '</b>' : '',
+                    $label,
+                    $vIt['qty'],
+                    $vIt['unit'],
+                    $vIt['price'],
+                    $vIt['subtotal'],
+                ];
+            }
+            $data[] = [
+                '',
+                '',
+                '',
+                '',
+                '<b>Total ' . $vGroup['vendor_name'] . '</b>',
+                '<b>' . $vGroup['total'] . '</b>',
+            ];
+            $data[] = [];
+        }
+
+        $xlsFileName = "summary_po_{$doc->document_number}_" . date('Ymd_His') . '.xlsx';
         $xlsx = \Shuchkin\SimpleXLSXGen::fromArray($data);
 
         return response((string) $xlsx, 200, [

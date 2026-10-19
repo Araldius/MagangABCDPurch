@@ -40,17 +40,10 @@ class VendorPortalController extends Controller
             }
         }
 
-        $vendors = Vendor::select('id', 'vendor_name', 'email', 'location')->get();
+        $vendors = collect();
 
-        if ($request->query('new')) {
-            $vendorId = null;
-            $quotation = null;
-            $currentVendor = null;
-        } else {
-            $vendorId = session('last_vendor_id') ?: $rfq->vendor_id;
-            $quotation = Quotation::with('details')->where('rfq_id', $rfq->id)->where('vendor_id', $vendorId)->first();
-            $currentVendor = $vendorId ? Vendor::find($vendorId) : null;
-        }
+        $quotation = $request->attributes->get('editing_quotation');
+        $currentVendor = $quotation ? $quotation->vendor : null;
 
         $existingItems = [];
         if ($quotation) {
@@ -84,13 +77,9 @@ class VendorPortalController extends Controller
                     $items = $items->merge($job->items);
                 }
             }
-            $vendors = Vendor::select('id', 'vendor_name', 'email', 'location')->get();
+            $vendors = collect();
             return response()->view('vendors.quote', compact('rfq', 'items', 'neededDate', 'closedDate', 'vendors', 'closedReason'), 403);
         }
-
-        $neededDateRaw = $rfq->purchaseRequest ? $rfq->purchaseRequest->need_date : ($rfq->serviceRequest ? $rfq->serviceRequest->requested_date : null);
-        $neededDate = $neededDateRaw ? \Carbon\Carbon::parse($neededDateRaw)->startOfDay() : null;
-        $closedDate = $neededDate ? $neededDate->copy()->subDay()->endOfDay() : null;
 
         if ($closedDate && now()->gt($closedDate)) {
             // We no longer block submission here. Vendors can submit overdue quotations.
@@ -98,34 +87,68 @@ class VendorPortalController extends Controller
 
         $data = $request->validate([
             'vendor_name' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
+            'email' => 'nullable|string|max:255',
             'vendor_location' => 'nullable|string|max:255',
             'attachment' => 'nullable|file|mimes:pdf,xlsx,xls,jpg,jpeg,png|max:10240',
             'items' => 'required|array',
             'items.*.item_id' => 'required',
-            'items.*.price' => 'required|numeric|min:0',
-            'items.*.quantity' => 'required|numeric|min:0',
+            'items.*.price' => 'nullable|numeric|min:0',
+            'items.*.quantity' => 'nullable|numeric|min:0',
             'items.*.unit' => 'nullable|string',
             'items.*.specification' => 'nullable|string',
             'items.*.notes' => 'nullable|string',
             'note' => 'nullable|string',
         ]);
 
-        if (!$request->filled('vendor_id') && str_contains($data['email'], '*')) {
-            return back()->withInput()->withErrors(['email' => 'Silakan pilih vendor dari daftar dengan benar, atau masukkan alamat email lengkap secara manual jika membuat vendor baru (tanpa tanda bintang).']);
+        // If registering a brand-new vendor and email was entered manually (not blurred/masked), check email format
+        if (!$request->filled('vendor_id') && !empty($data['email'])) {
+            if (str_contains($data['email'], '•') || str_contains($data['email'], '*')) {
+                $data['email'] = null;
+            } elseif (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
+                return back()->withInput()->withErrors(['email' => 'Format email tidak valid.']);
+            }
         }
 
-        // Find or create vendor
+        // Filter items that have a quoted price > 0
+        $quotedItems = collect($data['items'])->filter(function ($it) {
+            return isset($it['price']) && $it['price'] !== '' && $it['price'] !== null && (float) $it['price'] > 0;
+        });
+
+        if ($quotedItems->isEmpty()) {
+            return back()->withInput()->withErrors(['items' => 'Mohon isi harga penawaran minimal pada 1 item.']);
+        }
+
+        // Find or create vendor by exact company name (so similar names like Trial & Trial2 or Citra Pratama & Citra Sejahtera remain distinct)
         $vendor = null;
         if ($request->filled('vendor_id')) {
             $vendor = Vendor::find($request->vendor_id);
+            if ($vendor && strtolower(trim($vendor->vendor_name)) !== strtolower(trim($data['vendor_name']))) {
+                $vendor = null;
+            }
         }
 
         if (!$vendor) {
-            $vendor = Vendor::firstOrCreate(
-                ['vendor_name' => $data['vendor_name'], 'email' => $data['email']],
-                ['location' => $data['vendor_location'] ?? '-', 'status' => 'active']
-            );
+            $vendor = Vendor::whereRaw('LOWER(TRIM(vendor_name)) = ?', [strtolower(trim($data['vendor_name']))])->first();
+        }
+
+        if (!$vendor) {
+            $vendor = Vendor::create([
+                'vendor_name' => trim($data['vendor_name']),
+                'email' => (!empty($data['email']) && !str_contains($data['email'], '*') && !str_contains($data['email'], '•')) ? $data['email'] : null,
+                'location' => (!empty($data['vendor_location']) && !str_contains($data['vendor_location'], '*') && !str_contains($data['vendor_location'], '•')) ? $data['vendor_location'] : '-',
+                'status' => 'active',
+            ]);
+        } else {
+            $vendorUpdates = [];
+            if (!empty($data['email']) && !str_contains($data['email'], '*') && !str_contains($data['email'], '•')) {
+                $vendorUpdates['email'] = $data['email'];
+            }
+            if (!empty($data['vendor_location']) && !str_contains($data['vendor_location'], '*') && !str_contains($data['vendor_location'], '•')) {
+                $vendorUpdates['location'] = $data['vendor_location'];
+            }
+            if (!empty($vendorUpdates)) {
+                $vendor->update($vendorUpdates);
+            }
         }
 
         // Find existing quotation for this vendor + RFQ
@@ -142,10 +165,12 @@ class VendorPortalController extends Controller
             $attachmentPath = $request->file('attachment')->store('quotations', 'public');
         }
 
+        $totalPrice = $quotedItems->sum(fn($it) => (float) $it['price'] * (float) ($it['quantity'] ?? 1));
+
         if ($quotation) {
             // Update
             $updateData = [
-                'total_price' => collect($data['items'])->sum(fn($it) => $it['price'] * $it['quantity']),
+                'total_price' => $totalPrice,
                 'note' => $data['note'] ?? null,
                 'status' => 'submitted',
             ];
@@ -162,7 +187,7 @@ class VendorPortalController extends Controller
             $quotation = Quotation::create([
                 'rfq_id' => $rfq->id,
                 'vendor_id' => $vendor->id,
-                'total_price' => collect($data['items'])->sum(fn($it) => $it['price'] * $it['quantity']),
+                'total_price' => $totalPrice,
                 'note' => $data['note'] ?? null,
                 'status' => 'submitted',
                 'vendor_token' => Str::random(40),
@@ -171,13 +196,13 @@ class VendorPortalController extends Controller
         }
 
         $isService = (bool) $rfq->service_request_id;
-        foreach ($data['items'] as $it) {
+        foreach ($quotedItems as $it) {
             QuotationDetail::create([
                 'quotation_id' => $quotation->id,
                 'purchase_request_item_id' => $isService ? null : $it['item_id'],
                 'service_request_item_id' => $isService ? $it['item_id'] : null,
                 'offered_price_per_item' => $it['price'],
-                'offered_quantity' => $it['quantity'],
+                'offered_quantity' => $it['quantity'] ?? 1,
                 'offered_unit' => $it['unit'] ?? null,
                 'offered_brand' => $it['brand'] ?? null,
                 'offered_specification' => $it['specification'] ?? null,
@@ -202,19 +227,38 @@ class VendorPortalController extends Controller
 
         // Send Notifications in the background (after HTTP response is sent) to prevent slow loading
         $purchasingUsers = User::where('role', 'purchasing')->get();
+        $pr = $rfq->purchaseRequest ?? $rfq->serviceRequest;
+        $userCreator = ($pr && $pr->user_id) ? User::find($pr->user_id) : null;
         
-        dispatch(function () use ($purchasingUsers, $rfq, $vendor, $quotation) {
-            if ($purchasingUsers->count() > 0) {
-                Notification::send($purchasingUsers, new VendorQuotationSubmitted($rfq, $vendor));
-            }
+        dispatch(function () use ($purchasingUsers, $userCreator, $rfq, $vendor, $quotation) {
+            try {
+                // 1. In-app database notification to all Purchasing users
+                if ($purchasingUsers->count() > 0) {
+                    Notification::send($purchasingUsers, new VendorQuotationSubmitted($rfq, $vendor));
+                }
 
-            // Send Quotation Details + Attachment to Company Email (using system email)
-            $companyEmail = env('MAIL_FROM_ADDRESS', 'purchasing@duniakimiajaya.abc');
-            Notification::route('mail', $companyEmail)->notify(new \App\Notifications\CompanyQuotationSubmitted($rfq, $vendor, $quotation));
+                // 2. In-app database notification to PR creator
+                if ($userCreator) {
+                    $userCreator->notify(new VendorQuotationSubmitted($rfq, $vendor));
+                }
 
-            // Send Edit Link to Vendor
-            if ($quotation->vendor_token) {
-                $vendor->notify(new \App\Notifications\VendorQuotationEditLink($rfq, $vendor, $quotation->vendor_token));
+                // 3. Email Quotation Details + Attachment to all Purchasing users
+                if ($purchasingUsers->count() > 0) {
+                    Notification::send($purchasingUsers, new \App\Notifications\CompanyQuotationSubmitted($rfq, $vendor, $quotation));
+                }
+
+                // 4. Send Quotation Details to Company Email if configured
+                $companyEmail = config('mail.from.address') ?: env('MAIL_FROM_ADDRESS');
+                if ($companyEmail && !in_array($companyEmail, $purchasingUsers->pluck('email')->toArray())) {
+                    Notification::route('mail', $companyEmail)->notify(new \App\Notifications\CompanyQuotationSubmitted($rfq, $vendor, $quotation));
+                }
+
+                // 5. Send Edit Link to Vendor
+                if ($quotation->vendor_token && !empty($vendor->email)) {
+                    $vendor->notify(new \App\Notifications\VendorQuotationEditLink($rfq, $vendor, $quotation->vendor_token));
+                }
+            } catch (\Throwable $e) {
+                \Log::error('Error sending quotation notifications: ' . $e->getMessage());
             }
         })->afterResponse();
 
@@ -223,11 +267,10 @@ class VendorPortalController extends Controller
 
     public function showEdit(Request $request, $token)
     {
-        $quotation = Quotation::where('vendor_token', $token)->firstOrFail();
+        $quotation = Quotation::with('details', 'vendor')->where('vendor_token', $token)->firstOrFail();
         $rfq = $quotation->rfq;
         
-        // Temporarily set session to remember who is editing
-        session(['last_vendor_id' => $quotation->vendor_id]);
+        $request->attributes->set('editing_quotation', $quotation);
         
         return $this->show($request, $rfq->vendor_token);
     }
@@ -237,57 +280,56 @@ class VendorPortalController extends Controller
         $quotation = Quotation::where('vendor_token', $token)->firstOrFail();
         $rfq = $quotation->rfq;
         
-        // Pass confirm_overwrite to skip the warning
-        $request->merge(['confirm_overwrite' => true]);
+        // Pass confirm_overwrite and vendor_id to skip the warning
+        $request->merge([
+            'confirm_overwrite' => true,
+            'vendor_id' => $quotation->vendor_id,
+        ]);
         
         return $this->submit($request, $rfq->vendor_token);
     }
 
     /**
-     * Autocomplete endpoint for vendor name with word matching and server-side masking.
+     * Autocomplete endpoint for vendor name with location masking and full email blurring/masking.
      */
     public function autocomplete(Request $request)
     {
-        $q = $request->query('q', '');
-        if (empty($q)) {
-            return response()->json([]);
-        }
-
-        $words = array_filter(explode(' ', $q));
+        $q = trim($request->query('q', ''));
         $queryBuilder = Vendor::query();
 
-        foreach ($words as $word) {
-            $queryBuilder->where('vendor_name', 'like', '%' . $word . '%');
+        if (!empty($q)) {
+            $words = array_filter(explode(' ', $q));
+            foreach ($words as $word) {
+                $queryBuilder->where('vendor_name', 'like', '%' . $word . '%');
+            }
         }
 
-        $vendors = $queryBuilder->limit(8)->get(['id', 'vendor_name', 'location', 'email']);
+        $vendors = $queryBuilder->orderBy('vendor_name')->limit(100)->get(['id', 'vendor_name', 'location', 'email']);
 
         $maskedVendors = $vendors->map(function ($v) {
             return [
                 'id' => $v->id,
                 'vendor_name' => $v->vendor_name,
                 'location' => $this->maskLocation($v->location),
-                'email' => $this->maskEmail($v->email),
+                // Email is fully masked as bullets so real email is never transmitted to frontend
+                'email' => !empty($v->email) ? '••••••••••••••••' : '-',
             ];
         });
 
         return response()->json($maskedVendors);
     }
 
-    private function maskEmail($email)
-    {
-        if (!$email) return '';
-        $parts = explode('@', $email);
-        if (count($parts) < 2) return str_repeat('*', strlen($email));
-        $name = $parts[0];
-        $domain = $parts[1];
-        $maskedName = strlen($name) <= 2 ? $name . '*' : substr($name, 0, 2) . str_repeat('*', strlen($name) - 2);
-        return $maskedName . '@' . $domain;
-    }
-
     private function maskLocation($location)
     {
         if (!$location || $location === '-') return '-';
-        return strlen($location) <= 3 ? $location . '*' : substr($location, 0, 3) . str_repeat('*', strlen($location) - 3);
+        $len = strlen($location);
+        if ($len <= 2) {
+            return substr($location, 0, 1) . '*';
+        }
+        if ($len <= 4) {
+            return substr($location, 0, 2) . str_repeat('*', $len - 2);
+        }
+        $maskedCount = max(3, $len - 3);
+        return substr($location, 0, 3) . str_repeat('*', $maskedCount);
     }
 }

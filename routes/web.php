@@ -79,6 +79,7 @@ Route::middleware('auth')->group(function () {
     Route::get( 'vendor-selection',       [VendorController::class, 'index'])->name('vendors.list');
     Route::post('vendor-selection/store', [VendorController::class, 'storeSelection'])->name('vendors.store.selection');
     Route::get( 'vendor-selection/export', [VendorController::class, 'exportQuotations'])->name('vendors.export');
+    Route::post('vendor-selection/export-summary', [VendorController::class, 'exportSummaryPo'])->name('vendors.export.summary');
 
     /* Vendor Selection (old RFQ-based flow — backward compat, GET only) */
     Route::get('vendor/select/{rfq}', [VendorController::class, 'select'])->name('vendors.select');

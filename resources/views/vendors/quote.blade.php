@@ -62,7 +62,7 @@
     </style>
 </head>
 <body>
-    @if(!isset($closedReason) && !request()->routeIs('vendors.quote.edit') && !session('success') && !request()->query('new'))
+    @if(!isset($closedReason) && !request()->routeIs('vendors.quote.edit') && !session('success') && !session('overwrite_warning') && !$errors->any() && !request()->query('new'))
     <!-- Token Initial Page Overlay -->
     <div id="initialTokenModal" style="position: fixed; inset: 0; background: #f3f6f9; z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;">
         <script>document.body.style.overflow = 'hidden';</script>
@@ -204,32 +204,35 @@
 
         <form id="quote-form" method="POST" action="{{ route('vendors.quote.submit', $rfq->vendor_token) }}" enctype="multipart/form-data">
             @csrf
-            <input type="hidden" name="vendor_id" id="vendor_id_input">
-            <div class="card">
+            <input type="hidden" name="vendor_id" id="vendor_id_input" value="{{ old('vendor_id', $currentVendor->id ?? '') }}">
+            @if(request()->routeIs('vendors.quote.edit'))
+                <input type="hidden" name="confirm_overwrite" value="1">
+            @endif
+            <div class="card" style="overflow: visible; position: relative; z-index: 50;">
                 <div class="card-header">
                     <div class="card-title">Vendor Quotation Portal</div>
                     <div class="card-desc">Please provide your company details and quotation for the items below.</div>
                 </div>
-                <div class="card-body">
-                    <div class="form-group" style="margin-bottom:16px; position:relative;">
+                <div class="card-body" style="overflow: visible; position: relative;">
+                    <div class="form-group" style="margin-bottom:16px; position:relative; z-index:60;">
                         <label class="form-label flex-between">
                             <span>Company Name *</span>
-                            <span id="vendor-status-badge" style="display:none; font-size:11px; background:#dcfce7; color:#15803d; padding:2px 8px; border-radius:4px; font-weight:700;">✓ REGISTERED VENDOR</span>
+                            <span id="vendor-status-badge" style="display:{{ isset($currentVendor) ? 'inline-flex' : 'none' }}; font-size:11px; background:#dcfce7; color:#15803d; padding:2px 8px; border-radius:4px; font-weight:700;">✓ REGISTERED VENDOR</span>
                         </label>
                         <div style="position:relative; display:flex; align-items:center;">
-                            <input type="text" class="form-control" name="vendor_name" id="vendor_name_input" value="{{ old('vendor_name') }}" required placeholder="Type your company name..." autocomplete="off">
-                            <button type="button" id="clear-vendor-btn" onclick="resetVendorSelection()" style="display:none; position:absolute; right:10px; background:none; border:none; color:#ef4444; font-weight:bold; cursor:pointer; font-size:16px;">&times;</button>
+                            <input type="text" class="form-control" name="vendor_name" id="vendor_name_input" value="{{ old('vendor_name', $currentVendor->vendor_name ?? '') }}" required placeholder="Type your company name..." autocomplete="off">
+                            <button type="button" id="clear-vendor-btn" onclick="resetVendorSelection()" style="display:{{ isset($currentVendor) ? 'block' : 'none' }}; position:absolute; right:10px; background:none; border:none; color:#ef4444; font-weight:bold; cursor:pointer; font-size:16px;" title="Change / Clear Vendor">&times;</button>
                         </div>
-                        <div id="autocomplete-dropdown" style="display:none; position:absolute; left:0; right:0; top:100%; background:#fff; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); z-index:100; max-height:220px; overflow-y:auto; margin-top:4px;"></div>
+                        <div id="autocomplete-dropdown" style="display:none; position:absolute; left:0; right:0; top:100%; background:#fff; border:1px solid #cbd5e1; border-radius:8px; box-shadow:0 12px 28px -4px rgba(0,0,0,0.2), 0 8px 10px -4px rgba(0,0,0,0.1); z-index:1000; max-height:280px; overflow-y:auto; margin-top:4px;"></div>
                     </div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                         <div class="form-group" style="margin-bottom:0;">
                             <label class="form-label">Company Location / Address</label>
-                            <input type="text" class="form-control" name="vendor_location" id="vendor_location" value="{{ old('vendor_location') }}" placeholder="Jakarta, Indonesia">
+                            <input type="text" class="form-control" name="vendor_location" id="vendor_location" value="{{ old('vendor_location', $currentVendor->location ?? '') }}" placeholder="Jakarta, Indonesia">
                         </div>
                         <div class="form-group" style="margin-bottom:0;">
                             <label class="form-label">Email <span style="color:#9ca3af;font-weight:400">(Optional)</span></label>
-                            <input type="email" class="form-control" name="email" id="vendor_contact" value="{{ old('email') }}" placeholder="email@company.com" oninvalid="this.setCustomValidity('Email must contain \'@\'')" oninput="this.setCustomValidity('')">
+                            <input type="{{ isset($currentVendor) ? 'text' : 'email' }}" class="form-control" name="email" id="vendor_contact" value="{{ old('email', isset($currentVendor) ? '••••••••••••••••' : '') }}" placeholder="email@company.com" style="{{ isset($currentVendor) ? 'filter:blur(4px); user-select:none; background:#f1f5f9;' : '' }}" oninvalid="this.setCustomValidity('Email must contain \'@\'')" oninput="this.setCustomValidity('')">
                         </div>
                     </div>
                 </div>
@@ -238,6 +241,7 @@
             <div class="card">
                 <div class="card-header">
                     <div class="card-title">Quoted Items & Prices</div>
+                    <div class="card-desc">Isi harga penawaran untuk item yang tersedia. Kosongkan kolom harga jika item belum/tidak ditawarkan.</div>
                 </div>
                 <div class="card-body" style="padding:0;">
                     <div class="table-responsive">
@@ -309,7 +313,7 @@
                                                         }
                                                     @endphp
                                                     <input type="hidden" name="items[{{ $idx }}][price]" id="hidden-price-{{ $idx }}" value="{{ $rawPrice }}">
-                                                    <input type="text" inputmode="decimal" class="form-control price-input" value="{{ $formattedPrice }}" required placeholder="Rp. 0" oninput="formatPriceInput(this, 'hidden-price-{{ $idx }}')">
+                                                    <input type="text" inputmode="decimal" class="form-control price-input" value="{{ $formattedPrice }}" placeholder="Rp. 0 (Opsional)" oninput="formatPriceInput(this, 'hidden-price-{{ $idx }}')">
                                                 </td>
                                                 <td style="min-width:260px;">
                                                     <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
@@ -377,7 +381,7 @@
                                                     }
                                                 @endphp
                                                 <input type="hidden" name="items[{{ $idx }}][price]" id="hidden-price-{{ $idx }}" value="{{ $rawPrice }}">
-                                                <input type="text" inputmode="decimal" class="form-control price-input" value="{{ $formattedPrice }}" required placeholder="Rp. 0" oninput="formatPriceInput(this, 'hidden-price-{{ $idx }}')">
+                                                <input type="text" inputmode="decimal" class="form-control price-input" value="{{ $formattedPrice }}" placeholder="Rp. 0 (Opsional)" oninput="formatPriceInput(this, 'hidden-price-{{ $idx }}')">
                                             </td>
                                             <td style="min-width:260px;">
                                                 <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#4b5563;cursor:pointer;">
@@ -408,7 +412,7 @@
                         @error('attachment')
                             <div style="color:#ef4444; font-size:12px; margin-top:4px;">{{ $message }}</div>
                         @enderror
-                        @if($rfq->quotations && $rfq->quotations->where('vendor_id', session('last_vendor_id'))->first() && $rfq->quotations->where('vendor_id', session('last_vendor_id'))->first()->attachment_path)
+                        @if(isset($currentVendor) && $rfq->quotations && $rfq->quotations->where('vendor_id', $currentVendor->id)->first() && $rfq->quotations->where('vendor_id', $currentVendor->id)->first()->attachment_path)
                             <div style="margin-top:8px; font-size:12px; color:#10b981;">
                                 ✓ You have previously uploaded a document. Uploading a new one will replace it.
                             </div>
@@ -436,14 +440,44 @@
             const clearBtn = document.getElementById('clear-vendor-btn');
 
             @if(isset($currentVendor))
-                selectVendor('{{ $currentVendor->id }}', '{!! addslashes($currentVendor->vendor_name) !!}', '{!! addslashes($currentVendor->location) !!}', '{!! addslashes($currentVendor->email) !!}');
+                selectVendor('{{ $currentVendor->id }}', '{!! addslashes($currentVendor->vendor_name) !!}', '{!! addslashes($currentVendor->location ?? '') !!}', '••••••••••••••••');
             @endif
 
-            document.addEventListener('DOMContentLoaded', function() {
-                // Formatting is now done server-side on load, no need to loop here
-            });
-
             let debounceTimeout = null;
+
+            function fetchVendors(query) {
+                if (selectedVendor) return;
+                fetch(`/vendor-portal/autocomplete?q=${encodeURIComponent(query || '')}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!data || data.length === 0) {
+                            autocompleteDropdown.innerHTML = `
+                                <div style="padding:10px 14px; font-size:12px; color:var(--text-muted); font-style:italic;">
+                                    Vendor tidak ditemukan. Anda dapat melanjutkan mendaftar sebagai vendor baru.
+                                </div>
+                            `;
+                            autocompleteDropdown.style.display = 'block';
+                            return;
+                        }
+
+                        // We intentionally do NOT auto-select on typing!
+                        // User clicks to select, so similar names (e.g. Trial vs Trial2) won't clash.
+                        autocompleteDropdown.innerHTML = data.map(v => `
+                            <div class="item-option" style="padding:10px 14px; cursor:pointer; border-bottom:1px solid var(--border);" onclick="selectVendor(${v.id}, '${v.vendor_name.replace(/'/g, "\\'")}', '${(v.location || '').replace(/'/g, "\\'")}', '${v.email}')">
+                                <div style="font-weight:600; color:var(--primary); font-size:13.5px;">${v.vendor_name}</div>
+                                <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px; display:flex; align-items:center; gap:8px;">
+                                    <span>Location: ${v.location || '-'}</span>
+                                    <span>|</span>
+                                    <span>Email: <span style="filter:blur(4px); user-select:none; font-weight:700; letter-spacing:1px; display:inline-block;">••••••••••••</span></span>
+                                </div>
+                            </div>
+                        `).join('');
+                        autocompleteDropdown.style.display = 'block';
+                    })
+                    .catch(() => {
+                        autocompleteDropdown.style.display = 'none';
+                    });
+            }
 
             if (vendorNameInput) {
                 vendorNameInput.addEventListener('input', function() {
@@ -471,41 +505,25 @@
 
                     if (!selectedVendor) {
                         vendorIdInput.value = '';
-                        vendorLocationInput.value = '';
-                        vendorContactInput.value = '';
                     }
 
                     clearTimeout(debounceTimeout);
-                    const query = newVal.trim();
-                    if (query.length < 2 || selectedVendor) {
-                        autocompleteDropdown.style.display = 'none';
-                        return;
-                    }
-
                     debounceTimeout = setTimeout(() => {
-                        fetch(`/vendor-portal/autocomplete?q=${encodeURIComponent(query)}`)
-                            .then(res => res.json())
-                            .then(data => {
-                                if (data.length === 0) {
-                                    autocompleteDropdown.style.display = 'none';
-                                    return;
-                                }
-                                
-                                const exactMatch = data.find(v => v.vendor_name.toLowerCase() === query.toLowerCase());
-                                if (exactMatch) {
-                                    selectVendor(exactMatch.id, exactMatch.vendor_name, exactMatch.location, exactMatch.email);
-                                    return;
-                                }
+                        fetchVendors(newVal.trim());
+                    }, 250);
+                });
 
-                                autocompleteDropdown.innerHTML = data.map(v => `
-                                    <div class="item-option" style="padding:10px 14px; cursor:pointer; border-bottom:1px solid var(--border);" onclick="selectVendor(${v.id}, '${v.vendor_name.replace(/'/g, "\\'")}', '${v.location}', '${v.email}')">
-                                        <div style="font-weight:600; color:var(--primary); font-size:13.5px;">${v.vendor_name}</div>
-                                        <div style="font-size:11.5px; color:var(--text-muted); margin-top:2px;">Location: ${v.location} | Email: ${v.email || '-'}</div>
-                                    </div>
-                                `).join('');
-                                autocompleteDropdown.style.display = 'block';
-                            });
-                    }, 300);
+                // Open list of all vendors when focusing or clicking into input if not selected
+                vendorNameInput.addEventListener('focus', function() {
+                    if (!selectedVendor) {
+                        fetchVendors(this.value.trim());
+                    }
+                });
+
+                vendorNameInput.addEventListener('click', function() {
+                    if (!selectedVendor && autocompleteDropdown.style.display !== 'block') {
+                        fetchVendors(this.value.trim());
+                    }
                 });
 
                 // Prevent submitting on Enter inside name input
@@ -524,13 +542,17 @@
                 vendorNameInput.value = name;
                 vendorNameInput.readOnly = true;
                 
-                vendorLocationInput.value = location;
+                vendorLocationInput.value = location || '-';
                 vendorLocationInput.readOnly = true;
                 vendorLocationInput.style.background = '#f1f5f9';
                 
-                vendorContactInput.value = email;
+                // Email is fully blurred and protected
+                vendorContactInput.type = 'text';
+                vendorContactInput.value = '••••••••••••••••';
                 vendorContactInput.readOnly = true;
                 vendorContactInput.style.background = '#f1f5f9';
+                vendorContactInput.style.filter = 'blur(4px)';
+                vendorContactInput.style.userSelect = 'none';
                 
                 statusBadge.style.display = 'inline-flex';
                 clearBtn.style.display = 'block';
@@ -547,12 +569,16 @@
                 vendorLocationInput.readOnly = false;
                 vendorLocationInput.style.background = '#fff';
                 
+                vendorContactInput.type = 'email';
                 vendorContactInput.value = '';
                 vendorContactInput.readOnly = false;
                 vendorContactInput.style.background = '#fff';
+                vendorContactInput.style.filter = 'none';
+                vendorContactInput.style.userSelect = 'auto';
                 
                 statusBadge.style.display = 'none';
                 clearBtn.style.display = 'none';
+                autocompleteDropdown.style.display = 'none';
                 vendorNameInput.focus();
             }
 
@@ -562,6 +588,15 @@
                     autocompleteDropdown.style.display = 'none';
                 }
             });
+
+            const quoteForm = document.getElementById('quote-form');
+            if (quoteForm) {
+                quoteForm.addEventListener('submit', function(e) {
+                    // Temporarily remove readonly so values are submitted
+                    if (vendorLocationInput) vendorLocationInput.readOnly = false;
+                    if (vendorContactInput) vendorContactInput.readOnly = false;
+                });
+            }
 
             // Helper: ubah "1.500,75" -> 1500.75 (number biasa)
             function parsePriceValue(str) {
@@ -587,17 +622,8 @@
                 
                 if (hiddenId) {
                     let cleanStr = val.replace(',', '.');
-                    document.getElementById(hiddenId).value = parseFloat(cleanStr) || 0;
+                    document.getElementById(hiddenId).value = cleanStr !== '' ? (parseFloat(cleanStr) || '') : '';
                 }
-            }
-
-            const quoteForm = document.getElementById('quote-form');
-            if (quoteForm) {
-                quoteForm.addEventListener('submit', function(e) {
-                    // Temporarily remove readonly/disabled so values are submitted
-                    if(vendorLocationInput) vendorLocationInput.readOnly = false;
-                    if(vendorContactInput) vendorContactInput.readOnly = false;
-                });
             }
         </script>
     </div>
