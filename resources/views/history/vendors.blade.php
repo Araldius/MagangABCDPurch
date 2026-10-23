@@ -68,7 +68,7 @@ else $rangeText = 'All Time';
         <div style="position:relative;">
             <select id="plant-filter" onchange="applyHFilters()"
                 style="height:32px;padding:0 28px 0 10px;border:1px solid #e5e7eb;border-radius:7px;font-size:12.5px;color:#374151;background:#fff;appearance:none;cursor:pointer;font-family:inherit;">
-                <option value="">All Plants</option>
+                <option value="">All Business Areas</option>
                 @php
                     $allPlants = collect($vendors)->flatMap(fn($v) => collect($v['history'] ?? [])->pluck('plant'))->filter()->unique()->sort()->values();
                 @endphp

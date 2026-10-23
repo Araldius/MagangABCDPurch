@@ -125,14 +125,27 @@ textarea.form-control { height:auto; padding:8px 10px; resize:vertical; }
                 <div class="modal-title" id="modal-title">Add New Item</div>
                 <button type="button" class="modal-close" onclick="closeModal()">&times;</button>
             </div>
-            <div class="modal-body">
+                                    <div class="modal-body">
                 <div>
                     <label class="form-label">Item Code (Auto-generated)</label>
                     <input type="text" name="item_code" id="input_item_code" class="form-control" placeholder="e.g. ITM-001" readonly style="background:#f3f4f6; color:#6b7280; cursor:not-allowed;">
                 </div>
                 <div>
                     <label class="form-label">Item Name <span style="color:#ef4444">*</span></label>
-                    <input type="text" name="item_name" id="input_item_name" class="form-control" required>
+                    <input type="text" name="item_name" id="input_item_name" class="form-control" maxlength="60" oninput="updatePreviewCounter()" required>
+                </div>
+                <div>
+                    <label class="form-label">Specification</label>
+                    <textarea name="specification" id="input_specification" class="form-control" rows="3" oninput="updatePreviewCounter()"></textarea>
+                </div>
+                <div>
+                    <label class="form-label">Brand / Merek</label>
+                    <input type="text" name="brand" id="input_brand" class="form-control" oninput="updatePreviewCounter()">
+                </div>
+                <div style="background:#f3f4f6; border:1px dashed #d1d5db; padding:10px 12px; border-radius:6px; margin-top:16px; margin-bottom:16px;">
+                    <span style="font-size:11px; font-weight:600; color:#6b7280; display:block; margin-bottom:4px;">Item Name (Formatted)</span>
+                    <div id="preview-text" style="font-family:monospace; font-weight:600; color:var(--primary); font-size:13.5px; word-break:break-all;">_nsp_nbr</div>
+                    <div id="preview-counter" style="font-size:11px; color:#ef4444; margin-top:4px;">8/40 characters (min 7)</div>
                 </div>
                 <div>
                     <label class="form-label">Unit <span style="color:#ef4444">*</span></label>
@@ -143,27 +156,12 @@ textarea.form-control { height:auto; padding:8px 10px; resize:vertical; }
                         @endforeach
                     </select>
                 </div>
-                <div>
-                    <label class="form-label">Category <span style="color:#ef4444">*</span></label>
-                    <select name="type" id="input_type" class="form-control" required>
-                        <option value="goods">Goods</option>
-                        <option value="service">Service</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="form-label">Brand / Merek</label>
-                    <input type="text" name="brand" id="input_brand" class="form-control">
-                </div>
-                <div>
-                    <label class="form-label">Specification</label>
-                    <textarea name="specification" id="input_specification" class="form-control" rows="3"></textarea>
-                </div>
+                <input type="hidden" name="type" value="goods">
                 <div>
                     <label class="form-label">Notes</label>
                     <textarea name="item_notes" id="input_item_notes" class="form-control" rows="2"></textarea>
                 </div>
-            </div>
-            <div class="modal-footer">
+            </div><div class="modal-footer">
                 <button type="button" onclick="closeModal()" style="padding:8px 16px;background:#fff;border:1px solid #e5e7eb;border-radius:6px;font-size:12.5px;font-weight:600;color:#374151;cursor:pointer;">Cancel</button>
                 <button type="submit" style="padding:8px 16px;background:#111827;border:1px solid #111827;border-radius:6px;font-size:12.5px;font-weight:600;color:#fff;cursor:pointer;">Save Item</button>
             </div>
@@ -173,6 +171,7 @@ textarea.form-control { height:auto; padding:8px 10px; resize:vertical; }
 
 <script>
     function openAddModal() {
+        setTimeout(updatePreviewCounter, 50);
         document.getElementById('modal-title').textContent = 'Add New Item';
         const form = document.getElementById('item-form');
         form.action = '{{ route("items.store") }}';
@@ -183,6 +182,7 @@ textarea.form-control { height:auto; padding:8px 10px; resize:vertical; }
     }
 
     function openEditModal(item) {
+        setTimeout(updatePreviewCounter, 50);
         document.getElementById('modal-title').textContent = 'Edit Item';
         const form = document.getElementById('item-form');
         form.action = '{{ url("master-items/update") }}/' + item.id;
@@ -197,6 +197,37 @@ textarea.form-control { height:auto; padding:8px 10px; resize:vertical; }
 
         document.getElementById('item-modal').classList.add('open');
         document.body.style.overflow = 'hidden';
+    }
+
+        function updatePreviewCounter() {
+        const finalName = document.getElementById('input_item_name').value.trim();
+        const finalSpec = document.getElementById('input_specification').value.trim();
+        const finalBrand = document.getElementById('input_brand').value.trim();
+        
+        let displaySpec = finalSpec || 'nsp';
+        let displayBrand = finalBrand || 'nbr';
+        let fullName = `${finalName}_${displaySpec}_${displayBrand}`;
+        if (!finalName) fullName = "_nsp_nbr";
+        
+        const len = fullName.length;
+        const counterEl = document.getElementById('preview-counter');
+        const textEl = document.getElementById('preview-text');
+        
+        textEl.textContent = fullName;
+        counterEl.textContent = `${len}/40 characters (min 7)`;
+        
+        const ok = len >= 7 && len <= 40 && finalName.length > 0;
+        
+        if (len >= 40) {
+            counterEl.style.color = '#ef4444';
+            textEl.style.color = '#ef4444';
+        } else if (ok) {
+            counterEl.style.color = '#16a34a';
+            textEl.style.color = '#16a34a';
+        } else {
+            counterEl.style.color = '#ef4444';
+            textEl.style.color = 'var(--primary)';
+        }
     }
 
     function closeModal() {
@@ -334,3 +365,7 @@ textarea.form-control { height:auto; padding:8px 10px; resize:vertical; }
     });
 </script>
 @endsection
+
+
+
+

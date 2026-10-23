@@ -32,12 +32,10 @@ class ItemController extends Controller
             $item->dynamic_category = $srCount > $prCount ? 'Service' : 'Goods';
         }
 
-        $lastItem = Item::where('item_code', 'like', 'ITM-%')->orderBy('item_code', 'desc')->first();
-        $nextId = 'ITM-0001';
-        if ($lastItem) {
-            $lastNum = intval(substr($lastItem->item_code, 4));
-            $nextId = 'ITM-' . str_pad($lastNum + 1, 4, '0', STR_PAD_LEFT);
-        }
+        $maxItem = \App\Models\Item::where('item_code', 'like', 'ITM-%')->pluck('item_code')->map(function($c) { return intval(substr($c, 4)); })->max() ?? 0;
+        $maxPR = \App\Models\PurchaseRequestItem::where('item_id', 'like', 'ITM-%')->pluck('item_id')->map(function($c) { return intval(substr($c, 4)); })->max() ?? 0;
+        $maxId = max($maxItem, $maxPR);
+        $nextId = 'ITM-' . str_pad($maxId + 1, 4, '0', STR_PAD_LEFT);
         
         return view('master.items', compact('items', 'search', 'showArchived', 'nextId'));
     }
@@ -65,13 +63,10 @@ class ItemController extends Controller
 
         $data = $request->all();
         if (empty($data['item_code'])) {
-            $lastItem = Item::where('item_code', 'like', 'ITM-%')->orderBy('item_code', 'desc')->first();
-            $nextId = 'ITM-0001';
-            if ($lastItem) {
-                $lastNum = intval(substr($lastItem->item_code, 4));
-                $nextId = 'ITM-' . str_pad($lastNum + 1, 4, '0', STR_PAD_LEFT);
-            }
-            $data['item_code'] = $nextId;
+            $maxItem = \App\Models\Item::where('item_code', 'like', 'ITM-%')->pluck('item_code')->map(function($c) { return intval(substr($c, 4)); })->max() ?? 0;
+            $maxPR = \App\Models\PurchaseRequestItem::where('item_id', 'like', 'ITM-%')->pluck('item_id')->map(function($c) { return intval(substr($c, 4)); })->max() ?? 0;
+            $maxId = max($maxItem, $maxPR);
+            $data['item_code'] = 'ITM-' . str_pad($maxId + 1, 4, '0', STR_PAD_LEFT);
         }
 
         Item::create($data);

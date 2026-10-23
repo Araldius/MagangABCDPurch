@@ -284,14 +284,19 @@ min-height: 180px;   /* atur sesuai kebutuhan, makin besar makin panjang ke bawa
 
 {{-- STEP 3: Selection Result / Summary --}}
 <div id="result-workspace" style="display:none">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
         <div>
             <div id="res-pr-label" style="font-size:14px;font-weight:700;color:#111827;margin-top:3px"></div>
             <div style="font-size:12px;color:#6b7280;margin-top:2px">Review final split PO Anda sebelum diproses oleh Purchasing</div>
         </div>
-        <button onclick="document.getElementById('selection-workspace').style.display='block'; document.getElementById('result-workspace').style.display='none';" class="btn-back">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Edit Selection
-        </button>
+        <div style="display:flex;align-items:center;gap:10px">
+            <button class="btn-outline" onclick="exportSummaryPO()" style="display:inline-flex;align-items:center;gap:6px;padding:7px 12px;color:#059669;border-color:#059669;background:#ecfdf5;">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16" stroke-linecap="round" stroke-linejoin="round"/></svg> Export Excel
+            </button>
+            <button onclick="document.getElementById('selection-workspace').style.display='block'; document.getElementById('result-workspace').style.display='none';" class="btn-back">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg> Edit Selection
+            </button>
+        </div>
     </div>
  
     <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;margin-bottom:14px;overflow:hidden;">
@@ -499,6 +504,41 @@ function loadPR(uniqueKey) {
 function exportQuotations() {
     if (!currentPR) return;
     window.location.href = `{{ url('vendor-selection/export') }}?id=${currentPR.id}&type=${currentPR.type}`;
+}
+
+function exportSummaryPO() {
+    if (!currentPR) return;
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '{{ route("vendors.export.summary") }}';
+
+    const csrf = document.createElement('input');
+    csrf.type = 'hidden';
+    csrf.name = '_token';
+    csrf.value = document.querySelector('meta[name=csrf-token]')?.content || '{{ csrf_token() }}';
+    form.appendChild(csrf);
+
+    const prId = document.createElement('input');
+    prId.type = 'hidden';
+    prId.name = 'purchase_request_id';
+    prId.value = currentPR.id;
+    form.appendChild(prId);
+
+    const prType = document.createElement('input');
+    prType.type = 'hidden';
+    prType.name = 'item_type';
+    prType.value = currentPR.type;
+    form.appendChild(prType);
+
+    const selInput = document.createElement('input');
+    selInput.type = 'hidden';
+    selInput.name = 'selections_json';
+    selInput.value = JSON.stringify(Object.values(selections));
+    form.appendChild(selInput);
+
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
 }
 
 function backToStep1(){

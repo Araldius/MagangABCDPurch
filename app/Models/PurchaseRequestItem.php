@@ -18,7 +18,9 @@ class PurchaseRequestItem extends Model
         'specification',
         'brand',
         'item_notes',
-        'admin_notes'
+        'admin_notes',
+        'is_asset',
+        'purpose'
     ];
 
     public function getFullNameAttribute()

@@ -16,7 +16,7 @@ class PurchaseRequest extends Model
         'title', 
         'department', 
         'priority', 
-        'plant', 
+        'business_area', 
         'submission_date', 
         'requested_date', 
         'need_date', 

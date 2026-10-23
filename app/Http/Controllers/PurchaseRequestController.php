@@ -120,10 +120,13 @@ class PurchaseRequestController extends Controller
         $itemBrands = \App\Models\Item::whereNotNull('brand')->where('brand', '!=', '')->distinct()->pluck('brand');
         $allBrands = $prBrands->concat($itemBrands)->unique()->sort()->values();
 
-        // Get the latest Item ID to use for the next new item
-        $lastItemId = \App\Models\Item::max('id') ?? 0;
+        // Get the highest ITM- code number to use for the next new item
+        // Check both Master Items and PR Items to reserve IDs and prevent collisions before approval
+        $maxItem = \App\Models\Item::where('item_code', 'like', 'ITM-%')->pluck('item_code')->map(function($c) { return intval(substr($c, 4)); })->max() ?? 0;
+        $maxPR = \App\Models\PurchaseRequestItem::where('item_id', 'like', 'ITM-%')->pluck('item_id')->map(function($c) { return intval(substr($c, 4)); })->max() ?? 0;
+        $maxCodeId = max($maxItem, $maxPR);
 
-        return view('purchase_requests.create', compact('existingItems', 'existingServiceTemplates', 'nextPrDocNum', 'nextSrDocNum', 'allBrands', 'lastItemId'));
+        return view('purchase_requests.create', compact('existingItems', 'existingServiceTemplates', 'nextPrDocNum', 'nextSrDocNum', 'allBrands', 'maxCodeId'));
     }
 
     public function store(Request $request)
@@ -147,6 +150,12 @@ class PurchaseRequestController extends Controller
                 // Generate SR document number: SR-YYYY-NNNN
                 $srCount  = ServiceRequest::whereYear('created_at', now()->year)->count() + 1;
                 $srDocNum = 'SR-' . now()->format('Y') . '-' . str_pad($srCount, 4, '0', STR_PAD_LEFT);
+                
+                // Ensure no collision if two people submit at the exact same millisecond
+                while (\App\Models\ServiceRequest::where('document_number', $srDocNum)->exists()) {
+                    $srCount++;
+                    $srDocNum = 'SR-' . now()->format('Y') . '-' . str_pad($srCount, 4, '0', STR_PAD_LEFT);
+                }
 
                 $sr = ServiceRequest::create([
                     'user_id'         => Auth::id(),
@@ -155,7 +164,7 @@ class PurchaseRequestController extends Controller
                     'service_name'    => $svcData['service_name'],
                     'submission_date' => now(),
                     'requested_date'  => $request->requested_date,
-                    'plant'           => $request->plant,
+                    'business_area'   => $request->plant,
                     'status'          => 'submitted',
                     'attachment_path' => $attachmentPath,
                 ]);
@@ -187,6 +196,22 @@ class PurchaseRequestController extends Controller
                 'action_date'        => now(),
             ]);
 
+            $purchasingUsers = \App\Models\User::where('role', 'purchasing')->get();
+            dispatch(function () use ($sr, $purchasingUsers) {
+                try {
+                    $notif = new \App\Notifications\NewPurchaseRequestNotification($sr, 'service');
+                    if ($purchasingUsers->count() > 0) {
+                        \Illuminate\Support\Facades\Notification::send($purchasingUsers, $notif);
+                    }
+                    $companyEmail = config('mail.from.address') ?: env('MAIL_FROM_ADDRESS');
+                    if ($companyEmail && !in_array($companyEmail, $purchasingUsers->pluck('email')->toArray())) {
+                        \Illuminate\Support\Facades\Notification::route('mail', $companyEmail)->notify($notif);
+                    }
+                } catch (\Throwable $e) {
+                    \Log::error('Error sending new SR notification: ' . $e->getMessage());
+                }
+            })->afterResponse();
+
             return redirect()->route('pr.list')->with('success', "Request $docInfo berhasil dibuat.");
 
         } else {
@@ -203,13 +228,19 @@ class PurchaseRequestController extends Controller
             // Auto-generate PR-YYYY-NNNN (4-digit, same format as SR)
             $prYearCount  = PurchaseRequest::whereYear('created_at', now()->year)->count() + 1;
             $prDocNum     = 'PR-' . now()->format('Y') . '-' . str_pad($prYearCount, 4, '0', STR_PAD_LEFT);
+            
+            // Ensure no collision if two people submit at the exact same millisecond
+            while (\App\Models\PurchaseRequest::where('document_number', $prDocNum)->exists()) {
+                $prYearCount++;
+                $prDocNum = 'PR-' . now()->format('Y') . '-' . str_pad($prYearCount, 4, '0', STR_PAD_LEFT);
+            }
 
             $pr = PurchaseRequest::create([
                 'user_id'         => Auth::id(),
                 'document_number' => $prDocNum,
                 'title'           => $request->title,
                 'department'      => $request->department,
-                'plant'           => $request->plant,
+                'business_area'   => $request->plant,
                 'submission_date' => now(),
                 'requested_date'  => $request->requested_date,
                 'need_date'       => $request->need_date,
@@ -218,6 +249,29 @@ class PurchaseRequestController extends Controller
             ]);
 
             foreach ($request->items as $item) {
+                // RACE CONDITION GUARD: If two people submit a PR at the exact same millisecond, they might both have the same ID from JS.
+                // Or if another user created this ID manually in Master Items while we were typing our PR.
+                // We use the `is_new` flag to know if the user INTENDED to create a brand new item.
+                $isNew = !empty($item['is_new']) && $item['is_new'] == 1;
+                
+                if ($isNew) {
+                    $existingInMaster = \App\Models\Item::where('item_code', $item['item_id'])->exists();
+                    if (!$existingInMaster) {
+                        $idNum = (int) str_replace('ITM-', '', $item['item_id']);
+                        if ($idNum > 0 && \App\Models\Item::find($idNum)) {
+                            $existingInMaster = true;
+                        }
+                    }
+                    
+                    if ($existingInMaster || \App\Models\PurchaseRequestItem::where('item_id', $item['item_id'])->exists()) {
+                        // Yes! Re-generate a fresh ID to avoid clash!
+                        $maxItem = \App\Models\Item::where('item_code', 'like', 'ITM-%')->pluck('item_code')->map(function($c) { return intval(substr($c, 4)); })->max() ?? 0;
+                        $maxPR = \App\Models\PurchaseRequestItem::where('item_id', 'like', 'ITM-%')->pluck('item_id')->map(function($c) { return intval(substr($c, 4)); })->max() ?? 0;
+                        $newMax = max($maxItem, $maxPR);
+                        $item['item_id'] = 'ITM-' . str_pad($newMax + 1, 4, '0', STR_PAD_LEFT);
+                    }
+                }
+
                 PurchaseRequestItem::create([
                     'purchase_request_id' => $pr->id,
                     'item_id'             => $item['item_id'],
@@ -227,6 +281,8 @@ class PurchaseRequestController extends Controller
                     'specification'       => $item['specification'] ?? null,
                     'brand'               => $item['brand'] ?? null,
                     'item_notes'          => $item['item_notes'] ?? null,
+                    'is_asset'            => !empty($item['is_asset']) ? 1 : 0,
+                    'purpose'             => !empty($item['is_asset']) ? ($item['purpose'] ?? null) : null,
                 ]);
             }
             $docInfo = $prDocNum;
@@ -238,6 +294,22 @@ class PurchaseRequestController extends Controller
                 'notes'              => "Dokumen $docInfo berhasil dibuat.",
                 'action_date'        => now(),
             ]);
+
+            $purchasingUsers = \App\Models\User::where('role', 'purchasing')->get();
+            dispatch(function () use ($pr, $purchasingUsers) {
+                try {
+                    $notif = new \App\Notifications\NewPurchaseRequestNotification($pr, 'goods');
+                    if ($purchasingUsers->count() > 0) {
+                        \Illuminate\Support\Facades\Notification::send($purchasingUsers, $notif);
+                    }
+                    $companyEmail = config('mail.from.address') ?: env('MAIL_FROM_ADDRESS');
+                    if ($companyEmail && !in_array($companyEmail, $purchasingUsers->pluck('email')->toArray())) {
+                        \Illuminate\Support\Facades\Notification::route('mail', $companyEmail)->notify($notif);
+                    }
+                } catch (\Throwable $e) {
+                    \Log::error('Error sending new PR notification: ' . $e->getMessage());
+                }
+            })->afterResponse();
 
             return redirect()->route('pr.list')->with('success', "Request $docInfo berhasil dibuat.");
         }
@@ -318,6 +390,17 @@ class PurchaseRequestController extends Controller
             'action_date'        => now(),
         ]);
 
+        if ($req->user) {
+            $userTarget = $req->user;
+            dispatch(function () use ($userTarget, $req, $isService) {
+                try {
+                    $userTarget->notify(new \App\Notifications\PurchaseRequestStatusNotification($req, 'approved', 'Dokumen disetujui dan masuk ke tahap Vendor Search.', $isService ? 'service' : 'goods'));
+                } catch (\Throwable $e) {
+                    \Log::error('Error sending PR approved notification: ' . $e->getMessage());
+                }
+            })->afterResponse();
+        }
+
         return back()->with('success', "Request $docNum berhasil di-approve. Silakan tambahkan Quotation.");
     }
 
@@ -352,6 +435,17 @@ class PurchaseRequestController extends Controller
             'notes'              => "Dokumen $docNum ditolak oleh Admin.",
             'action_date'        => now(),
         ]);
+
+        if ($req->user) {
+            $userTarget = $req->user;
+            dispatch(function () use ($userTarget, $req, $isService) {
+                try {
+                    $userTarget->notify(new \App\Notifications\PurchaseRequestStatusNotification($req, 'rejected', 'Dokumen ditolak oleh Admin Purchasing.', $isService ? 'service' : 'goods'));
+                } catch (\Throwable $e) {
+                    \Log::error('Error sending PR rejected notification: ' . $e->getMessage());
+                }
+            })->afterResponse();
+        }
 
         return back()->with('success', "Request $docNum berhasil ditolak.");
     }
@@ -434,6 +528,22 @@ class PurchaseRequestController extends Controller
             'notes'              => "Dokumen $docNum dikembalikan ke Vendor Selection oleh Admin untuk diperpanjang waktunya.",
             'action_date'        => now(),
         ]);
+
+        $purchasingUsers = \App\Models\User::where('role', 'purchasing')->get();
+        $userTarget = $req->user;
+        dispatch(function () use ($req, $userTarget, $purchasingUsers, $isService, $docNum) {
+            try {
+                $notif = new \App\Notifications\PurchaseRequestStatusNotification($req, 'reopened', "Dokumen $docNum dibuka kembali ke tahap Vendor Selection.", $isService ? 'service' : 'goods');
+                if ($userTarget) {
+                    $userTarget->notify($notif);
+                }
+                if ($purchasingUsers->count() > 0) {
+                    \Illuminate\Support\Facades\Notification::send($purchasingUsers, $notif);
+                }
+            } catch (\Throwable $e) {
+                \Log::error('Error sending PR reopened notification: ' . $e->getMessage());
+            }
+        })->afterResponse();
 
         return back()->with('success', "Request $docNum berhasil dikembalikan ke tahap Vendor Selection.");
     }

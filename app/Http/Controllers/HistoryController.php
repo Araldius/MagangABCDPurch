@@ -67,7 +67,7 @@ class HistoryController extends Controller
                     'doc_number'     => $docNo,
                     'vendor_names'   => collect(),
                     'department'     => $pr->department ?? optional($pr->user)->department ?? '—',
-                    'plant'          => $pr->plant ?? '—',
+                    'business_area'  => $pr->business_area ?? '—',
                     'items'          => collect(),
                     'total_value'    => 0,
                     'lead_days'      => null,
@@ -230,7 +230,7 @@ class HistoryController extends Controller
                             'item_name' => $pri->full_name ?? $pri->item_name ?? $pri->name ?? '-',
                             'vendor' => $vName,
                             'vendor_city' => optional($vendor)->location ?? '',
-                            'plant' => $pr->plant ?? '-',
+                            'business_area' => $pr->business_area ?? '-',
                             'value' => $si->final_price_per_item * $si->final_quantity,
                             'qty' => $si->final_quantity,
                             'unit' => $qd->offered_unit ?? $pri->unit ?? '-',
@@ -333,7 +333,7 @@ class HistoryController extends Controller
                         $vendorMap[$vid]['history'][] = [
                             'item_id' => $pri->item_id ?? $pri->item_code ?? '-',
                             'item_name' => $pri->full_name ?? $pri->item_name ?? $pri->name ?? '-',
-                            'plant' => $pr->plant ?? '-',
+                            'business_area' => $pr->business_area ?? '-',
                             'value' => $val,
                             'qty' => $si->final_quantity,
                             'unit' => $pri->unit ?? '-',
@@ -535,3 +535,4 @@ class HistoryController extends Controller
         return view('master.vendor_detail', compact('vendor', 'history', 'totalValue'));
     }
 }
+

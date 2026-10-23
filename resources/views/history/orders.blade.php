@@ -58,7 +58,7 @@ else $rangeText = 'All Time';
                 @endforeach
             </select>
             <select id="plant-filter" onchange="applyHFilters()" style="height:34px;border:1px solid #d1d5db;border-radius:6px;padding:0 12px;font-size:12.5px;outline:none;background:#fff">
-                <option value="">All Plants</option>
+                <option value="">All Business Areas</option>
                 @foreach($records->pluck('plant')->filter()->unique() as $p)
                     <option value="{{ $p }}">{{ $p }}</option>
                 @endforeach
@@ -86,7 +86,7 @@ else $rangeText = 'All Time';
             </thead>
             <tbody id="hist-tbody">
                 @forelse($records as $idx => $r)
-                <tr style="border-bottom:1px solid #f3f4f6" data-dept="{{ $r->department }}" data-plant="{{ $r->plant }}" data-date="{{ $r->completed_date_raw ?? '' }}">
+                <tr style="border-bottom:1px solid #f3f4f6" data-dept="{{ $r->department }}" data-plant="{{ $r->business_area }}" data-date="{{ $r->completed_date_raw ?? '' }}">
                     <td style="padding:12px 20px;font-weight:600;color:#111827;font-family:monospace">{{ $r->doc_number }}</td>
                     <td style="padding:12px 14px">
                         <div style="font-weight:600;color:#111827">{{ $r->vendor_name }}</div>
@@ -212,7 +212,7 @@ function openDetail(idx) {
     if (!pr) return;
 
     // Fill Header
-    document.getElementById('modal-title-text').innerHTML = `${pr.items[0] ? pr.items[0].name : 'Procurement'} <br><span style="font-size:12px;font-weight:400;color:#6b7280;margin-top:2px;display:block">${pr.doc_number} | ${pr.department}${pr.plant ? ' | ' + pr.plant : ''}</span>`;
+    document.getElementById('modal-title-text').innerHTML = `${pr.items[0] ? pr.items[0].name : 'Procurement'} <br><span style="font-size:12px;font-weight:400;color:#6b7280;margin-top:2px;display:block">${pr.doc_number} | ${pr.department}${pr.business_area ? ' | ' + pr.business_area : ''}</span>`;
 
     // Fill Request Info
     document.getElementById('modal-info-submission').textContent = pr.decided_at ? pr.decided_at.split('T')[0] : '-'; // Just as an example, normally submission_date

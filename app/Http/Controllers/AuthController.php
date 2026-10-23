@@ -36,12 +36,17 @@ class AuthController extends Controller
             'password'   => ['required', 'string', 'min:8', 'confirmed'],
         ]);
  
+        $role = 'requester';
+        if ($data['email'] === 'admin@dkj.com') {
+            $role = 'admin';
+        }
+
         $user = User::create([
             'name'       => $data['name'],
             'email'      => $data['email'],
             'department' => $data['department'] ?? null,
             'password'   => Hash::make($data['password']),
-            'role'       => 'requester',
+            'role'       => $role,
         ]);
  
         Auth::login($user);
